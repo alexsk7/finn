@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80">
+  <defs>
+    <linearGradient id="chartGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#4080f0" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#4080f0" stop-opacity="1"/>
+    </linearGradient>
+    <linearGradient id="fillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#4080f0" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#4080f0" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="iconClip">
+      <rect x="0" y="0" width="80" height="80" rx="14"/>
+    </clipPath>
+  </defs>
+
+  <!-- Icon mark: rounded square -->
+  <rect x="0" y="0" width="80" height="80" rx="14" fill="#131820"/>
+  <rect x="0" y="0" width="80" height="80" rx="14" fill="none" stroke="#232d3f" stroke-width="1.5"/>
+
+  <!-- Grid lines (subtle) -->
+  <g clip-path="url(#iconClip)" opacity="0.3">
+    <line x1="12" y1="28" x2="68" y2="28" stroke="#232d3f" stroke-width="1"/>
+    <line x1="12" y1="44" x2="68" y2="44" stroke="#232d3f" stroke-width="1"/>
+    <line x1="12" y1="60" x2="68" y2="60" stroke="#232d3f" stroke-width="1"/>
+  </g>
+
+  <!-- Chart area fill -->
+  <polygon
+    points="14,62 24,52 34,56 44,40 54,32 66,20 66,64 14,64"
+    fill="url(#fillGrad)"
+    clip-path="url(#iconClip)"
+  />
+
+  <!-- Chart line -->
+  <polyline
+    points="14,62 24,52 34,56 44,40 54,32 66,20"
+    fill="none"
+    stroke="url(#chartGrad)"
+    stroke-width="2.5"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+    clip-path="url(#iconClip)"
+  />
+
+  <!-- Peak dot -->
+  <circle cx="66" cy="20" r="3.5" fill="#22d3a0"/>
+  <!-- Glow ring -->
+  <circle cx="66" cy="20" r="6" fill="none" stroke="#22d3a0" stroke-width="1" opacity="0.35"/>
+
+  <!-- Wordmark -->
+  <!-- FIN in accent blue -->
+  <text
+    x="96" y="52"
+    font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace"
+    font-size="36"
+    font-weight="700"
+    letter-spacing="-1"
+    fill="#4080f0"
+  >FIN</text>
+  <!-- CTL in lighter -->
+  <text
+    x="192" y="52"
+    font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace"
+    font-size="36"
+    font-weight="700"
+    letter-spacing="-1"
+    fill="#c8d4e8"
+  >CTL</text>
+  <!-- Tagline -->
+  <text
+    x="97" y="66"
+    font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace"
+    font-size="9"
+    font-weight="400"
+    letter-spacing="0.18em"
+    fill="#5a6a85"
+  >MISSION CONTROL</text>
+</svg>

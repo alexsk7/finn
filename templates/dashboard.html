@@ -1,0 +1,634 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block head %}
+<style>
+/* ── NW period filters ──────────────────────────────────────────── */
+.nw-filter {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 10px;
+  padding: 2px 7px;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.nw-filter:hover  { color: var(--text-head); border-color: var(--text-dim); }
+.nw-filter.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── Multi-line chart legend ────────────────────────────────────── */
+.chart-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 5px 0 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.chart-legend-line {
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+/* ── Market ticker ──────────────────────────────────────────────── */
+.ticker-strip {
+  display: none;
+  align-items: center;
+  height: 32px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ticker-badge {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: var(--accent);
+  padding: 0 12px;
+  border-right: 1px solid var(--border);
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.ticker-wrap {
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+}
+.ticker-inner {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  animation: ticker-scroll 60s linear infinite;
+  will-change: transform;
+}
+.ticker-inner:hover { animation-play-state: paused; }
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-item  { display:inline-flex; align-items:center; gap:5px; padding:0 16px; font-size:11px; font-variant-numeric:tabular-nums; }
+.ticker-divider { color: var(--border); padding: 0 2px; font-size: 10px; }
+.t-lbl   { color: var(--text-dim); font-size: 10px; font-weight: 600; letter-spacing: .03em; }
+.t-price { color: var(--text-head); }
+.t-chg   { font-size: 10px; }
+
+/* ── KPI sparklines ─────────────────────────────────────────────── */
+.kpi-spark {
+  margin-top: 7px;
+  height: 22px;
+  overflow: hidden;
+  opacity: 0.75;
+}
+
+/* ── Dashboard viewport-fit layout ─────────────────────────────── */
+
+/* Lock main area — dashboard only */
+.main { overflow: hidden; }
+
+/* Root flex column, fills grid cell */
+#dash {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* KPI row: never grows */
+#kpi-row             { flex-shrink: 0; }
+#kpi-row .card       { padding: 10px 14px; }
+#kpi-row .card-value { font-size: 20px; }
+
+/*
+ * Content rows: flex-grow to fill remaining height.
+ *
+ * KEY FIX: grid-template-rows:1fr forces the single internal grid row
+ * to exactly match the flex-allocated height, preventing Chart.js
+ * canvases from pushing the row taller than its allocation.
+ * align-items:stretch ensures both grid cells fill the row height.
+ */
+.dash-row {
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: 1fr;
+  align-items: stretch;
+}
+
+/* Both grid cells must clip — not expand to content */
+.dash-row > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Flex-column helper for right-side stacked columns */
+.dash-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-height: 0;
+  /* height fills grid cell via align-items:stretch on parent */
+}
+
+/*
+ * Cards that must fill their grid cell height.
+ * .section-title is flex-shrink:0 so the chart/table gets the rest.
+ */
+.card-fill {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.card-fill .section-title { flex-shrink: 0; }
+.card-fill .chart-wrap    { flex: 1; min-height: 0; }
+
+/* Compact 2-col allocation legend */
+#alloc-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  padding-top: 6px;
+}
+#alloc-legend .legend-item { margin-bottom: 0; font-size: 11px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="dash">
+
+  <!-- Row 1: KPI tiles ─────────────────────────────────────────── -->
+  <div class="grid-4" id="kpi-row">
+    <div class="card">
+      <div class="card-title">Net Worth</div>
+      <div class="card-value" id="kpi-nw">—</div>
+      <div class="card-sub"><span id="kpi-mom"></span> &nbsp;·&nbsp; <span id="kpi-ytd"></span></div>
+      <div id="spark-nw" class="kpi-spark"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Invested</div>
+      <div class="card-value" id="kpi-inv">—</div>
+      <div class="card-sub"><span id="kpi-inv-mom"></span> &nbsp;·&nbsp; <span id="kpi-inv-ytd"></span></div>
+      <div id="spark-inv" class="kpi-spark"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Home Equity</div>
+      <div class="card-value" id="kpi-eq">—</div>
+      <div class="card-sub"><span id="kpi-eq-mom"></span> &nbsp;·&nbsp; <span id="kpi-eq-ytd"></span></div>
+      <div id="spark-eq" class="kpi-spark"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Liquid Cash</div>
+      <div class="card-value" id="kpi-cash">—</div>
+      <div class="card-sub"><span id="kpi-cash-mom"></span> &nbsp;·&nbsp; <span id="kpi-cash-ytd"></span></div>
+      <div id="spark-cash" class="kpi-spark"></div>
+    </div>
+  </div>
+
+  <!-- Row 2: NW chart | Cashflow + Allocation ──────────────────── -->
+  <div class="layout-main-aside dash-row">
+
+    <!-- NW multi-line chart -->
+    <div class="card card-fill">
+      <div class="section-title" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        Net Worth History
+        <div style="display:flex;gap:3px;margin-left:auto;">
+          <button class="nw-filter" onclick="filterNW('30D')">30D</button>
+          <button class="nw-filter" onclick="filterNW('QTD')">QTD</button>
+          <button class="nw-filter" onclick="filterNW('YTD')">YTD</button>
+          <button class="nw-filter" onclick="filterNW('1Y')">1Y</button>
+          <button class="nw-filter" onclick="filterNW('2Y')">2Y</button>
+          <button class="nw-filter" onclick="filterNW('5Y')">5Y</button>
+          <button class="nw-filter active" onclick="filterNW('MAX')">MAX</button>
+        </div>
+      </div>
+      <div class="chart-legend">
+        <div class="chart-legend-item">
+          <div class="chart-legend-line" style="background:#4080f0;height:2px;"></div>Net Worth
+        </div>
+        <div class="chart-legend-item">
+          <div class="chart-legend-line" style="background:#22d3a0;"></div>Invested
+        </div>
+        <div class="chart-legend-item">
+          <div class="chart-legend-line" style="background:#f0b040;"></div>Cash
+        </div>
+        <div class="chart-legend-item">
+          <div class="chart-legend-line" style="background:#8060f0;"></div>Equity
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="nw-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Right column: Cashflow + Allocation -->
+    <div class="dash-col">
+
+      <div class="card" style="flex-shrink:0;">
+        <div class="section-title">Cash Flow · MTD</div>
+        <div style="margin-bottom:10px;">
+          <div class="cf-row">
+            <div class="cf-label">Income</div>
+            <div class="cf-track"><div class="cf-fill" id="cf-income-bar" style="background:var(--green);width:0%"></div></div>
+            <div class="cf-val" id="cf-income-val" style="color:var(--green);">—</div>
+          </div>
+          <div class="cf-row">
+            <div class="cf-label">Spent</div>
+            <div class="cf-track"><div class="cf-fill" id="cf-exp-bar" style="background:var(--red);width:0%"></div></div>
+            <div class="cf-val" id="cf-exp-val" style="color:var(--red);">—</div>
+          </div>
+          <div style="height:1px;background:var(--border);margin:7px 0;"></div>
+          <div class="cf-row">
+            <div class="cf-label">Net</div>
+            <div style="flex:1;"></div>
+            <div class="cf-val" id="cf-net-val">—</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);" id="cf-savings-rate"></div>
+      </div>
+
+      <div class="card card-fill" style="flex:1;min-height:0;">
+        <div class="section-title">
+          Allocation
+          <a href="/investments" style="font-size:10px;color:var(--accent);">detail →</a>
+        </div>
+        <div class="chart-wrap" style="min-height:60px;">
+          <canvas id="alloc-chart"></canvas>
+        </div>
+        <div id="alloc-legend"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Row 3: Holdings | Alerts + Journal ──────────────────────── -->
+  <div class="layout-main-aside dash-row">
+
+    <div class="card card-fill">
+      <div class="section-title">
+        Top Holdings
+        <a href="/investments" style="font-size:10px;color:var(--accent);">view all →</a>
+      </div>
+      <div class="table-scroll" style="flex:1;overflow-y:auto;min-height:0;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Name</th>
+              <th>Class</th>
+              <th class="num">Value</th>
+              <th class="num">Return</th>
+              <th style="width:90px;">Perf</th>
+            </tr>
+          </thead>
+          <tbody id="holdings-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dash-col">
+      <div class="card" style="flex:1;overflow-y:auto;min-height:0;">
+        <div class="section-title">Alerts</div>
+        <div class="alert-list" id="alerts"></div>
+      </div>
+      <div class="card" style="flex:1;overflow-y:auto;min-height:0;">
+        <div class="section-title">
+          Recent Log
+          <a href="/journal" style="font-size:10px;color:var(--accent);">all →</a>
+        </div>
+        <div id="recent-journal"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Market ticker ────────────────────────────────────────────── -->
+  <div class="ticker-strip" id="ticker-strip">
+    <div class="ticker-badge">MKT</div>
+    <div class="ticker-wrap">
+      <div class="ticker-inner" id="ticker-inner"></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let nwChart, allocChart;
+let fullHistory = [];
+
+async function loadDashboard() {
+  const [dash, alloc, tlh, journal, ticker] = await Promise.all([
+    fetch('/api/dashboard').then(r=>r.json()),
+    fetch('/api/allocation').then(r=>r.json()),
+    fetch('/api/tax').then(r=>r.json()),
+    fetch('/api/journal').then(r=>r.json()),
+    fetch('/api/ticker').then(r=>r.json()).catch(()=>[]),
+  ]);
+
+  // KPIs
+  document.getElementById('kpi-nw').textContent   = fmt(dash.net_worth);
+  document.getElementById('kpi-cash').textContent = fmt(dash.liquid_cash);
+  document.getElementById('kpi-inv').textContent  = fmt(dash.invested);
+  document.getElementById('kpi-eq').textContent   = fmt(dash.home_equity);
+
+  function setKpiSub(momId, ytdId, momPct, ytdPct) {
+    const m = document.getElementById(momId);
+    m.textContent = (momPct>=0?'▲ ':'▼ ') + Math.abs(momPct).toFixed(1) + '% MoM';
+    m.style.color = clr(momPct);
+    const y = document.getElementById(ytdId);
+    y.textContent = (ytdPct>=0?'▲ ':'▼ ') + Math.abs(ytdPct).toFixed(1) + '% YTD';
+    y.style.color = clr(ytdPct);
+  }
+
+  setKpiSub('kpi-mom',      'kpi-ytd',      dash.mom_change_pct,      dash.ytd_change_pct);
+  setKpiSub('kpi-cash-mom', 'kpi-cash-ytd', dash.liquid_cash_mom_pct, dash.liquid_cash_ytd_pct);
+  setKpiSub('kpi-inv-mom',  'kpi-inv-ytd',  dash.invested_mom_pct,    dash.invested_ytd_pct);
+  setKpiSub('kpi-eq-mom',   'kpi-eq-ytd',   dash.equity_mom_pct,      dash.equity_ytd_pct);
+
+  // Cashflow
+  const inc = dash.income_mtd, exp = dash.expenses_mtd, net = inc - exp;
+  const max = Math.max(inc, exp, 1);
+  document.getElementById('cf-income-val').textContent = fmt(inc);
+  document.getElementById('cf-exp-val').textContent    = fmt(exp);
+  document.getElementById('cf-net-val').textContent    = fmt(net);
+  document.getElementById('cf-net-val').style.color    = clr(net);
+  document.getElementById('cf-income-bar').style.width = (inc/max*100).toFixed(0)+'%';
+  document.getElementById('cf-exp-bar').style.width    = (exp/max*100).toFixed(0)+'%';
+  if (inc > 0) {
+    const sr = ((net/inc)*100).toFixed(0);
+    document.getElementById('cf-savings-rate').textContent = `Savings rate: ${sr}%`;
+  }
+
+  // NW chart + sparklines
+  fullHistory = dash.history || [];
+  renderNWChart(fullHistory);
+  renderSparklines(fullHistory);
+
+  // Allocation donut
+  const cls = alloc.allocation.filter(a => a.market_value > 0);
+  if (allocChart) allocChart.destroy();
+  allocChart = new Chart(document.getElementById('alloc-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: cls.map(a => CLASS_LABELS[a.asset_class] || a.asset_class),
+      datasets: [{
+        data: cls.map(a => a.market_value),
+        backgroundColor: cls.map(a => COLORS[a.asset_class] || '#506070'),
+        borderWidth: 0,
+        hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => `${ctx.label}: ${fmt(ctx.raw)} (${(ctx.raw / alloc.total_invested * 100).toFixed(1)}%)`
+        }}
+      }
+    }
+  });
+
+  const legendEl = document.getElementById('alloc-legend');
+  legendEl.innerHTML = cls.map(a => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${COLORS[a.asset_class]||'#506070'}"></div>
+      <span style="color:var(--text-dim);">${CLASS_LABELS[a.asset_class]||a.asset_class}</span>
+      <span style="margin-left:auto;font-variant-numeric:tabular-nums;">${fmt(a.market_value)}</span>
+    </div>`).join('');
+
+  // Holdings table — consolidate duplicate tickers across accounts
+  const holdingMap = new Map();
+  for (const h of alloc.holdings) {
+    if (holdingMap.has(h.symbol)) {
+      const e = holdingMap.get(h.symbol);
+      e.market_value += h.market_value;
+      e.cost_basis   += h.cost_basis;
+      e.gain         += h.gain;
+    } else {
+      holdingMap.set(h.symbol, { ...h });
+    }
+  }
+  const consolidated = [...holdingMap.values()].map(h => ({
+    ...h,
+    gain_pct: h.cost_basis > 0 ? (h.gain / h.cost_basis * 100) : 0,
+  })).sort((a, b) => b.market_value - a.market_value);
+
+  const tbody = document.getElementById('holdings-body');
+  tbody.innerHTML = consolidated.slice(0, 8).map(h => {
+    const maxVal = consolidated[0]?.market_value || 1;
+    const barW   = (h.market_value / maxVal * 100).toFixed(0);
+    const gColor = h.gain_pct >= 0 ? 'var(--green)' : 'var(--red)';
+    return `<tr>
+      <td><strong style="color:var(--text-head);">${h.symbol}</strong></td>
+      <td style="color:var(--text-dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.name||''}</td>
+      <td><span class="badge blue">${CLASS_LABELS[h.asset_class]||h.asset_class}</span></td>
+      <td class="num">${fmt(h.market_value)}</td>
+      <td class="num" style="color:${gColor}">${pct(h.gain_pct)}</td>
+      <td><div class="bar-track"><div class="bar-fill" style="width:${barW}%;background:${gColor};"></div></div></td>
+    </tr>`;
+  }).join('');
+
+  // Alerts
+  const alertItems = [];
+  alloc.allocation.forEach(a => {
+    if (Math.abs(a.drift) >= 3) {
+      const dir  = a.drift > 0 ? 'over' : 'under';
+      const cls2 = a.drift > 0 ? 'warn' : 'info';
+      alertItems.push({ type: cls2, label: 'Rebalance',
+        text: `${CLASS_LABELS[a.asset_class]||a.asset_class} is ${Math.abs(a.drift).toFixed(1)}% ${dir} target (${a.actual_pct.toFixed(0)}% vs ${a.target_pct}%)` });
+    }
+  });
+  tlh.slice(0,2).forEach(t => {
+    alertItems.push({ type: 'warn', label: 'TLH Opportunity',
+      text: `${t.symbol}: ${fmt(t.unrealized_loss)} unrealized loss — harvest before year-end` });
+  });
+  const milestones = journal.filter(j => j.is_milestone);
+  if (milestones.length) {
+    alertItems.push({ type: 'milestone', label: 'Milestone', text: milestones[0].title });
+  }
+  if (!alertItems.length) {
+    alertItems.push({ type: 'good', label: 'Status', text: 'Portfolio on track — no actions needed.' });
+  }
+  document.getElementById('alerts').innerHTML = alertItems.slice(0,4).map(a => `
+    <div class="alert-item ${a.type}">
+      <div class="alert-label">${a.label}</div>
+      <div>${a.text}</div>
+    </div>`).join('');
+
+  // Recent journal
+  document.getElementById('recent-journal').innerHTML = journal.slice(0,3).map(j => `
+    <div class="journal-entry ${j.is_milestone ? 'milestone' : ''}">
+      <div class="journal-date">${j.entry_date}</div>
+      <div class="journal-title">${j.is_milestone ? '★ ' : ''}${j.title}</div>
+    </div>`).join('');
+
+  buildTicker(ticker);
+}
+
+/* ── Ticker ──────────────────────────────────────────────────────── */
+function buildTicker(items) {
+  if (!items || !items.length) return;
+  const strip = document.getElementById('ticker-strip');
+  const inner = document.getElementById('ticker-inner');
+
+  const renderItems = () => items.map(t => {
+    const hasChg = t.change_pct !== null && t.change_pct !== undefined;
+    const up     = hasChg && t.change_pct >= 0;
+    const color  = hasChg ? (up ? 'var(--green)' : 'var(--red)') : 'var(--text-dim)';
+    const arrow  = hasChg ? (up ? '▲' : '▼') : '';
+    return `<span class="ticker-item">` +
+      `<span class="t-lbl">${t.label}</span>` +
+      `<span class="t-price">$${t.price.toFixed(2)}</span>` +
+      (hasChg ? `<span class="t-chg" style="color:${color}">${arrow} ${Math.abs(t.change_pct).toFixed(2)}%</span>` : '') +
+      `</span>`;
+  }).join('<span class="ticker-divider">|</span>');
+
+  inner.innerHTML = renderItems() + '<span class="ticker-divider">|</span>' + renderItems();
+  inner.style.animationDuration = Math.max(20, items.length * 4) + 's';
+  strip.style.display = 'flex';
+}
+
+/* ── KPI sparklines ─────────────────────────────────────────────── */
+function buildSparkSVG(values, color) {
+  const pts = values.filter(v => v != null);
+  if (pts.length < 2) return '';
+  const W = 200, H = 22;
+  const min = Math.min(...pts), max = Math.max(...pts);
+  const range = max - min || 1;
+  const coords = pts.map((v, i) => {
+    const x = (i / (pts.length - 1)) * W;
+    const y = H - ((v - min) / range) * (H - 2) - 1;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const polyPts = coords.join(' ');
+  const fillPts = `0,${H} ${coords[0]} ${coords.slice(1).join(' ')} ${W},${H}`;
+  const gid = `ksg${color.replace('#','')}`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px;display:block;">
+    <defs>
+      <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <polygon points="${fillPts}" fill="url(#${gid})"/>
+    <polyline points="${polyPts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function renderSparklines(history) {
+  const slice = history.slice(-24);
+  document.getElementById('spark-nw').innerHTML   = buildSparkSVG(slice.map(h => h.net_worth),     '#4080f0');
+  document.getElementById('spark-inv').innerHTML  = buildSparkSVG(slice.map(h => h.invested_total), '#22d3a0');
+  document.getElementById('spark-eq').innerHTML   = buildSparkSVG(slice.map(h => h.home_equity),    '#8060f0');
+  document.getElementById('spark-cash').innerHTML = buildSparkSVG(slice.map(h => h.liquid_cash),    '#f0b040');
+}
+
+/* ── NW chart (multi-line) ───────────────────────────────────────── */
+function renderNWChart(history) {
+  const labels = history.map(h => {
+    const d = new Date(h.snapshot_date + 'T00:00:00');
+    return d.toLocaleDateString('en-US', {month:'short', year:'2-digit'});
+  });
+
+  const ds = (key, label, color, width, filled) => ({
+    label,
+    data:               history.map(h => h[key] ?? null),
+    borderColor:        color,
+    backgroundColor:    filled ? `${color}14` : 'transparent',
+    borderWidth:        width,
+    pointRadius:        2,
+    pointHoverRadius:   5,
+    pointBackgroundColor: color,
+    fill:               filled,
+    tension:            0.4,
+    spanGaps:           true,
+  });
+
+  if (nwChart) nwChart.destroy();
+  nwChart = new Chart(document.getElementById('nw-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        ds('net_worth',     'Net Worth',   '#4080f0', 2,   true),
+        ds('invested_total','Invested',    '#22d3a0', 1.5, false),
+        ds('liquid_cash',   'Cash',        '#f0b040', 1.5, false),
+        ds('home_equity',   'Home Equity', '#8060f0', 1.5, false),
+      ]
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => history[ctx[0].dataIndex]?.snapshot_date || labels[ctx[0].dataIndex],
+            label: ctx => ctx.raw != null ? `${ctx.dataset.label}: ${fmt(ctx.raw)}` : null,
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { maxTicksLimit: 8, font: { size: 10 } }
+        },
+        y: {
+          grid: { color: '#1a2030' },
+          ticks: { callback: v => fmt(v), maxTicksLimit: 5, font: { size: 10 } }
+        }
+      }
+    }
+  });
+}
+
+/* ── History filter ──────────────────────────────────────────────── */
+function filterHistory(period) {
+  if (period === 'MAX') return fullHistory;
+  const now = new Date();
+  let cutoff;
+  if      (period === '30D') cutoff = new Date(now - 30*24*60*60*1000);
+  else if (period === 'QTD') { const q = Math.floor(now.getMonth()/3); cutoff = new Date(now.getFullYear(), q*3, 1); }
+  else if (period === 'YTD') cutoff = new Date(now.getFullYear(), 0, 1);
+  else if (period === '1Y')  cutoff = new Date(now.getFullYear()-1, now.getMonth(), now.getDate());
+  else if (period === '2Y')  cutoff = new Date(now.getFullYear()-2, now.getMonth(), now.getDate());
+  else if (period === '5Y')  cutoff = new Date(now.getFullYear()-5, now.getMonth(), now.getDate());
+  return fullHistory.filter(h => new Date(h.snapshot_date + 'T00:00:00') >= cutoff);
+}
+
+function filterNW(period) {
+  document.querySelectorAll('.nw-filter').forEach(b =>
+    b.classList.toggle('active', b.textContent === period)
+  );
+  renderNWChart(filterHistory(period));
+}
+
+loadDashboard();
+</script>
+{% endblock %}

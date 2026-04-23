@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+{% block title %}Real Estate{% endblock %}
+
+{% block head %}
+<style>
+.field-label {
+  display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-dim);margin-bottom:4px;
+}
+.field-input {
+  background:var(--bg3);border:1px solid var(--border);border-radius:4px;
+  color:var(--text-head);font-family:var(--font);font-size:13px;
+  padding:6px 8px;outline:none;transition:border-color .15s;width:100%;
+}
+.field-input:focus { border-color:var(--accent); }
+.btn-sm {
+  background:var(--bg3);border:1px solid var(--border);border-radius:4px;
+  color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:12px;
+  padding:5px 12px;transition:color .15s,border-color .15s;white-space:nowrap;
+}
+.btn-sm:hover { color:var(--text-head);border-color:var(--text-dim); }
+.btn-sm.active { border-color:var(--accent);color:var(--accent); }
+
+/* Amortization table */
+.amort-table { width:100%;border-collapse:collapse;font-size:12px; }
+.amort-table th {
+  padding:6px 8px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-dim);border-bottom:1px solid var(--border);text-align:right;
+}
+.amort-table th:first-child, .amort-table th:nth-child(2) { text-align:left; }
+.amort-table td {
+  padding:6px 8px;border-bottom:1px solid #171f2e;
+  font-variant-numeric:tabular-nums;text-align:right;
+  transition:background .1s;
+}
+.amort-table td:first-child, .amort-table td:nth-child(2) { text-align:left; }
+.amort-table tr:hover td { background:var(--bg3); }
+.amort-table tr.current-month td {
+  background:rgba(64,128,240,.07);
+}
+.amort-table tr.current-month td:first-child {
+  border-left:2px solid var(--accent);
+}
+.cost-input {
+  background:transparent;border:none;border-bottom:1px solid transparent;
+  color:var(--text);font-family:var(--font);font-size:12px;
+  text-align:right;width:80px;outline:none;padding:1px 2px;
+  transition:border-color .15s;
+}
+.cost-input:focus { border-bottom-color:var(--accent); }
+.memo-input {
+  background:transparent;border:none;border-bottom:1px solid transparent;
+  color:var(--text-dim);font-family:var(--font);font-size:11px;
+  width:160px;outline:none;padding:1px 2px;
+  transition:border-color .15s;
+}
+.memo-input:focus { border-bottom-color:var(--accent); }
+
+/* Year group header */
+.amort-year-row td {
+  background:var(--bg3);color:var(--text-dim);font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;
+  border-bottom:1px solid var(--border);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:var(--gap);">
+  <div class="grid-4" id="re-kpis"></div>
+  <div id="re-properties"></div>
+
+  <!-- Amortization section per property (rendered below) -->
+  <div id="re-amort-sections"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let propData = [];
+
+async function loadRE() {
+  propData = await fetch('/api/real-estate').then(r=>r.json());
+
+  const totalEquity = propData.reduce((s,p)=>s+p.equity, 0);
+  const totalValue  = propData.reduce((s,p)=>s+p.estimated_value, 0);
+  const totalMortg  = propData.reduce((s,p)=>s+p.mortgage_balance, 0);
+  const totalGain   = propData.reduce((s,p)=>s+p.gain, 0);
+
+  document.getElementById('re-kpis').innerHTML = `
+    <div class="card"><div class="card-title">Total Equity</div><div class="card-value">${fmt(totalEquity)}</div></div>
+    <div class="card"><div class="card-title">Est. Market Value</div><div class="card-value">${fmt(totalValue)}</div></div>
+    <div class="card"><div class="card-title">Mortgage Debt</div><div class="card-value" style="color:var(--red)">${fmt(totalMortg)}</div></div>
+    <div class="card"><div class="card-title">Appreciation</div><div class="card-value" style="color:${clr(totalGain)}">${fmt(totalGain)}</div></div>`;
+
+  document.getElementById('re-properties').innerHTML = propData.map(p => `
+    <div class="card">
+      <div class="section-title">${p.name}</div>
+      <div class="re-prop-kpis">
+        <div><div class="card-title">Equity</div><div class="card-value">${fmt(p.equity)}</div></div>
+        <div><div class="card-title">Est. Value</div><div class="card-value">${fmt(p.estimated_value)}</div></div>
+        <div><div class="card-title">Mortgage</div><div class="card-value" style="color:var(--red)">${fmt(p.mortgage_balance)}</div></div>
+        <div><div class="card-title">LTV</div><div class="card-value">${p.ltv}%</div></div>
+        <div><div class="card-title">Appreciation</div><div class="card-value" style="color:${clr(p.gain)}">${fmt(p.gain)}</div></div>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:5px;">Equity vs Mortgage</div>
+        <div style="display:flex;height:10px;border-radius:3px;overflow:hidden;">
+          <div style="background:var(--green);width:${(p.equity/p.estimated_value*100).toFixed(0)}%;"></div>
+          <div style="background:var(--red);opacity:.55;flex:1;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-top:3px;">
+          <span>Equity ${(p.equity/p.estimated_value*100).toFixed(0)}%</span>
+          <span>Debt ${p.ltv}%</span>
+        </div>
+      </div>
+      ${p.address ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim);">${p.address}</div>` : ''}
+      ${p.purchase_date ? `<div style="font-size:11px;color:var(--text-dim);margin-top:3px;">Purchased ${p.purchase_date} · ${fmt(p.purchase_price)}</div>` : ''}
+    </div>`).join('');
+
+  // Load amortization for each property
+  const amortEl = document.getElementById('re-amort-sections');
+  amortEl.innerHTML = '';
+  for (const p of propData) {
+    const section = document.createElement('div');
+    section.id = `amort-section-${p.id}`;
+    amortEl.appendChild(section);
+    renderAmortSection(p, section);
+  }
+}
+
+async function renderAmortSection(prop, container) {
+  const data = await fetch(`/api/real-estate/${prop.id}/amortization`).then(r=>r.json());
+
+  const today = new Date();
+  const curYear = today.getFullYear(), curMonth = today.getMonth() + 1;
+
+  // Config form (collapsed by default if already configured)
+  const cfg = data.config;
+  const hasConfig = !!cfg;
+
+  container.innerHTML = `
+    <div class="card">
+      <div class="section-title">
+        ${prop.name} — Amortization
+        <button class="btn-sm ${hasConfig ? '' : 'active'}" onclick="toggleAmortConfig(${prop.id})">
+          ${hasConfig ? 'Edit Loan Config' : 'Configure Loan'}
+        </button>
+      </div>
+
+      <!-- Loan config form -->
+      <div id="amort-config-${prop.id}" style="display:${hasConfig ? 'none' : 'block'};margin-bottom:16px;">
+        <div class="re-config-form">
+          <div>
+            <label class="field-label">Original Loan ($)</label>
+            <input type="number" id="ac-loan-${prop.id}" class="field-input" step="1000"
+              value="${cfg?.loan_amount||''}" placeholder="480000" />
+          </div>
+          <div>
+            <label class="field-label">Rate (%)</label>
+            <input type="number" id="ac-rate-${prop.id}" class="field-input" step="0.001"
+              value="${cfg?.annual_rate_pct||''}" placeholder="6.750" />
+          </div>
+          <div>
+            <label class="field-label">Term (months)</label>
+            <input type="number" id="ac-term-${prop.id}" class="field-input" step="12"
+              value="${cfg?.term_months||360}" placeholder="360" />
+          </div>
+          <div>
+            <label class="field-label">Monthly Payment ($)</label>
+            <input type="number" id="ac-pmt-${prop.id}" class="field-input" step="1"
+              value="${cfg?.monthly_payment||''}" placeholder="3114" />
+          </div>
+          <div>
+            <label class="field-label">First Payment Date</label>
+            <input type="date" id="ac-start-${prop.id}" class="field-input"
+              value="${cfg?.start_date||''}" />
+          </div>
+          <div>
+            <label class="field-label">Appr. Rate (%/yr)</label>
+            <input type="number" id="ac-appr-${prop.id}" class="field-input" step="0.1"
+              value="${cfg?.appreciation_rate??2.5}" placeholder="2.5" />
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px;">
+            <button class="btn-sm active" onclick="saveMortgageConfig(${prop.id})">Save</button>
+            <span id="ac-status-${prop.id}" style="font-size:11px;white-space:nowrap;"></span>
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <button class="btn-sm" onclick="calcPayment(${prop.id})" style="font-size:11px;">
+            Auto-calc payment from loan / rate / term
+          </button>
+        </div>
+      </div>
+
+      ${hasConfig ? renderAmortSummary(data) : '<div style="color:var(--text-dim);font-size:13px;padding:8px 0;">Configure loan details above to generate the amortization schedule.</div>'}
+
+      ${hasConfig ? `
+        <!-- Schedule table -->
+        <div style="margin-top:16px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+            <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);">Payment Schedule</div>
+            <div style="display:flex;gap:6px;margin-left:auto;">
+              <button class="btn-sm active" id="view-all-${prop.id}" onclick="setView(${prop.id},'all')">All</button>
+              <button class="btn-sm" id="view-annual-${prop.id}" onclick="setView(${prop.id},'annual')">Annual</button>
+              <button class="btn-sm" id="view-remain-${prop.id}" onclick="setView(${prop.id},'remain')">Remaining</button>
+            </div>
+          </div>
+          <div class="table-scroll" style="max-height:420px;border:1px solid var(--border);border-radius:var(--radius);">
+            <table class="amort-table">
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Date</th>
+                  <th class="num">#</th>
+                  <th class="num">Payment</th>
+                  <th class="num">Principal</th>
+                  <th class="num">Interest</th>
+                  <th class="num">Balance</th>
+                  <th class="num">Est. Value</th>
+                  <th class="num">Equity</th>
+                  <th class="num">Capex / Cost</th>
+                  <th style="text-align:left;">Memo</th>
+                </tr>
+              </thead>
+              <tbody id="amort-tbody-${prop.id}"></tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:8px;font-size:11px;color:var(--text-dim);">
+            Click any Capex or Memo cell to edit · changes save automatically
+          </div>
+        </div>
+      ` : ''}
+    </div>`;
+
+  if (hasConfig) {
+    renderAmortRows(prop.id, data.schedule, 'all', curYear, curMonth);
+  }
+}
+
+function renderAmortSummary(data) {
+  const s = data.summary, cfg = data.config;
+  const schedule = data.schedule;
+  // Find current month row
+  const today = new Date();
+  const cur = schedule.find(r => r.year === today.getFullYear() && r.mo === today.getMonth()+1);
+  const totalCosts = schedule.reduce((s,r)=>s+(r.cost_amount||0), 0);
+
+  return `
+    <div class="re-amort-summary">
+      <div><div class="card-title">Original Loan</div><div style="font-size:18px;font-weight:700;color:var(--text-head);">${fmt(cfg.loan_amount)}</div></div>
+      <div><div class="card-title">Total Interest</div><div style="font-size:18px;font-weight:700;color:var(--red);">${fmt(s.total_interest)}</div></div>
+      <div><div class="card-title">Current Balance</div><div style="font-size:18px;font-weight:700;color:var(--text-head);">${cur ? fmt(cur.balance) : '—'}</div></div>
+      <div><div class="card-title">Current Equity</div><div style="font-size:18px;font-weight:700;color:var(--green);">${cur ? fmt(cur.equity) : '—'}</div></div>
+      <div><div class="card-title">Total Capex Logged</div><div style="font-size:18px;font-weight:700;color:var(--yellow);">${fmt(totalCosts)}</div></div>
+    </div>`;
+}
+
+function renderAmortRows(propId, schedule, view, curYear, curMonth) {
+  const tbody = document.getElementById(`amort-tbody-${propId}`);
+  if (!tbody) return;
+
+  let rows = schedule;
+  let isAnnual = false;
+
+  if (view === 'remain') {
+    rows = schedule.filter(r => r.year > curYear || (r.year === curYear && r.mo >= curMonth));
+  } else if (view === 'annual') {
+    isAnnual = true;
+    const byYear = {};
+    schedule.forEach(r => {
+      if (!byYear[r.year]) {
+        byYear[r.year] = { year: r.year, payment: 0, principal: 0, interest: 0,
+                           cost_amount: 0, balance: 0, home_value: 0, equity: 0 };
+      }
+      const y = byYear[r.year];
+      y.payment      += r.payment;
+      y.principal    += r.principal;
+      y.interest     += r.interest;
+      y.cost_amount  += (r.cost_amount || 0);
+      // year-end snapshot for balance / value / equity
+      y.balance    = r.balance;
+      y.home_value = r.home_value;
+      y.equity     = r.equity;
+    });
+    rows = Object.values(byYear);
+  }
+
+  const MON = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let lastYear = null;
+
+  tbody.innerHTML = rows.map(r => {
+    const isCurrent = isAnnual
+      ? r.year === curYear
+      : r.year === curYear && r.mo === curMonth;
+
+    const yearHeader = (!isAnnual && r.year !== lastYear)
+      ? `<tr class="amort-year-row"><td colspan="10">${r.year}</td></tr>` : '';
+    lastYear = r.year;
+
+    const dateLabel = isAnnual ? `${r.year}` : `${MON[r.mo]} ${r.year}`;
+    const monthCell = isAnnual
+      ? `<span style="color:var(--text-dim);font-size:10px;">annual</span>`
+      : r.month;
+
+    const costCell = isAnnual
+      ? `<span style="color:var(--text-dim);">${r.cost_amount ? fmt(r.cost_amount) : '—'}</span>`
+      : `<input class="cost-input" id="cost-${propId}-${r.year}-${r.mo}" type="number" step="1" min="0"
+           value="${r.cost_amount||''}" placeholder="—"
+           onchange="saveCost(${propId},${r.year},${r.mo},this.value,document.getElementById('memo-${propId}-${r.year}-${r.mo}')?.value)" />`;
+
+    const memoCell = isAnnual
+      ? ''
+      : `<input class="memo-input" id="memo-${propId}-${r.year}-${r.mo}"
+           value="${(r.cost_memo||'').replace(/"/g,'&quot;')}" placeholder="add note…"
+           onchange="saveCost(${propId},${r.year},${r.mo},document.getElementById('cost-${propId}-${r.year}-${r.mo}')?.value,this.value)" />`;
+
+    return `${yearHeader}<tr class="${isCurrent ? 'current-month' : ''}">
+      <td>${dateLabel}${isCurrent ? ' <span style="color:var(--accent);font-size:10px;">← now</span>' : ''}</td>
+      <td>${monthCell}</td>
+      <td>${fmt(r.payment)}</td>
+      <td style="color:var(--green);">${fmt(r.principal)}</td>
+      <td style="color:var(--red);">${fmt(r.interest)}</td>
+      <td style="font-weight:600;">${fmt(r.balance)}</td>
+      <td style="color:var(--text-dim);">${fmt(r.home_value)}</td>
+      <td style="color:var(--green);font-weight:600;">${fmt(r.equity)}</td>
+      <td>${costCell}</td>
+      <td>${memoCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+function setView(propId, view) {
+  ['all','annual','remain'].forEach(v => {
+    const btn = document.getElementById(`view-${v}-${propId}`);
+    if (btn) btn.classList.toggle('active', v === view);
+  });
+  // Re-render with current schedule
+  fetch(`/api/real-estate/${propId}/amortization`).then(r=>r.json()).then(data => {
+    const today = new Date();
+    renderAmortRows(propId, data.schedule, view, today.getFullYear(), today.getMonth()+1);
+  });
+}
+
+function toggleAmortConfig(propId) {
+  const el = document.getElementById(`amort-config-${propId}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function calcPayment(propId) {
+  const loan = parseFloat(document.getElementById(`ac-loan-${propId}`).value);
+  const rate = parseFloat(document.getElementById(`ac-rate-${propId}`).value) / 100 / 12;
+  const term = parseInt(document.getElementById(`ac-term-${propId}`).value);
+  if (!loan || !rate || !term) return;
+  const pmt = loan * rate / (1 - Math.pow(1 + rate, -term));
+  document.getElementById(`ac-pmt-${propId}`).value = pmt.toFixed(2);
+}
+
+async function saveMortgageConfig(propId) {
+  const statusEl = document.getElementById(`ac-status-${propId}`);
+  statusEl.textContent = 'Saving…'; statusEl.style.color = 'var(--text-dim)';
+
+  const body = {
+    property_id:       propId,
+    loan_amount:       parseFloat(document.getElementById(`ac-loan-${propId}`).value),
+    annual_rate_pct:   parseFloat(document.getElementById(`ac-rate-${propId}`).value),
+    term_months:       parseInt(document.getElementById(`ac-term-${propId}`).value),
+    monthly_payment:   parseFloat(document.getElementById(`ac-pmt-${propId}`).value),
+    start_date:        document.getElementById(`ac-start-${propId}`).value,
+    appreciation_rate: parseFloat(document.getElementById(`ac-appr-${propId}`).value),
+  };
+
+  const res = await fetch('/api/real-estate/mortgage-config', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body),
+  });
+
+  if (res.ok) {
+    statusEl.textContent = '✓ Saved'; statusEl.style.color = 'var(--green)';
+    // Re-render the whole section
+    const section = document.getElementById(`amort-section-${propId}`);
+    const prop = propData.find(p => p.id === propId);
+    if (section && prop) renderAmortSection(prop, section);
+  } else {
+    statusEl.textContent = '✗ Error'; statusEl.style.color = 'var(--red)';
+  }
+}
+
+async function saveCost(propId, year, month, amountRaw, memo) {
+  const amount = parseFloat(amountRaw) || 0;
+  await fetch('/api/real-estate/cost', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ property_id: propId, cost_year: year, cost_month: month, amount, memo: memo||null }),
+  });
+}
+
+loadRE();
+</script>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Tax & TLH{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:var(--gap);">
+
+  <div class="card">
+    <div class="section-title">Tax-Loss Harvesting Opportunities</div>
+    <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">
+      Taxable brokerage holdings with unrealized losses ≥ $500. Consider harvesting before year-end to offset gains.
+      Remember the 30-day wash sale rule.
+    </p>
+    <div id="tlh-content" class="table-scroll"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">All Taxable Holdings — Unrealized Gains / Losses</div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr><th>Symbol</th><th>Name</th><th class="num">Shares</th><th class="num">Market Value</th><th class="num">Cost Basis</th><th class="num">Unrealized</th><th class="num">Return</th><th>Status</th></tr>
+        </thead>
+        <tbody id="tax-all-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadTax() {
+  const [tlh, alloc] = await Promise.all([
+    fetch('/api/tax').then(r=>r.json()),
+    fetch('/api/allocation').then(r=>r.json()),
+  ]);
+
+  const tlhEl = document.getElementById('tlh-content');
+  if (!tlh.length) {
+    tlhEl.innerHTML = '<div class="alert-item good"><div class="alert-label">All Clear</div>No significant loss positions in taxable accounts.</div>';
+  } else {
+    tlhEl.innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>Symbol</th><th>Name</th><th class="num">Market Value</th><th class="num">Cost Basis</th><th class="num">Unrealized Loss</th></tr></thead>
+        <tbody>${tlh.map(t=>`
+          <tr>
+            <td><strong style="color:var(--text-head);">${t.symbol}</strong></td>
+            <td style="color:var(--text-dim);">${t.name||''}</td>
+            <td class="num">${fmt(t.market_value)}</td>
+            <td class="num" style="color:var(--text-dim);">${fmt(t.cost_basis)}</td>
+            <td class="num" style="color:var(--red);font-weight:600;">${fmt(t.unrealized_loss)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  const taxable = alloc.holdings.filter(h => h.account_type === 'brokerage');
+  const totalTaxableGain = taxable.reduce((s,h)=>s+h.gain, 0);
+
+  document.getElementById('tax-all-body').innerHTML = taxable.sort((a,b)=>a.gain-b.gain).map(h => {
+    const isTLH = h.gain < -500;
+    const isGain = h.gain > 0;
+    const statusLabel = isTLH ? 'TLH candidate' : isGain ? 'gain' : 'small loss';
+    const statusColor = isTLH ? 'var(--yellow)' : isGain ? 'var(--green)' : 'var(--text-dim)';
+    return `<tr>
+      <td><strong style="color:var(--text-head);">${h.symbol}</strong></td>
+      <td style="color:var(--text-dim);">${h.name||''}</td>
+      <td class="num">${h.shares.toFixed(3)}</td>
+      <td class="num">${fmt(h.market_value)}</td>
+      <td class="num" style="color:var(--text-dim);">${fmt(h.cost_basis)}</td>
+      <td class="num" style="color:${clr(h.gain)}">${fmt(h.gain)}</td>
+      <td class="num" style="color:${clr(h.gain_pct)}">${pct(h.gain_pct)}</td>
+      <td><span style="font-size:10px;color:${statusColor}">${statusLabel}</span></td>
+    </tr>`;
+  }).join('');
+}
+loadTax();
+</script>
+{% endblock %}

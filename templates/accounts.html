@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Accounts{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:var(--gap);">
+  <div class="grid-4" id="acct-kpis"></div>
+
+  <div class="card">
+    <div class="section-title">All Accounts</div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr><th>Name</th><th>Institution</th><th>Type</th><th class="num">Balance</th><th>Notes</th></tr>
+        </thead>
+        <tbody id="acct-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const TYPE_LABEL = {
+  checking:'Checking', savings:'Savings', brokerage:'Brokerage',
+  retirement_401k:'401(k)', retirement_ira:'IRA / Roth', hsa:'HSA',
+  credit:'Credit Card', loan:'Loan', crypto:'Crypto', other:'Other'
+};
+const TYPE_SIGN = { credit:-1, loan:-1 };
+
+async function loadAccounts() {
+  const accounts = await fetch('/api/accounts').then(r=>r.json());
+
+  let assets=0, liabilities=0;
+  accounts.forEach(a => {
+    const bal = a.balance || 0;
+    if (TYPE_SIGN[a.type] === -1) liabilities += Math.abs(bal);
+    else assets += bal;
+  });
+  const net = assets - liabilities;
+  document.getElementById('acct-kpis').innerHTML = `
+    <div class="card"><div class="card-title">Total Assets</div><div class="card-value">${fmt(assets)}</div></div>
+    <div class="card"><div class="card-title">Total Liabilities</div><div class="card-value" style="color:var(--red)">${fmt(liabilities)}</div></div>
+    <div class="card"><div class="card-title">Net</div><div class="card-value">${fmt(net)}</div></div>
+    <div class="card"><div class="card-title">Accounts</div><div class="card-value">${accounts.length}</div></div>`;
+
+  const tbody = document.getElementById('acct-body');
+  const grouped = {};
+  accounts.forEach(a => { (grouped[a.type]=grouped[a.type]||[]).push(a); });
+
+  let rows = '';
+  const typeOrder = ['checking','savings','brokerage','retirement_401k','retirement_ira','hsa','credit','loan','crypto','other'];
+  typeOrder.forEach(type => {
+    if (!grouped[type]) return;
+    grouped[type].forEach(a => {
+      const bal = a.balance;
+      const isLiab = TYPE_SIGN[a.type] === -1;
+      const balColor = isLiab ? 'var(--red)' : 'var(--text-head)';
+      rows += `<tr>
+        <td><a href="/accounts/${a.id}" style="color:var(--text-head);font-weight:600;text-decoration:none;"
+               onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-head)'"
+               >${a.name}</a></td>
+        <td style="color:var(--text-dim);">${a.institution}</td>
+        <td><span class="badge blue">${TYPE_LABEL[a.type]||a.type}</span></td>
+        <td class="num" style="color:${balColor}">${bal!=null ? fmt(isLiab?-bal:bal) : '—'}</td>
+        <td style="color:var(--text-dim);font-size:11px;">${a.notes||''}</td>
+      </tr>`;
+    });
+  });
+  tbody.innerHTML = rows;
+}
+loadAccounts();
+</script>
+{% endblock %}

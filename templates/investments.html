@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Investments{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:var(--gap);">
+
+  <!-- Row 1: KPI tiles -->
+  <div class="grid-4" id="inv-kpis"></div>
+
+  <!-- Row 2: Allocation bar chart | Portfolio donut -->
+  <div class="layout-inv-charts">
+    <div class="card">
+      <div class="section-title">Allocation vs Target</div>
+      <div class="chart-wrap" style="height:280px;"><canvas id="alloc-bar"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Portfolio Mix</div>
+      <div class="chart-wrap" style="height:200px;"><canvas id="donut-full"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 3: Asset Class Performance (full width) -->
+  <div class="card">
+    <div class="section-title">Asset Class Performance</div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th class="num">Value</th>
+            <th class="num">Actual %</th>
+            <th class="num">Target %</th>
+            <th class="num">Drift</th>
+            <th class="num">Cost Basis</th>
+            <th class="num">Unrealized</th>
+          </tr>
+        </thead>
+        <tbody id="class-perf"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Row 4: All Holdings (full width) -->
+  <div class="card">
+    <div class="section-title">All Holdings</div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Name</th>
+            <th>Class</th>
+            <th>Account</th>
+            <th class="num">Shares</th>
+            <th class="num">Price</th>
+            <th class="num">Value</th>
+            <th class="num">Cost Basis</th>
+            <th class="num">Gain $</th>
+            <th class="num">Gain %</th>
+          </tr>
+        </thead>
+        <tbody id="holdings-all"></tbody>
+        <tfoot id="holdings-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadInvestments() {
+  const alloc = await fetch('/api/allocation').then(r=>r.json());
+
+  // KPIs
+  const totalGain    = alloc.holdings.reduce((s,h) => s + h.gain, 0);
+  const totalCost    = alloc.holdings.reduce((s,h) => s + h.cost_basis, 0);
+  const totalGainPct = totalCost ? totalGain / totalCost * 100 : 0;
+  document.getElementById('inv-kpis').innerHTML = `
+    <div class="card"><div class="card-title">Total Invested</div><div class="card-value">${fmt(alloc.total_invested)}</div></div>
+    <div class="card"><div class="card-title">Total Cost Basis</div><div class="card-value">${fmt(totalCost)}</div></div>
+    <div class="card"><div class="card-title">Unrealized Gain</div>
+      <div class="card-value" style="color:${clr(totalGain)}">${fmt(totalGain)}</div></div>
+    <div class="card"><div class="card-title">Return</div>
+      <div class="card-value" style="color:${clr(totalGainPct)}">${pct(totalGainPct)}</div></div>`;
+
+  // Allocation bar chart
+  const sorted = [...alloc.allocation].sort((a,b) => b.target_pct - a.target_pct);
+  new Chart(document.getElementById('alloc-bar'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(a => CLASS_LABELS[a.asset_class] || a.asset_class),
+      datasets: [
+        {
+          label: 'Actual',
+          data: sorted.map(a => a.actual_pct),
+          backgroundColor: sorted.map(a => COLORS[a.asset_class] || '#506070'),
+          borderRadius: 3,
+        },
+        {
+          label: 'Target',
+          data: sorted.map(a => a.target_pct),
+          backgroundColor: 'rgba(255,255,255,0.05)',
+          borderColor: 'rgba(255,255,255,0.2)',
+          borderWidth: 1,
+          borderRadius: 3,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.raw.toFixed(1) + '%' } }
+      },
+      scales: {
+        x: { ticks: { callback: v => v + '%' }, grid: { color: '#1a2030' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Portfolio donut
+  const cls = alloc.allocation.filter(a => a.market_value > 0);
+  new Chart(document.getElementById('donut-full'), {
+    type: 'doughnut',
+    data: {
+      labels: cls.map(a => CLASS_LABELS[a.asset_class] || a.asset_class),
+      datasets: [{
+        data: cls.map(a => a.market_value),
+        backgroundColor: cls.map(a => COLORS[a.asset_class] || '#506070'),
+        borderWidth: 0,
+        hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 10, padding: 10, font: { size: 11 } } },
+        tooltip: { callbacks: {
+          label: ctx => `${ctx.label}: ${fmt(ctx.raw)} (${(ctx.raw / alloc.total_invested * 100).toFixed(1)}%)`
+        }}
+      }
+    }
+  });
+
+  // Asset class performance table
+  const classCostMap = {};
+  alloc.holdings.forEach(h => {
+    classCostMap[h.asset_class] = (classCostMap[h.asset_class] || 0) + h.cost_basis;
+  });
+  document.getElementById('class-perf').innerHTML = alloc.allocation
+    .filter(a => a.market_value > 0)
+    .map(a => {
+      const cost = classCostMap[a.asset_class] || 0;
+      const gain = a.market_value - cost;
+      const driftCls = a.drift > 0 ? 'drift-pos' : a.drift < 0 ? 'drift-neg' : 'drift-zero';
+      return `<tr>
+        <td><div style="display:flex;align-items:center;gap:6px;">
+          <div class="legend-dot" style="background:${COLORS[a.asset_class]||'#506070'}"></div>
+          ${CLASS_LABELS[a.asset_class]||a.asset_class}
+        </div></td>
+        <td class="num">${fmt(a.market_value)}</td>
+        <td class="num">${a.actual_pct.toFixed(1)}%</td>
+        <td class="num" style="color:var(--text-dim);">${a.target_pct}%</td>
+        <td class="num ${driftCls}">${a.drift>=0?'+':''}${a.drift.toFixed(1)}%</td>
+        <td class="num" style="color:var(--text-dim);">${fmt(cost)}</td>
+        <td class="num" style="color:${clr(gain)}">${fmt(gain)}</td>
+      </tr>`;
+    }).join('');
+
+  // All holdings table (per-account, not deduplicated)
+  const totalVal = alloc.total_invested;
+  document.getElementById('holdings-all').innerHTML = alloc.holdings.map(h => `
+    <tr>
+      <td><strong style="color:var(--text-head);">${h.symbol}</strong></td>
+      <td style="color:var(--text-dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.name||''}</td>
+      <td><span style="font-size:10px;color:var(--text-dim);">${CLASS_LABELS[h.asset_class]||h.asset_class}</span></td>
+      <td style="font-size:10px;color:var(--text-dim);">${h.account_type}</td>
+      <td class="num">${h.shares.toFixed(3)}</td>
+      <td class="num">${h.price ? '$'+h.price.toFixed(2) : '—'}</td>
+      <td class="num">${fmt(h.market_value)}</td>
+      <td class="num" style="color:var(--text-dim);">${fmt(h.cost_basis)}</td>
+      <td class="num" style="color:${clr(h.gain)}">${fmt(h.gain)}</td>
+      <td class="num" style="color:${clr(h.gain_pct)}">${pct(h.gain_pct)}</td>
+    </tr>`).join('');
+
+  document.getElementById('holdings-foot').innerHTML = `
+    <tr style="font-weight:700;border-top:1px solid var(--border);">
+      <td colspan="6" style="padding:7px 10px;">Total</td>
+      <td class="num">${fmt(totalVal)}</td>
+      <td class="num" style="color:var(--text-dim);">${fmt(totalCost)}</td>
+      <td class="num" style="color:${clr(totalGain)}">${fmt(totalGain)}</td>
+      <td class="num" style="color:${clr(totalGainPct)}">${pct(totalGainPct)}</td>
+    </tr>`;
+}
+loadInvestments();
+</script>
+{% endblock %}

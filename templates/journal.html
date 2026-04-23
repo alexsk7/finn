@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Journal{% endblock %}
+
+{% block head %}
+<style>
+.field-label {
+  display:block;font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;
+}
+.field-input {
+  width:100%;background:var(--bg3);border:1px solid var(--border);
+  border-radius:4px;color:var(--text-head);font-family:var(--font);
+  font-size:12px;padding:6px 8px;outline:none;transition:border-color .15s;
+  resize:vertical;
+}
+.field-input:focus { border-color:var(--accent); }
+.btn-primary {
+  background:var(--accent);border:none;border-radius:4px;color:#fff;
+  cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;
+  padding:7px 14px;transition:opacity .15s;
+}
+.btn-primary:hover { opacity:.85; }
+.btn-secondary {
+  background:transparent;border:1px solid var(--border);border-radius:4px;
+  color:var(--text-dim);cursor:pointer;font-family:var(--font);
+  font-size:11px;padding:3px 9px;transition:color .15s,border-color .15s;white-space:nowrap;
+}
+.btn-secondary:hover { color:var(--text-head);border-color:var(--text-dim); }
+.btn-danger {
+  background:transparent;border:1px solid var(--red);border-radius:4px;
+  color:var(--red);cursor:pointer;font-family:var(--font);
+  font-size:11px;padding:3px 9px;transition:background .15s,color .15s;white-space:nowrap;
+}
+.btn-danger:hover { background:var(--red);color:#fff; }
+.j-edit-form {
+  display:none;margin-top:10px;padding:10px;
+  background:var(--bg3);border-radius:4px;border:1px solid var(--border);
+}
+.j-edit-form.open { display:block; }
+.j-entry-actions { display:flex;gap:6px;margin-top:8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="layout-journal">
+
+  <!-- Log -->
+  <div style="display:flex;flex-direction:column;gap:var(--gap);">
+
+    <!-- New entry form -->
+    <div class="card">
+      <div class="section-title">New Entry</div>
+      <div class="layout-j-header">
+        <div>
+          <label class="field-label">Title</label>
+          <input type="text" id="j-title" class="field-input" placeholder="What happened?" />
+        </div>
+        <div>
+          <label class="field-label">Date</label>
+          <input type="date" id="j-date" class="field-input" />
+        </div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <label class="field-label">Notes</label>
+        <textarea id="j-body" class="field-input" rows="3" placeholder="Optional detail…"></textarea>
+      </div>
+      <div class="layout-j-footer">
+        <div>
+          <label class="field-label">Tags (comma-separated)</label>
+          <input type="text" id="j-tags" class="field-input" placeholder="e.g. rebalance, tax" />
+        </div>
+        <div>
+          <label class="field-label">Milestone value (optional)</label>
+          <input type="number" id="j-mval" class="field-input" placeholder="e.g. 1000000" step="1000" />
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding-bottom:1px;">
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-dim);cursor:pointer;">
+            <input type="checkbox" id="j-milestone" style="accent-color:var(--purple);" />
+            Milestone
+          </label>
+          <button class="btn-primary" onclick="submitEntry()">Save</button>
+          <span id="j-status" style="font-size:11px;"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Existing entries -->
+    <div class="card">
+      <div class="section-title">Log & Notes</div>
+      <div id="journal-list"></div>
+    </div>
+  </div>
+
+  <!-- Sidebar: milestones -->
+  <div class="card">
+    <div class="section-title">Milestones</div>
+    <div id="milestones-list"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadJournal() {
+  const entries = await fetch('/api/journal').then(r=>r.json());
+
+  document.getElementById('journal-list').innerHTML = entries.map(j => {
+    const tags = j.tags ? j.tags.split(',').map(t=>`<span class="tag">${t.trim()}</span>`).join('') : '';
+    const esc = s => (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    return `<div class="journal-entry ${j.is_milestone?'milestone':''}" id="jentry-${j.id}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div style="flex:1;">
+          <div class="journal-date">${j.entry_date}</div>
+          <div class="journal-title">${j.is_milestone ? '★ ' : ''}${j.title}
+            ${j.milestone_value ? `<span style="color:var(--purple);font-size:11px;margin-left:8px;">${fmt(j.milestone_value)}</span>` : ''}
+          </div>
+          ${j.body ? `<div class="journal-body">${j.body}</div>` : ''}
+          ${tags ? `<div style="margin-top:6px;">${tags}</div>` : ''}
+        </div>
+        <div class="j-entry-actions">
+          <button class="btn-secondary" onclick="openJEdit(${j.id})">Edit</button>
+          <button class="btn-danger" onclick="deleteJEntry(${j.id})">Del</button>
+        </div>
+      </div>
+      <div class="j-edit-form" id="jedit-${j.id}">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;">
+          <div><label class="field-label">Title</label>
+            <input class="field-input" id="je-title-${j.id}" value="${esc(j.title)}" /></div>
+          <div><label class="field-label">Date</label>
+            <input type="date" class="field-input" id="je-date-${j.id}" value="${j.entry_date}" style="width:140px;" /></div>
+        </div>
+        <div style="margin-bottom:8px;"><label class="field-label">Notes</label>
+          <textarea class="field-input" id="je-body-${j.id}" rows="2">${esc(j.body||'')}</textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:end;">
+          <div><label class="field-label">Tags</label>
+            <input class="field-input" id="je-tags-${j.id}" value="${esc(j.tags||'')}" /></div>
+          <div><label class="field-label">Milestone value</label>
+            <input type="number" class="field-input" id="je-mval-${j.id}" value="${j.milestone_value||''}" step="1000" /></div>
+          <div><label class="field-label">Milestone</label>
+            <input type="checkbox" id="je-ms-${j.id}" ${j.is_milestone?'checked':''} style="accent-color:var(--purple);margin-top:8px;" /></div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-primary" style="font-size:11px;padding:5px 12px;" onclick="saveJEdit(${j.id})">Save</button>
+            <button class="btn-secondary" onclick="closeJEdit(${j.id})">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const milestones = entries.filter(j=>j.is_milestone);
+  document.getElementById('milestones-list').innerHTML = milestones.length
+    ? milestones.map(m => `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+        <span style="color:var(--purple);font-size:16px;">★</span>
+        <div>
+          <div style="font-size:12px;color:var(--text-head);">${m.title}</div>
+          <div style="font-size:10px;color:var(--text-dim);">${m.entry_date}${m.milestone_value?' · '+fmt(m.milestone_value):''}</div>
+        </div>
+      </div>`).join('')
+    : '<div style="font-size:11px;color:var(--text-dim);">No milestones yet.</div>';
+}
+
+async function submitEntry() {
+  const title = document.getElementById('j-title').value.trim();
+  const statusEl = document.getElementById('j-status');
+  if (!title) { statusEl.textContent = 'Title required.'; statusEl.style.color='var(--red)'; return; }
+
+  const body = {
+    title,
+    body:            document.getElementById('j-body').value.trim() || null,
+    entry_date:      document.getElementById('j-date').value || null,
+    tags:            document.getElementById('j-tags').value.trim() || null,
+    is_milestone:    document.getElementById('j-milestone').checked,
+    milestone_value: parseFloat(document.getElementById('j-mval').value) || null,
+  };
+
+  statusEl.textContent = 'Saving…';
+  statusEl.style.color = 'var(--text-dim)';
+
+  const res = await fetch('/api/journal', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body),
+  });
+
+  if (res.ok) {
+    statusEl.textContent = '✓ Saved';
+    statusEl.style.color = 'var(--green)';
+    document.getElementById('j-title').value = '';
+    document.getElementById('j-body').value = '';
+    document.getElementById('j-tags').value = '';
+    document.getElementById('j-mval').value = '';
+    document.getElementById('j-milestone').checked = false;
+    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    loadJournal();
+  } else {
+    statusEl.textContent = '✗ Error';
+    statusEl.style.color = 'var(--red)';
+  }
+}
+
+function openJEdit(id) {
+  document.getElementById(`jedit-${id}`).classList.add('open');
+}
+function closeJEdit(id) {
+  document.getElementById(`jedit-${id}`).classList.remove('open');
+}
+
+async function saveJEdit(id) {
+  const body = {
+    title:           document.getElementById(`je-title-${id}`).value.trim(),
+    body:            document.getElementById(`je-body-${id}`).value.trim() || null,
+    entry_date:      document.getElementById(`je-date-${id}`).value || null,
+    tags:            document.getElementById(`je-tags-${id}`).value.trim() || null,
+    is_milestone:    document.getElementById(`je-ms-${id}`).checked,
+    milestone_value: parseFloat(document.getElementById(`je-mval-${id}`).value) || null,
+  };
+  if (!body.title) return;
+  await fetch(`/api/journal/${id}`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body),
+  });
+  loadJournal();
+}
+
+async function deleteJEntry(id) {
+  if (!confirm('Delete this journal entry?')) return;
+  await fetch(`/api/journal/${id}`, {method: 'DELETE'});
+  loadJournal();
+}
+
+// Default date to today
+document.getElementById('j-date').value = new Date().toISOString().slice(0,10);
+loadJournal();
+</script>
+{% endblock %}
