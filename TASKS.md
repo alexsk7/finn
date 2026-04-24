@@ -78,6 +78,11 @@
   — needs `businesses` table + scoped `business_transactions`, `business_accounts`
   — confirm bookkeeper utility path before starting
 
+## Testing
+
+- [ ] Write data-agnostic tests for tax/TLH logic that work against any seed data (structure checks, not hardcoded dollar values)
+- [ ] Consider a test fixture with a minimal known dataset so assertions can be precise without depending on `seed_demo()`
+
 ## Infrastructure
 
 - [ ] `ruff` linting setup
