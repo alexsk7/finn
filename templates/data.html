@@ -3,95 +3,6 @@
 
 {% block head %}
 <style>
-  .field-label {
-    display: block;
-    font-size: 9px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    margin-bottom: 4px;
-  }
-
-  .field-input {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--text-head);
-    font-family: var(--font);
-    font-size: 12px;
-    padding: 6px 8px;
-    outline: none;
-    transition: border-color .15s;
-  }
-
-  .field-input:focus {
-    border-color: var(--accent);
-  }
-
-  .field-input option {
-    background: var(--bg2);
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    border: none;
-    border-radius: 4px;
-    color: #fff;
-    cursor: pointer;
-    font-family: var(--font);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 7px 14px;
-    transition: opacity .15s;
-    white-space: nowrap;
-  }
-
-  .btn-primary:hover {
-    opacity: .85;
-  }
-
-  .btn-primary:disabled {
-    opacity: .4;
-    cursor: default;
-  }
-
-  .btn-secondary {
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--text-dim);
-    cursor: pointer;
-    font-family: var(--font);
-    font-size: 11px;
-    padding: 4px 10px;
-    transition: color .15s, border-color .15s;
-    white-space: nowrap;
-  }
-
-  .btn-secondary:hover {
-    color: var(--text-head);
-    border-color: var(--text-dim);
-  }
-
-  .btn-danger {
-    background: transparent;
-    border: 1px solid var(--red);
-    border-radius: 4px;
-    color: var(--red);
-    cursor: pointer;
-    font-family: var(--font);
-    font-size: 11px;
-    padding: 4px 10px;
-    transition: background .15s, color .15s;
-    white-space: nowrap;
-  }
-
-  .btn-danger:hover {
-    background: var(--red);
-    color: #fff;
-  }
-
   .acct-row {
     display: grid;
     grid-template-columns: 1fr 130px;
@@ -156,15 +67,17 @@
 <div>
   <!-- Tab navigation -->
   <nav class="tab-nav">
-    <button class="tab-btn active" data-tab="holdings" onclick="showTab('holdings')">Holdings</button>
-    <button class="tab-btn" data-tab="accounts" onclick="showTab('accounts')">Accounts</button>
     <button class="tab-btn" data-tab="snapshot" onclick="showTab('snapshot')">Snapshot</button>
-    <button class="tab-btn" data-tab="prices" onclick="showTab('prices')">Prices</button>
-    <button class="tab-btn" data-tab="transactions" onclick="showTab('transactions')">Transactions</button>
-    <button class="tab-btn" data-tab="realestate" onclick="showTab('realestate')">Real Estate</button>
-    <button class="tab-btn" data-tab="allocation" onclick="showTab('allocation')">Allocation</button>
+    <button class="tab-btn" data-tab="accounts" onclick="showTab('accounts')">Accounts</button>
     <button class="tab-btn" data-tab="budget" onclick="showTab('budget')">Budget</button>
-    <button class="tab-btn" data-tab="danger" onclick="showTab('danger')" style="margin-left:auto;color:var(--red);opacity:.6;">Danger Zone</button>
+    <button class="tab-btn" data-tab="transactions" onclick="showTab('transactions')">Transactions</button>
+    <button class="tab-btn active" data-tab="holdings" onclick="showTab('holdings')">Holdings</button>
+    <button class="tab-btn" data-tab="prices" onclick="showTab('prices')">Prices</button>
+    <button class="tab-btn" data-tab="allocation" onclick="showTab('allocation')">Allocation</button>
+    <button class="tab-btn" data-tab="realestate" onclick="showTab('realestate')">Real Estate</button>
+    <button class="tab-btn" data-tab="portfolios" onclick="showTab('portfolios')">Portfolios</button>
+    <button class="tab-btn" data-tab="danger" onclick="showTab('danger')"
+      style="margin-left:auto;color:var(--red);opacity:.6;">Danger Zone</button>
   </nav>
 
   <!-- ── Holdings ─────────────────────────────────────────────────────────── -->
@@ -213,6 +126,47 @@
     </div>
 
     <div class="card" style="margin-bottom:var(--gap);">
+      <div class="section-title">Import Holdings CSV</div>
+      <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">
+        Import from a Fidelity, Schwab, or Vanguard positions export. The CSV must contain a
+        <code style="color:var(--accent);">Symbol</code> column — all other metadata rows are skipped automatically.
+        Re-importing the same file updates existing positions rather than duplicating them.
+      </p>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+        <label class="btn-secondary" style="cursor:pointer;display:inline-block;">
+          Choose file
+          <input type="file" accept=".csv,.txt" id="hold-csv-file" onchange="loadHoldCSVFile(this)"
+            style="display:none;">
+        </label>
+        <span style="font-size:11px;color:var(--text-dim);">or paste below</span>
+        <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+          <label class="field-label" style="margin:0;white-space:nowrap;">Import into account:</label>
+          <select id="hold-csv-acct" class="field-input" style="width:220px;">
+            <option value="">— select account —</option>
+          </select>
+        </div>
+      </div>
+
+      <textarea id="hold-csv-paste" rows="8" class="field-input" placeholder="Symbol,Description,Quantity,Average Cost Basis
+VTI,Vanguard Total Stock Market ETF,42.5,201.34
+VXUS,Vanguard Total International,18,58.72"
+        style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);"
+        oninput="previewHoldCSV()"></textarea>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn-primary" onclick="importHoldCSV()">Import</button>
+        <button class="btn-secondary" onclick="
+          document.getElementById('hold-csv-paste').value='';
+          document.getElementById('hold-csv-preview').innerHTML='';
+          document.getElementById('hold-csv-result').textContent='';">Clear</button>
+        <span id="hold-csv-result" style="font-size:11px;"></span>
+      </div>
+
+      <div id="hold-csv-preview" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="card">
       <div class="section-title">
         All Holdings
         <span id="h-count" style="color:var(--text-dim);font-size:10px;"></span>
@@ -235,106 +189,75 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="section-title">Import Holdings CSV</div>
-      <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">
-        Import from a Fidelity, Schwab, or Vanguard positions export. The CSV must contain a
-        <code style="color:var(--accent);">Symbol</code> column — all other metadata rows are skipped automatically.
-        Re-importing the same file updates existing positions rather than duplicating them.
-      </p>
-
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
-        <label class="btn-secondary" style="cursor:pointer;display:inline-block;">
-          Choose file
-          <input type="file" accept=".csv,.txt" id="hold-csv-file" onchange="loadHoldCSVFile(this)" style="display:none;">
-        </label>
-        <span style="font-size:11px;color:var(--text-dim);">or paste below</span>
-        <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-          <label class="field-label" style="margin:0;white-space:nowrap;">Import into account:</label>
-          <select id="hold-csv-acct" class="field-input" style="width:220px;">
-            <option value="">— select account —</option>
-          </select>
-        </div>
-      </div>
-
-      <textarea id="hold-csv-paste" rows="8" class="field-input" placeholder="Symbol,Description,Quantity,Average Cost Basis
-VTI,Vanguard Total Stock Market ETF,42.5,201.34
-VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);" oninput="previewHoldCSV()"></textarea>
-
-      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
-        <button class="btn-primary" onclick="importHoldCSV()">Import</button>
-        <button class="btn-secondary" onclick="
-          document.getElementById('hold-csv-paste').value='';
-          document.getElementById('hold-csv-preview').innerHTML='';
-          document.getElementById('hold-csv-result').textContent='';">Clear</button>
-        <span id="hold-csv-result" style="font-size:11px;"></span>
-      </div>
-
-      <div id="hold-csv-preview" style="margin-top:16px;"></div>
-    </div>
   </div>
 
   <!-- ── Accounts ──────────────────────────────────────────────────────────── -->
   <div id="tab-accounts" class="tab-panel">
-    <div class="layout-data-accts">
-      <div class="card">
-        <div class="section-title">Add Account</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <div>
-            <label class="field-label">Name</label>
-            <input type="text" id="a-name" class="field-input" placeholder="Fidelity Brokerage" />
-          </div>
-          <div>
-            <label class="field-label">Institution</label>
-            <input type="text" id="a-inst" class="field-input" placeholder="Fidelity" />
-          </div>
-          <div>
-            <label class="field-label">Type</label>
-            <select id="a-type" class="field-input" onchange="toggleDebtFields()">
-              <option value="checking">Checking</option>
-              <option value="savings">Savings</option>
-              <option value="brokerage">Brokerage</option>
-              <option value="retirement_401k">401(k)</option>
-              <option value="retirement_ira">IRA / Roth IRA</option>
-              <option value="hsa">HSA</option>
-              <option value="credit">Credit Card</option>
-              <option value="loan">Loan / Mortgage</option>
-              <option value="crypto">Crypto</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label class="field-label">Notes (optional)</label>
-            <input type="text" id="a-notes" class="field-input" placeholder="" />
-          </div>
-          <div id="a-opening-field">
-            <label class="field-label">Opening Balance</label>
-            <input type="number" id="a-opening" class="field-input" placeholder="0.00" step="0.01" />
-          </div>
-          <div id="a-debt-fields" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
-            <div>
-              <label class="field-label">APR %</label>
-              <input type="number" id="a-rate" class="field-input" placeholder="24.99" step="0.01" min="0" />
-            </div>
-            <div>
-              <label class="field-label">Min. Payment</label>
-              <input type="number" id="a-minpay" class="field-input" placeholder="25.00" step="1" min="0" />
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <button class="btn-primary" onclick="addAccount()">Add Account</button>
-            <span id="a-status" style="font-size:11px;"></span>
-          </div>
+    <div class="card" style="margin-bottom:var(--gap);">
+      <div class="section-title">Add Account</div>
+      <div class="layout-add-acct">
+        <div>
+          <label class="field-label">Name</label>
+          <input type="text" id="a-name" class="field-input" placeholder="Fidelity Brokerage" />
+        </div>
+        <div>
+          <label class="field-label">Institution</label>
+          <input type="text" id="a-inst" class="field-input" placeholder="Fidelity" />
+        </div>
+        <div>
+          <label class="field-label">Type</label>
+          <select id="a-type" class="field-input" onchange="toggleDebtFields()">
+            <option value="checking">Checking</option>
+            <option value="savings">Savings</option>
+            <option value="brokerage">Brokerage</option>
+            <option value="retirement_401k">401(k)</option>
+            <option value="retirement_ira">IRA / Roth IRA</option>
+            <option value="hsa">HSA</option>
+            <option value="credit">Credit Card</option>
+            <option value="loan">Loan / Mortgage</option>
+            <option value="crypto">Crypto</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Notes (optional)</label>
+          <input type="text" id="a-notes" class="field-input" placeholder="" />
+        </div>
+        <div id="a-opening-field">
+          <label class="field-label">Opening Balance</label>
+          <input type="number" id="a-opening" class="field-input" placeholder="0.00" step="0.01" />
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:8px;">
+          <button class="btn-primary" onclick="addAccount()">Add Account</button>
+          <span id="a-status" style="font-size:11px;"></span>
         </div>
       </div>
+      <div id="a-debt-fields"
+        style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;max-width:360px;">
+        <div>
+          <label class="field-label">APR %</label>
+          <input type="number" id="a-rate" class="field-input" placeholder="24.99" step="0.01" min="0" />
+        </div>
+        <div>
+          <label class="field-label">Min. Payment</label>
+          <input type="number" id="a-minpay" class="field-input" placeholder="25.00" step="1" min="0" />
+        </div>
+      </div>
+    </div>
 
-      <div class="card">
-        <div class="section-title">Existing Accounts</div>
+    <div class="card">
+      <div class="section-title">Existing Accounts</div>
+      <div class="table-scroll">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Name</th><th>Institution</th><th>Type</th><th>Notes</th>
-              <th class="num">APR</th><th class="num">Min. Pay</th><th></th>
+              <th>Name</th>
+              <th>Institution</th>
+              <th>Type</th>
+              <th>Notes</th>
+              <th class="num">APR</th>
+              <th class="num">Min. Pay</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="accounts-tbody"></tbody>
@@ -390,7 +313,9 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
 
       <textarea id="csv-paste" rows="8" class="field-input" placeholder="date,net_worth,liquid_cash,invested_total,home_equity
 2015-01-01,320000,18000,140000,80000
-2016-01-01,370000,22000,165000,85000" style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);" oninput="previewCSV()"></textarea>
+2016-01-01,370000,22000,165000,85000"
+        style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);"
+        oninput="previewCSV()"></textarea>
 
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
         <button class="btn-primary" onclick="importCSV()">Import</button>
@@ -433,7 +358,7 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
   <div id="tab-transactions" class="tab-panel">
     <div class="card" style="margin-bottom:var(--gap);">
       <div class="section-title">Add Transaction</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:600px;">
+      <div class="layout-add-hold">
         <div>
           <label class="field-label">Date</label>
           <input type="date" id="txn-date" class="field-input" />
@@ -454,7 +379,7 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
           <label class="field-label">Category</label>
           <select id="txn-cat" class="field-input"></select>
         </div>
-        <div style="grid-column:span 2;">
+        <div>
           <label class="field-label">Description (optional)</label>
           <input type="text" id="txn-desc" class="field-input" />
         </div>
@@ -472,29 +397,6 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
     </div>
 
     <div class="card" style="margin-bottom:var(--gap);">
-      <div class="section-title">
-        Recent Transactions
-        <span id="txn-count" style="color:var(--text-dim);font-size:10px;"></span>
-      </div>
-      <div class="table-scroll">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Direction</th>
-              <th>Category</th>
-              <th class="num">Amount</th>
-              <th>Description</th>
-              <th>Account</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="txn-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
       <div class="section-title">Import Transactions CSV</div>
       <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">
         Import from a bank or brokerage CSV export. Recognized columns:
@@ -517,21 +419,46 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
         </div>
       </div>
 
-      <textarea id="txn-csv-paste" rows="8" class="field-input" placeholder="date,amount,direction,category,description
+      <textarea id="txn-csv-paste" rows="6" class="field-input" placeholder="date,amount,direction,category,description
 2026-01-15,9800,income,Salary,Paycheck
 2026-01-16,-634,,Groceries,Whole Foods
-2026-01-20,-265,,Dining,Restaurants" style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);" oninput="previewTxnCSV()"></textarea>
+2026-01-20,-265,,Dining,Restaurants"
+        style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);"
+        oninput="previewTxnCSV()"></textarea>
 
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
         <button class="btn-primary" onclick="importTxnCSV()">Import</button>
         <button class="btn-secondary" onclick="
-          document.getElementById('txn-csv-paste').value='';
-          document.getElementById('txn-csv-preview').innerHTML='';
-          document.getElementById('txn-csv-result').textContent='';">Clear</button>
+            document.getElementById('txn-csv-paste').value='';
+            document.getElementById('txn-csv-preview').innerHTML='';
+            document.getElementById('txn-csv-result').textContent='';">Clear</button>
         <span id="txn-csv-result" style="font-size:11px;"></span>
       </div>
 
       <div id="txn-csv-preview" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">
+        Recent Transactions
+        <span id="txn-count" style="color:var(--text-dim);font-size:10px;"></span>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Direction</th>
+              <th>Category</th>
+              <th class="num">Amount</th>
+              <th>Description</th>
+              <th>Account</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="txn-tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -603,34 +530,34 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
 
   <!-- ── Budget Categories ──────────────────────────────────────────────────── -->
   <div id="tab-budget" class="tab-panel">
-    <div class="layout-data-accts">
-      <div class="card">
-        <div class="section-title">Add Category</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <div>
-            <label class="field-label">Name</label>
-            <input type="text" id="bc-name" class="field-input" placeholder="e.g. Groceries" />
-          </div>
-          <div>
-            <label class="field-label">Direction</label>
-            <select id="bc-dir" class="field-input">
-              <option value="expense" selected>Expense</option>
-              <option value="income">Income</option>
-            </select>
-          </div>
-          <div>
-            <label class="field-label">Monthly Target ($)</label>
-            <input type="number" id="bc-target" class="field-input" placeholder="0.00" step="10" min="0" />
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <button class="btn-primary" onclick="addBudgetCategory()">Add Category</button>
-            <span id="bc-status" style="font-size:11px;"></span>
-          </div>
+    <div class="card" style="margin-bottom:var(--gap);">
+      <div class="section-title">Add Category</div>
+      <div class="layout-add-bc">
+        <div>
+          <label class="field-label">Name</label>
+          <input type="text" id="bc-name" class="field-input" placeholder="e.g. Groceries" />
+        </div>
+        <div>
+          <label class="field-label">Direction</label>
+          <select id="bc-dir" class="field-input">
+            <option value="expense" selected>Expense</option>
+            <option value="income">Income</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Monthly Target ($)</label>
+          <input type="number" id="bc-target" class="field-input" placeholder="0.00" step="10" min="0" />
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:8px;">
+          <button class="btn-primary" onclick="addBudgetCategory()">Add Category</button>
+          <span id="bc-status" style="font-size:11px;"></span>
         </div>
       </div>
+    </div>
 
-      <div class="card">
-        <div class="section-title">Categories</div>
+    <div class="card">
+      <div class="section-title">Categories</div>
+      <div class="table-scroll">
         <table class="data-table">
           <thead>
             <tr>
@@ -647,6 +574,38 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
   </div>
 
   <!-- ── Danger Zone ───────────────────────────────────────────────────────── -->
+  <!-- ── Portfolios ──────────────────────────────────────────────────────────── -->
+  <div id="tab-portfolios" class="tab-panel">
+    <div class="card" style="margin-bottom:var(--gap);">
+      <div class="section-title">Add Portfolio</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;max-width:420px;">
+        <div style="flex:1;">
+          <label class="field-label">Name</label>
+          <input type="text" id="pf-name" class="field-input" placeholder="e.g. Family Trust" />
+        </div>
+        <button class="btn-primary" onclick="addPortfolio()" style="margin-bottom:1px;">Add</button>
+      </div>
+      <div id="pf-add-status" style="margin-top:8px;font-size:11px;min-height:16px;"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">All Portfolios</div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>DB File</th>
+              <th>Created</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="pf-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div id="tab-danger" class="tab-panel">
     <div class="card" style="max-width:500px;border-color:rgba(240,80,96,.3);">
       <div class="section-title" style="color:var(--red);">Danger Zone</div>
@@ -659,7 +618,8 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
         <button class="btn-danger" onclick="confirmReset()">Reset All Data</button>
         <span id="reset-status" style="font-size:11px;"></span>
       </div>
-      <div id="reset-confirm" style="display:none;margin-top:14px;padding:12px;background:rgba(240,80,96,.08);border:1px solid rgba(240,80,96,.3);border-radius:4px;">
+      <div id="reset-confirm"
+        style="display:none;margin-top:14px;padding:12px;background:rgba(240,80,96,.08);border:1px solid rgba(240,80,96,.3);border-radius:4px;">
         <div style="font-size:12px;color:var(--text-head);margin-bottom:10px;">
           Are you sure? Type <strong>RESET</strong> to confirm.
         </div>
@@ -703,13 +663,14 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
 
   // ── Boot ───────────────────────────────────────────────────────────────────────
   async function loadData() {
-    const [accounts, alloc, re, allocTargets, budgetCats, txns] = await Promise.all([
+    const [accounts, alloc, re, allocTargets, budgetCats, txns, pfData] = await Promise.all([
       fetch('/api/accounts').then(r => r.json()),
       fetch('/api/allocation').then(r => r.json()),
       fetch('/api/real-estate').then(r => r.json()),
       fetch('/api/allocation-targets').then(r => r.json()),
       fetch('/api/budget-categories').then(r => r.json()),
       fetch('/api/transactions').then(r => r.json()),
+      fetch('/api/portfolios').then(r => r.json()),
     ]);
 
     allAccounts = accounts;
@@ -722,6 +683,7 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
     buildAllocTargets(allocTargets);
     buildBudgetCats(budgetCats);
     buildTxnTable(txns);
+    buildPortfoliosTable(pfData.portfolios);
 
     document.getElementById('snap-date').value = new Date().toISOString().slice(0, 10);
     document.getElementById('txn-date').value = new Date().toISOString().slice(0, 10);
@@ -864,7 +826,7 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
   }
 
   // ── Accounts ───────────────────────────────────────────────────────────────────
-  const DEBT_TYPES       = new Set(['credit', 'loan']);
+  const DEBT_TYPES = new Set(['credit', 'loan']);
   const INVESTMENT_TYPES = new Set(['brokerage', 'retirement_401k', 'retirement_ira', 'hsa', 'crypto']);
 
   function toggleDebtFields() {
@@ -872,7 +834,7 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
     const isDebt = DEBT_TYPES.has(type);
     const isInvestment = INVESTMENT_TYPES.has(type);
     document.getElementById('a-debt-fields').style.display = isDebt ? 'grid' : 'none';
-    document.getElementById('a-opening-field').style.display = isInvestment ? 'none' : '';
+    document.getElementById('a-opening-field').style.visibility = isInvestment ? 'hidden' : '';
   }
 
   function buildAccountsTable(accounts) {
@@ -882,10 +844,10 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
       return;
     }
     tbody.innerHTML = accounts.map(a => {
-      const isDebt       = DEBT_TYPES.has(a.type);
+      const isDebt = DEBT_TYPES.has(a.type);
       const isInvestment = INVESTMENT_TYPES.has(a.type);
-      const canEdit      = !isInvestment;
-      const rateDisplay  = isDebt && a.interest_rate   != null ? a.interest_rate.toFixed(2) + '%' : '—';
+      const canEdit = !isInvestment;
+      const rateDisplay = isDebt && a.interest_rate != null ? a.interest_rate.toFixed(2) + '%' : '—';
       const minPayDisplay = isDebt && a.minimum_payment != null ? fmt(a.minimum_payment) : '—';
       return `
       <tr id="arow-${a.id}">
@@ -941,11 +903,11 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
   }
 
   async function saveAcctEdit(id) {
-    const rateEl   = document.getElementById(`ae-rate-${id}`);
+    const rateEl = document.getElementById(`ae-rate-${id}`);
     const minpayEl = document.getElementById(`ae-minpay-${id}`);
-    const rate     = rateEl   ? parseFloat(rateEl.value)   || null : null;
-    const minpay   = minpayEl ? parseFloat(minpayEl.value) || null : null;
-    const opening  = parseFloat(document.getElementById(`ae-opening-${id}`).value) || 0;
+    const rate = rateEl ? parseFloat(rateEl.value) || null : null;
+    const minpay = minpayEl ? parseFloat(minpayEl.value) || null : null;
+    const opening = parseFloat(document.getElementById(`ae-opening-${id}`).value) || 0;
     await fetch(`/api/accounts/${id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ interest_rate: rate, minimum_payment: minpay, opening_balance: opening }),
@@ -972,15 +934,15 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name, institution: inst, type,
-        notes:           document.getElementById('a-notes').value.trim() || null,
-        interest_rate:   isDebt ? parseFloat(document.getElementById('a-rate').value)   || null : null,
+        notes: document.getElementById('a-notes').value.trim() || null,
+        interest_rate: isDebt ? parseFloat(document.getElementById('a-rate').value) || null : null,
         minimum_payment: isDebt ? parseFloat(document.getElementById('a-minpay').value) || null : null,
         opening_balance: !INVESTMENT_TYPES.has(type) ? parseFloat(document.getElementById('a-opening').value) || 0 : 0,
       }),
     });
     if (res.ok) {
       statusEl.textContent = '✓ Added'; statusEl.style.color = 'var(--green)';
-      ['a-name','a-inst','a-notes','a-rate','a-minpay','a-opening'].forEach(id => {
+      ['a-name', 'a-inst', 'a-notes', 'a-rate', 'a-minpay', 'a-opening'].forEach(id => {
         document.getElementById(id).value = '';
       });
       toggleDebtFields();
@@ -1103,8 +1065,8 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
 
     document.getElementById('re-form').innerHTML = re.length
       ? re.map(p => {
-          const linked = p.account_id != null;
-          return `
+        const linked = p.account_id != null;
+        return `
           <div style="margin-bottom:14px;" id="re-prop-${p.id}">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
               <div style="font-size:12px;font-weight:600;color:var(--text-head);">${p.name}</div>
@@ -1115,11 +1077,11 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
                 <input type="number" step="1000" class="field-input" id="re-val-${p.id}" value="${p.estimated_value}" /></div>
               <div><label class="field-label">Mortgage Balance</label>
                 ${linked
-                  ? `<div style="padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;font-size:12px;color:var(--text-dim);">
+            ? `<div style="padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;font-size:12px;color:var(--text-dim);">
                        Auto — linked to <strong style="color:var(--accent);">${p.linked_account_name || 'account'}</strong>
                      </div>`
-                  : `<input type="number" step="100" class="field-input" id="re-mort-${p.id}" value="${p.mortgage_balance}" />`
-                }
+            : `<input type="number" step="100" class="field-input" id="re-mort-${p.id}" value="${p.mortgage_balance}" />`
+          }
               </div>
             </div>
             <div style="margin-top:8px;">
@@ -1134,7 +1096,7 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
               <span id="re-status-${p.id}" style="font-size:11px;"></span>
             </div>
           </div>`;
-        }).join('<hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">')
+      }).join('<hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">')
       : '<div style="font-size:11px;color:var(--text-dim);">No properties yet. Add one above.</div>';
   }
 
@@ -1704,6 +1666,103 @@ VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;res
     document.getElementById('reset-confirm').style.display = 'none';
     // Reload after a beat so the user sees the confirmation
     setTimeout(() => location.reload(), 2000);
+  }
+
+  // ── Portfolios ─────────────────────────────────────────────────────────────────
+  let _pfList = [];
+
+  function buildPortfoliosTable(portfolios) {
+    _pfList = portfolios;
+    const tbody = document.getElementById('pf-body');
+    if (!tbody) return;
+    let rows = '';
+    portfolios.forEach((p, i) => {
+      rows += `
+      <tr id="pfrow-${i}">
+        <td style="font-weight:600;color:var(--text-head);">${p.name}</td>
+        <td style="font-size:11px;color:var(--text-dim);">${p.path}</td>
+        <td style="color:var(--text-dim);font-size:11px;">${p.created_at ? p.created_at.slice(0, 10) : '—'}</td>
+        <td>${p.is_active ? '<span class="badge blue">Active</span>' : ''}</td>
+        <td style="text-align:right;white-space:nowrap;">
+          <div style="display:flex;gap:5px;justify-content:flex-end;">
+            ${!p.is_active ? `<button class="btn-secondary" onclick="switchToPortfolio(${i})">Switch</button>` : ''}
+            <button class="btn-secondary" onclick="startPfEdit(${i})">Rename</button>
+            ${!p.is_active && portfolios.length > 1 ? `<button class="btn-danger" onclick="deletePortfolio(${i})">Delete</button>` : ''}
+          </div>
+        </td>
+      </tr>
+      <tr id="pfrow-edit-${i}" style="display:none;">
+        <td colspan="5" style="background:var(--bg3);padding:8px 12px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="pf-rename-${i}" class="field-input" value="${p.name}" style="width:220px;" />
+            <button class="btn-primary" style="font-size:12px;padding:5px 12px;" onclick="savePfRename(${i})">Save</button>
+            <button class="btn-secondary" onclick="cancelPfEdit(${i})">✕</button>
+          </div>
+        </td>
+      </tr>`;
+    });
+    tbody.innerHTML = rows;
+  }
+
+  function startPfEdit(i) {
+    document.getElementById(`pfrow-${i}`).style.display = 'none';
+    document.getElementById(`pfrow-edit-${i}`).style.display = 'table-row';
+    document.getElementById(`pf-rename-${i}`).focus();
+  }
+  function cancelPfEdit(i) {
+    document.getElementById(`pfrow-${i}`).style.display = '';
+    document.getElementById(`pfrow-edit-${i}`).style.display = 'none';
+  }
+
+  async function savePfRename(i) {
+    const p = _pfList[i];
+    const newName = document.getElementById(`pf-rename-${i}`).value.trim();
+    if (!newName || newName === p.name) { cancelPfEdit(i); return; }
+    const r = await fetch(`/api/portfolio/${encodeURIComponent(p.name)}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName }),
+    });
+    const result = await r.json();
+    if (r.ok) { window.location.reload(); }
+    else { alert(result.error || 'Rename failed'); cancelPfEdit(i); }
+  }
+
+  async function switchToPortfolio(i) {
+    const p = _pfList[i];
+    await fetch('/api/portfolio/switch', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: p.name }),
+    });
+    window.location.reload();
+  }
+
+  async function deletePortfolio(i) {
+    const p = _pfList[i];
+    if (!confirm(`Delete portfolio "${p.name}"?\n\nThis will permanently remove the portfolio and its database file (${p.path}). There is no undo.`)) return;
+    const r = await fetch(`/api/portfolio/${encodeURIComponent(p.name)}`, { method: 'DELETE' });
+    const result = await r.json();
+    if (r.ok) { window.location.reload(); }
+    else { alert(result.error || 'Delete failed'); }
+  }
+
+  async function addPortfolio() {
+    const name = document.getElementById('pf-name').value.trim();
+    const status = document.getElementById('pf-add-status');
+    if (!name) return;
+    const r = await fetch('/api/portfolio/new', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const result = await r.json();
+    if (r.ok) {
+      document.getElementById('pf-name').value = '';
+      status.style.color = 'var(--green)';
+      status.textContent = `Portfolio "${name}" created. Switching…`;
+      setTimeout(() => { window.location.href = '/data#portfolios'; location.reload(); }, 800);
+    } else {
+      status.style.color = 'var(--red)';
+      status.textContent = result.error || 'Failed to create portfolio';
+    }
   }
 
   loadData().then(() => {

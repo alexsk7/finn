@@ -8,11 +8,11 @@ INDEX_SYMBOLS = ['SPY', 'QQQ', 'DIA', 'IWM', 'GLD', 'TLT', 'BTC-USD']
 
 # ── Prices ────────────────────────────────────────────────────────────────────
 
-def refresh_prices() -> dict:
+def refresh_prices(db_path=None) -> dict:
     """Fetch latest quotes for all holdings symbols plus tracked market indices."""
     import yfinance as yf
 
-    with get_conn() as conn:
+    with get_conn(db_path) as conn:
         holding_symbols = [
             r[0] for r in
             conn.execute("SELECT DISTINCT symbol FROM holdings").fetchall()
@@ -32,7 +32,7 @@ def refresh_prices() -> dict:
     updated, failed = [], []
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
-    with get_conn() as conn:
+    with get_conn(db_path) as conn:
         for symbol in symbols:
             try:
                 ticker = yf.Ticker(yf_sym(symbol))

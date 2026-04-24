@@ -103,6 +103,75 @@ a:hover { color: var(--text-head); }
 .badge.yellow { background: #2a200e; color: var(--yellow); }
 .badge.blue   { background: #0e1a2a; color: var(--blue); }
 
+/* ── Form fields ───────────────────────────────────────────────── */
+.field-label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.field-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-head);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 6px 8px;
+  outline: none;
+  transition: border-color .15s;
+}
+.field-input:focus { border-color: var(--accent); }
+.field-input option { background: var(--bg2); }
+
+/* ── Buttons ───────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 10px;
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+.btn-primary:hover    { opacity: .85; }
+.btn-primary:disabled { opacity: .4; cursor: default; }
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 7px 10px;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.btn-secondary:hover { color: var(--text-head); border-color: var(--text-dim); }
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid var(--red);
+  border-radius: 4px;
+  color: var(--red);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 7px 10px;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+.btn-danger:hover { background: var(--red); color: #fff; }
+
 /* ── Sidebar ───────────────────────────────────────────────────── */
 
 .sidebar {
@@ -363,6 +432,8 @@ a:hover { color: var(--text-head); }
 .layout-j-header   { display:grid; grid-template-columns:1fr 140px; gap:8px; margin-bottom:8px; }
 .layout-j-footer   { display:grid; grid-template-columns:1fr 160px auto; gap:8px; align-items:end; }
 .layout-add-hold   { display:grid; grid-template-columns:repeat(6,1fr) auto; gap:8px; align-items:end; }
+.layout-add-acct   { display:grid; grid-template-columns:repeat(5,1fr) auto; gap:8px; align-items:end; }
+.layout-add-bc     { display:grid; grid-template-columns:repeat(3,1fr) auto; gap:8px; align-items:end; }
 .layout-data-accts { display:grid; grid-template-columns:400px 1fr; gap:var(--gap); align-items:start; }
 .layout-snap       { display:grid; grid-template-columns:1fr 280px; gap:var(--gap); }
 .re-prop-kpis      { display:grid; grid-template-columns:repeat(5,1fr); gap:var(--gap); }
@@ -449,7 +520,7 @@ body.sidebar-open .sidebar-backdrop { display:block; }
   .layout-inv-charts,
   .layout-journal,
   .layout-j-header, .layout-j-footer,
-  .layout-add-hold,
+  .layout-add-hold, .layout-add-acct, .layout-add-bc,
   .layout-data-accts, .layout-snap,
   .re-prop-kpis, .re-config-form, .re-amort-summary,
   .grid-2 { grid-template-columns:1fr; }

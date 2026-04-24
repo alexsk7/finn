@@ -9,10 +9,11 @@ wheels/
 # Virtual environments
 .venv
 
-# Database (commit intentionally if you want history)
-finance.db
-finance.db-shm
-finance.db-wal
+# Database and portfolio config (machine-specific)
+*.db
+*.db-shm
+*.db-wal
+portfolios.json
 
 # Internal AI session files — not for public repo
 CLAUDE.md

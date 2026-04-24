@@ -78,8 +78,28 @@
     <a href="/tax" {% if active == 'tax' %}class="active"{% endif %}><span class="nav-icon">◈</span> Tax & TLH</a>
     
     <div class="sidebar-section">Manage</div>
-    <a href="/data" {% if active == 'data' %}class="active"{% endif %}><span class="nav-icon">⊞</span> Data</a>
     <a href="/journal" {% if active == 'journal' %}class="active"{% endif %}><span class="nav-icon">◉</span> Journal</a>
+    <a href="/data" {% if active == 'data' %}class="active"{% endif %}><span class="nav-icon">⊞</span> Data</a>
+
+    <div style="margin-top:24px;padding:12px 14px 0;border-top:1px solid var(--border);"
+         x-data="portfolioWidget()" x-init="init()">
+      <div class="sidebar-section" style="margin:0 0 6px;">Portfolio</div>
+      <select @change="switchTo($event.target.value)" style="
+        width:100%;padding:7px 10px;
+        background:var(--bg2);border:1px solid var(--border);border-radius:5px;
+        color:var(--text-head);font-family:var(--font);font-size:12px;cursor:pointer;
+      ">
+        <template x-for="p in portfolios" :key="p.name">
+          <option :value="p.name" :selected="p.is_active" x-text="p.name"></option>
+        </template>
+      </select>
+      <div style="margin-top:8px;">
+        <a href="/data#portfolios" style="font-size:11px;color:var(--text-dim);text-decoration:none;transition:color .15s;"
+           onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">
+          Manage portfolios →
+        </a>
+      </div>
+    </div>
   </nav>
 
   <main class="main">
@@ -169,6 +189,27 @@ async function refreshPrices() {
     btn.style.color = 'var(--red)';
     btn.disabled = false;
   }
+}
+
+function portfolioWidget() {
+  return {
+    active: '', portfolios: [],
+    async init() {
+      try {
+        const d = await fetch('/api/portfolios').then(r => r.json());
+        this.active = d.active;
+        this.portfolios = d.portfolios;
+      } catch(e) {}
+    },
+    async switchTo(name) {
+      if (name === this.active) return;
+      await fetch('/api/portfolio/switch', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name}),
+      });
+      window.location.reload();
+    },
+  };
 }
 
 fetch('/api/dashboard').then(r => r.json()).then(d => {

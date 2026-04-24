@@ -1,21 +1,21 @@
 """SQLite database — schema init and connection helper."""
 
 import sqlite3
-from pathlib import Path
-
-DB_PATH = Path(__file__).parent.parent / "finance.db"
 
 
-def get_conn() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
+def get_conn(db_path=None) -> sqlite3.Connection:
+    if db_path is None:
+        from .portfolio import get_active_path
+        db_path = get_active_path()
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
 
-def init_db() -> None:
-    with get_conn() as conn:
+def init_db(db_path=None) -> None:
+    with get_conn(db_path) as conn:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS accounts (
                 id          INTEGER PRIMARY KEY,

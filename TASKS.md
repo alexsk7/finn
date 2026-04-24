@@ -65,6 +65,15 @@
 - [x] Transactions: add/edit/delete (/data Transactions tab, two-row inline edit)
 - [x] Transactions: inline edit/delete on account drill-down page (consistent button styles)
 
+## Multi-portfolio
+
+- [x] `portfolios.json` at project root — tracks named portfolios (name, db path, created_at) and active pointer
+- [x] `app/portfolio.py` — load/save config, list portfolios, switch active, create new
+- [x] `app/db.py` — `get_conn()` reads active DB path from portfolio config instead of hardcoded `finance.db`
+- [x] `main.py` — `GET /api/portfolios`, `POST /api/portfolio/switch`, `POST /api/portfolio/new`
+- [x] Sidebar portfolio switcher (Alpine.js dropdown anchored at bottom) — shows active name, lists others, inline "New portfolio" form
+- [x] `init_db()` + optional `seed_demo()` called on new portfolio creation; `init_db()` called on switch to apply any pending migrations
+
 ## Personalization
 
 - [ ] User profile: name, currency symbol, display preferences — stored in `app_flags` or a `profile` table

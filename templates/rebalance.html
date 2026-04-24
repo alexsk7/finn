@@ -22,20 +22,6 @@
 {% block content %}
 <div style="display:flex;flex-direction:column;gap:var(--gap);">
 
-  <!-- New cash input -->
-  <div class="card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-    <div style="font-size:13px;color:var(--text-dim);white-space:nowrap;">New cash to deploy:</div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <span style="color:var(--text-dim);">$</span>
-      <input type="number" id="new-cash-input" value="0" min="0" step="1000"
-             style="width:140px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:13px;">
-      <button class="btn-primary" onclick="loadRebalance()">Recalculate</button>
-    </div>
-    <div style="font-size:11px;color:var(--text-dim);">
-      Adding new cash increases your target portfolio size, reducing or eliminating sells needed.
-    </div>
-  </div>
-
   <!-- KPI tiles -->
   <div class="rebal-kpi-row" id="rebal-kpis"></div>
 
@@ -57,6 +43,20 @@
         </thead>
         <tbody id="alloc-drift-body"></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- New cash input -->
+  <div class="card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="font-size:13px;color:var(--text-dim);white-space:nowrap;">New cash to deploy:</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span style="color:var(--text-dim);">$</span>
+      <input type="number" id="new-cash-input" value="0" min="0" step="1000"
+             style="width:140px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:13px;">
+      <button class="btn-primary" onclick="loadRebalance()">Recalculate</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-dim);">
+      Adding new cash increases your target portfolio size, reducing or eliminating sells needed.
     </div>
   </div>
 

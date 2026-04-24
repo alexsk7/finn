@@ -69,13 +69,18 @@ seed_demo()
 logger = logging.getLogger(__name__)
 
 def _auto_refresh_prices():
-    if not get_all_holdings_raw():
-        return
-    try:
-        refresh_prices()
-        logger.info("Auto price refresh completed")
-    except Exception as exc:
-        logger.error("Auto price refresh failed: %s", exc)
+    from app.portfolio import list_portfolios
+    for p in list_portfolios():
+        path = Path(p["path"])
+        if not path.is_absolute():
+            path = Path(__file__).parent / path
+        if not path.exists():
+            continue
+        try:
+            refresh_prices(db_path=str(path))
+            logger.info("Auto price refresh: %s", p["name"])
+        except Exception as exc:
+            logger.error("Auto price refresh failed for %s: %s", p["name"], exc)
 
 _scheduler = BackgroundScheduler(daemon=True)
 _scheduler.add_job(
@@ -546,3 +551,67 @@ async def api_holdings_import_csv(body: HoldingsImportBody):
 async def api_reset():
     reset_all_data()
     return {"ok": True}
+
+
+# ── Portfolio Management ───────────────────────────────────────────────────────
+
+@app.get("/api/portfolios")
+async def api_portfolios():
+    from app.portfolio import _load, list_portfolios
+    cfg = _load()
+    return {"active": cfg["active"], "portfolios": list_portfolios()}
+
+
+class PortfolioSwitchBody(BaseModel):
+    name: str
+
+
+@app.post("/api/portfolio/switch")
+async def api_portfolio_switch(body: PortfolioSwitchBody):
+    from app.portfolio import set_active
+    try:
+        set_active(body.name)
+        init_db()  # apply any pending migrations to the newly active DB
+        return {"ok": True, "active": body.name}
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
+
+
+class PortfolioNewBody(BaseModel):
+    name: str
+
+
+@app.post("/api/portfolio/new")
+async def api_portfolio_new(body: PortfolioNewBody):
+    from app.portfolio import create_portfolio
+    try:
+        entry = create_portfolio(body.name)
+        init_db()    # init schema on the new (now active) DB
+        seed_demo()  # seed demo data
+        return {"ok": True, **entry}
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
+
+
+class PortfolioRenameBody(BaseModel):
+    name: str
+
+
+@app.put("/api/portfolio/{portfolio_name:path}")
+async def api_portfolio_rename(portfolio_name: str, body: PortfolioRenameBody):
+    from app.portfolio import rename_portfolio
+    try:
+        entry = rename_portfolio(portfolio_name, body.name)
+        return {"ok": True, **entry}
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
+
+
+@app.delete("/api/portfolio/{portfolio_name:path}")
+async def api_portfolio_delete(portfolio_name: str):
+    from app.portfolio import delete_portfolio
+    try:
+        delete_portfolio(portfolio_name)
+        return {"ok": True}
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
