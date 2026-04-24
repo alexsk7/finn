@@ -1,0 +1,40 @@
+# Development Guide
+
+## Adding a new page
+
+1. Add a query function to `app/queries.py`
+2. Add a GET route to `main.py` using the `page()` helper with a new `active` key
+3. Add the nav link to `templates/base.html` sidebar with the matching `active` check
+4. Create `templates/<name>.html` extending `base.html`; fetch data in `{% block scripts %}`
+5. For multi-column layouts that need to collapse on mobile, use a named layout class from `style.css`
+
+## Adding a new API endpoint
+
+1. Add a read function to `app/queries.py` or write function to `app/writer.py`
+2. Add a Pydantic model (for POST/PUT bodies) and route to `main.py`
+3. Import the function in `main.py` (in the relevant `from app.queries import ...` or `from app.writer import ...` block)
+4. Call from JS via `fetch('/api/...')` in the relevant template
+
+## Adding a CSV import to a tab
+
+Follow the snapshot tab pattern: add a second card below the main form in the relevant tab panel.
+
+- **Backend**: add a parser function in `writer.py` using `csv.DictReader`. Detect the header by checking first-row column names, normalize aliases, upsert.
+- **Frontend**: file picker + textarea + live preview (first 6 rows) + Import button + result summary.
+- Do not create a standalone "Import CSV" tab — imports always live inside their corresponding tab.
+
+## Schema migrations
+
+Add idempotent `ALTER TABLE` statements inside the try/except block after `executescript` in `db.py`. Each migration should be safe to run on a database that already has the column.
+
+## Running one-off Python
+
+```bash
+uv run python -c "from app.db import get_conn; ..."
+```
+
+## Tests
+
+```bash
+uv run python tests/test_tax.py
+```

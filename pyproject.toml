@@ -1,9 +1,11 @@
 [project]
-name = "finance"
+name = "finctl"
 version = "0.1.0"
-description = "Add your description here"
+description = "Local-first personal finance dashboard — net worth, investments, accounts, real estate, tax, and budget in a single SQLite database"
 readme = "README.md"
 requires-python = ">=3.12"
+license = { text = "MIT" }
+keywords = ["finance", "personal-finance", "net-worth", "budget", "investing"]
 dependencies = [
     "apscheduler>=3.10,<4",
     "fastapi>=0.136.0",

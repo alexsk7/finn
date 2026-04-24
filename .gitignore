@@ -13,3 +13,7 @@ wheels/
 finance.db
 finance.db-shm
 finance.db-wal
+
+# Internal AI session files — not for public repo
+CLAUDE.md
+RESUME_HERE.md

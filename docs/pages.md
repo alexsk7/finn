@@ -1,0 +1,43 @@
+# Pages and API Reference
+
+## Page routes
+
+| Route | Template | Description |
+|---|---|---|
+| `/` | `dashboard.html` | KPI tiles + sparklines, multi-line NW chart with period filters + projection overlay, allocation donut, cashflow, holdings (deduplicated by ticker), alerts, journal preview, market ticker strip |
+| `/investments` | `investments.html` | Full holdings table by account, allocation vs target, asset class performance |
+| `/accounts` | `accounts.html` | Grouped account list; account names link to drill-down; liabilities shown as negative |
+| `/accounts/{id}` | `account_detail.html` | Transaction history for one account, month separators, inline edit/delete; payoff projection for credit/loan accounts |
+| `/real-estate` | `real_estate.html` | Properties, equity/LTV, amortization schedule, appreciation projection, capex log |
+| `/tax` | `tax.html` | KPI tiles (unrealized total, YTD income, harvestable losses), YTD investment income by category, TLH candidates, full taxable gain/loss table |
+| `/budget` | `budget.html` | MTD income/expense vs target, savings rate |
+| `/journal` | `journal.html` | Entry log with tags, milestones, inline edit/delete |
+| `/data` | `data.html` | All data management — see tabs below |
+
+## /data page tabs
+
+Holdings | Accounts | Snapshot | Prices | Transactions | Real Estate | Allocation | Budget | Danger Zone
+
+- **Holdings** — add form + full table with two-row inline edit/delete; CSV import card (Fidelity/Schwab/Vanguard formats, account selector)
+- **Accounts** — add form (with opening balance + optional APR/min payment for credit/loan) + table with edit and delete
+- **Snapshot** — per-account balance entry form + preview card; plus "Import Historical Snapshots" CSV import card
+- **Prices** — last price per symbol, manual override inputs, refresh button
+- **Transactions** — add form + recent 100 rows with two-row inline edit/delete; plus "Import Transactions CSV" card
+- **Real Estate** — add property form + per-property value/mortgage update, linked loan account selector, delete
+- **Allocation** — editable target % for all 8 asset classes, Save All
+- **Budget** — add category form + two-row inline edit/delete table
+- **Danger Zone** — full data reset with RESET confirmation guard
+
+## Dashboard features
+
+- **KPI tiles**: Net Worth → Invested → Home Equity → Liquid Cash → Total Debt. Each tile shows current value, MoM % change, YTD % change, and an inline SVG sparkline. All values computed live.
+- **NW chart**: multi-line — Net Worth (blue, filled), Invested (green), Cash (yellow), Home Equity (purple). Period filters: 30D, QTD, YTD, 1Y, 2Y, 5Y, MAX. "Proj" toggle adds a dashed 10-year projection line using CAGR from the visible history slice, anchored to current live NW.
+- **Market ticker strip**: scrolling marquee at bottom — major indices + all holding symbols with price and daily % change.
+- **Holdings table**: deduplicated by ticker symbol (positions across multiple accounts summed client-side). Investments page keeps per-account detail.
+- **Alerts**: allocation drift ≥ 3%, TLH candidates (from `tax.tlh_candidates`), journal milestones.
+
+## API shape notes
+
+- `GET /api/tax` returns an **object**: `{tlh_candidates, unrealized_total, tlh_total, ytd_income_total, ytd_income_breakdown}` — not a plain array. Dashboard accesses `tlh.tlh_candidates` for alerts.
+- `GET /api/accounts/{id}` returns the account row + `balance` computed live by `_compute_balances`.
+- `GET /api/real-estate` returns properties with `mortgage_balance` substituted from the linked loan account when `account_id` is set, plus `linked_account_name`.

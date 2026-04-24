@@ -83,3 +83,13 @@
 - [ ] `ruff` linting setup
 - [ ] Backup script (`finance.db` → timestamped `backups/`)
 - [ ] `Makefile` with `run`, `refresh`, `snapshot` targets
+
+## Security
+
+- [ ] Add shared `esc(s)` HTML-escape helper to `base.html` (escape `&`, `<`, `>`, `"`, `'`) and apply to all user-entered text rendered via `innerHTML` — account names, property names, budget category names, journal content, transaction memos
+- [ ] Add server-side guard to `POST /api/reset` — require a `?confirm=RESET` query param to prevent DNS rebinding data-wipe
+- [ ] Document in README: always use `./run.sh` (binds to `127.0.0.1`) — never expose without adding authentication first
+
+## Supply chain
+
+- [ ] Add note in README about `yfinance` outbound dependency (fetches from Yahoo Finance); users in air-gapped environments should expect price refresh to fail silently
