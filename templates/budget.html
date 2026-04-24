@@ -54,7 +54,7 @@ async function loadBudget() {
     const over = c.actual > c.monthly_target && c.direction === 'expense';
     const barColor = over ? 'var(--red)' : c.direction === 'income' ? 'var(--green)' : 'var(--blue)';
     return `<tr>
-      <td>${c.name}</td>
+      <td>${esc(c.name)}</td>
       <td class="num" style="color:var(--text-dim);">${fmt(c.monthly_target)}</td>
       <td class="num" style="color:${over?'var(--red)':'var(--text-head)'}">${fmt(c.actual)}</td>
       <td>

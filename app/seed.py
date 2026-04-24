@@ -23,8 +23,10 @@ def seed_demo() -> None:
                 ('Taxable Brokerage',   'Fidelity',   'brokerage'),
                 ('401(k)',              'Fidelity',   'retirement_401k'),
                 ('Roth IRA',            'Fidelity',   'retirement_ira'),
-                ('HSA',                 'Optum',      'hsa'),
-                ('Mortgage',            'Chase',      'loan');
+                ('Traditional IRA',     'Fidelity',   'retirement_ira'),
+                ('HSA',                 'HealthEquity',      'hsa'),
+                ('Auto Loan',           'Chase',      'loan'),
+                ('Mortgage',           'Rocket',      'loan');
 
             INSERT INTO real_estate (name, estimated_value, mortgage_balance, purchase_price, purchase_date) VALUES
                 ('Primary Residence', 620000, 410000, 480000, '2020-06-15');

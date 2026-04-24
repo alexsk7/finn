@@ -112,7 +112,7 @@ async function loadTax() {
         <tbody>
           ${tax.ytd_income_breakdown.map(r => `
             <tr>
-              <td><span class="badge blue">${r.category}</span></td>
+              <td><span class="badge blue">${esc(r.category)}</span></td>
               <td class="num" style="color:var(--text-dim);">${r.count}</td>
               <td class="num" style="color:var(--green);font-weight:600;">${fmt(r.total)}</td>
             </tr>`).join('')}
@@ -138,8 +138,8 @@ async function loadTax() {
         <tbody>
           ${tax.tlh_candidates.map(t => `
             <tr>
-              <td><strong style="color:var(--text-head);">${t.symbol}</strong></td>
-              <td style="color:var(--text-dim);">${t.name || ''}</td>
+              <td><strong style="color:var(--text-head);">${esc(t.symbol)}</strong></td>
+              <td style="color:var(--text-dim);">${esc(t.name || '')}</td>
               <td class="num">${fmt(t.market_value)}</td>
               <td class="num" style="color:var(--text-dim);">${fmt(t.cost_basis)}</td>
               <td class="num" style="color:var(--red);font-weight:600;">${fmt(t.unrealized_loss)}</td>
@@ -158,8 +158,8 @@ async function loadTax() {
       const statusLabel = isTLH ? 'TLH candidate' : isGain ? 'gain' : 'small loss';
       const statusColor = isTLH ? 'var(--yellow)' : isGain ? 'var(--green)' : 'var(--text-dim)';
       return `<tr>
-        <td><strong style="color:var(--text-head);">${h.symbol}</strong></td>
-        <td style="color:var(--text-dim);">${h.name || ''}</td>
+        <td><strong style="color:var(--text-head);">${esc(h.symbol)}</strong></td>
+        <td style="color:var(--text-dim);">${esc(h.name || '')}</td>
         <td class="num">${h.shares.toFixed(3)}</td>
         <td class="num">${fmt(h.market_value)}</td>
         <td class="num" style="color:var(--text-dim);">${fmt(h.cost_basis)}</td>

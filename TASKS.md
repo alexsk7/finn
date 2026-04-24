@@ -19,6 +19,7 @@
 - [x] Transaction-based balance architecture: `_compute_balances()` — live from transactions + holdings, not snapshots
 - [x] Debt tracking: credit/loan accounts compute balance from transactions; opening_balance anchor; payoff projection on account detail
 - [x] Real estate ↔ loan account link: `real_estate.account_id` → mortgage balance from linked loan; double-count prevention in `debt_total`
+- [x] Transaction payee field: `payee` column on transactions table; shown in account drill-down and Data → Transactions; inline edit/delete
 
 ## Tier 2 — Data import (complete)
 
@@ -98,11 +99,18 @@
 - [ ] Backup script (`finance.db` → timestamped `backups/`)
 - [ ] `Makefile` with `run`, `refresh`, `snapshot` targets
 
-## Security
+## Security (complete)
 
-- [ ] Add shared `esc(s)` HTML-escape helper to `base.html` (escape `&`, `<`, `>`, `"`, `'`) and apply to all user-entered text rendered via `innerHTML` — account names, property names, budget category names, journal content, transaction memos
-- [ ] Add server-side guard to `POST /api/reset` — require a `?confirm=RESET` query param to prevent DNS rebinding data-wipe
-- [ ] Document in README: always use `./run.sh` (binds to `127.0.0.1`) — never expose without adding authentication first
+- [x] Add shared `esc(s)` HTML-escape helper to `base.html` (escape `&`, `<`, `>`, `"`, `'`) and apply to all user-entered text rendered via `innerHTML` — account names, property names, budget category names, journal content, transaction memos
+- [x] Add server-side guard to `POST /api/reset` — require `{"confirm":"RESET"}` JSON body to prevent DNS rebinding data-wipe
+- [x] Document in README: always use `./run.sh` (binds to `127.0.0.1`) — never expose without adding authentication first
+- [x] SQLite hardening: `trusted_schema=OFF`, `secure_delete=ON`
+
+## Database (complete)
+
+- [x] Indexes: `transactions(account_id)`, `transactions(txn_date)`, `prices(symbol, recorded_at)`, `snapshots(snapshot_date)`
+- [x] `UNIQUE(account_id, symbol)` on `holdings` enforced via unique index; `add_holding` upgraded to upsert; CSV import deduplication reinforced
+- [x] Performance PRAGMAs: `synchronous=NORMAL`, `temp_store=MEMORY`
 
 ## Supply chain
 

@@ -85,7 +85,7 @@ async function loadRE() {
 
   document.getElementById('re-properties').innerHTML = propData.map(p => `
     <div class="card">
-      <div class="section-title">${p.name}</div>
+      <div class="section-title">${esc(p.name)}</div>
       <div class="re-prop-kpis">
         <div><div class="card-title">Equity</div><div class="card-value">${fmt(p.equity)}</div></div>
         <div><div class="card-title">Est. Value</div><div class="card-value">${fmt(p.estimated_value)}</div></div>
@@ -104,9 +104,9 @@ async function loadRE() {
           <span>Debt ${p.ltv}%</span>
         </div>
       </div>
-      ${p.address ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim);">${p.address}</div>` : ''}
+      ${p.address ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim);">${esc(p.address)}</div>` : ''}
       ${p.purchase_date ? `<div style="font-size:11px;color:var(--text-dim);margin-top:3px;">Purchased ${p.purchase_date} · ${fmt(p.purchase_price)}</div>` : ''}
-      ${p.linked_account_name ? `<div style="margin-top:6px;font-size:11px;color:var(--accent);">⟳ Mortgage balance from: ${p.linked_account_name}</div>` : ''}
+      ${p.linked_account_name ? `<div style="margin-top:6px;font-size:11px;color:var(--accent);">⟳ Mortgage balance from: ${esc(p.linked_account_name)}</div>` : ''}
     </div>`).join('');
 
   // Load amortization for each property
@@ -133,7 +133,7 @@ async function renderAmortSection(prop, container) {
   container.innerHTML = `
     <div class="card">
       <div class="section-title">
-        ${prop.name} — Amortization
+        ${esc(prop.name)} — Amortization
         <button class="btn-sm ${hasConfig ? '' : 'active'}" onclick="toggleAmortConfig(${prop.id})">
           ${hasConfig ? 'Edit Loan Config' : 'Configure Loan'}
         </button>

@@ -49,12 +49,7 @@
       </svg>
       <div class="topbar-brand"><span>FIN</span>CTL</div>
     </a>
-    <button id="refresh-btn" onclick="refreshPrices()" title="Refresh prices from Yahoo Finance" style="
-      margin-left:auto;
-      background:transparent;border:1px solid var(--border);border-radius:4px;
-      color:var(--text-dim);font-family:var(--font);font-size:11px;
-      padding:4px 10px;cursor:pointer;transition:color .15s,border-color .15s;
-    ">↻ <span class="refresh-label">Prices</span></button>
+    
     <div class="topbar-nw" id="topbar-nw">—</div>
     <div class="topbar-meta">
       <span id="topbar-ytd" style="font-size:11px;"></span>
@@ -80,8 +75,10 @@
     <div class="sidebar-section">Manage</div>
     <a href="/journal" {% if active == 'journal' %}class="active"{% endif %}><span class="nav-icon">◉</span> Journal</a>
     <a href="/data" {% if active == 'data' %}class="active"{% endif %}><span class="nav-icon">⊞</span> Data</a>
+    
+    
 
-    <div style="margin-top:24px;padding:12px 14px 0;border-top:1px solid var(--border);"
+    <div style="margin-top:24px;padding:4px 8px;border-top:1px solid var(--border);"
          x-data="portfolioWidget()" x-init="init()">
       <div class="sidebar-section" style="margin:0 0 6px;">Portfolio</div>
       <select @change="switchTo($event.target.value)" style="
@@ -100,6 +97,14 @@
         </a>
       </div>
     </div>
+
+    <button id="refresh-btn" onclick="refreshPrices()" title="Refresh prices from Yahoo Finance" style="
+      display:block;width:100%;
+      margin: auto;
+      background:transparent;border:1px solid var(--border);border-radius:4px;
+      color:var(--text-dim);font-family:var(--font);font-size:12px;
+      padding:4px 8px;cursor:pointer;transition:color .15s,border-color .15s;
+    ">↻ <span class="refresh-label">Prices</span></button>
   </nav>
 
   <main class="main">
@@ -148,6 +153,11 @@ function pct(n) {
   return (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
 }
 function clr(n) { return n > 0 ? 'var(--green)' : n < 0 ? 'var(--red)' : 'var(--text-dim)'; }
+function esc(s) {
+  return (s == null ? '' : String(s))
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+}
 
 function buildCatOpts(cats, selectedVal) {
   const known = cats.some(c => c.name === selectedVal);
@@ -155,7 +165,7 @@ function buildCatOpts(cats, selectedVal) {
     ? `<option value="${selectedVal}" selected>${selectedVal}</option>` : '';
   return `<option value="">— select category —</option>${orphan}` +
     cats.map(c =>
-      `<option value="${c.name}"${c.name === selectedVal ? ' selected' : ''}>${c.name}</option>`
+      `<option value="${esc(c.name)}"${c.name === selectedVal ? ' selected' : ''}>${esc(c.name)}</option>`
     ).join('');
 }
 

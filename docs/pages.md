@@ -12,6 +12,7 @@
 | `/tax` | `tax.html` | KPI tiles (unrealized total, YTD income, harvestable losses), YTD investment income by category, TLH candidates, full taxable gain/loss table |
 | `/budget` | `budget.html` | MTD income/expense vs target, savings rate |
 | `/journal` | `journal.html` | Entry log with tags, milestones, inline edit/delete |
+| `/rebalance` | `rebalance.html` | Tax-aware rebalance calculator; drift table, sell candidates, buy targets; optional new-cash input |
 | `/data` | `data.html` | All data management — see tabs below |
 
 ## /data page tabs
@@ -26,18 +27,31 @@ Holdings | Accounts | Snapshot | Prices | Transactions | Real Estate | Allocatio
 - **Real Estate** — add property form + per-property value/mortgage update, linked loan account selector, delete
 - **Allocation** — editable target % for all 8 asset classes, Save All
 - **Budget** — add category form + two-row inline edit/delete table
-- **Danger Zone** — full data reset with RESET confirmation guard
+- **Danger Zone** — full data reset; server requires `{"confirm":"RESET"}` in request body
 
 ## Dashboard features
 
 - **KPI tiles**: Net Worth → Invested → Home Equity → Liquid Cash → Total Debt. Each tile shows current value, MoM % change, YTD % change, and an inline SVG sparkline. All values computed live.
 - **NW chart**: multi-line — Net Worth (blue, filled), Invested (green), Cash (yellow), Home Equity (purple). Period filters: 30D, QTD, YTD, 1Y, 2Y, 5Y, MAX. "Proj" toggle adds a dashed 10-year projection line using CAGR from the visible history slice, anchored to current live NW.
 - **Market ticker strip**: scrolling marquee at bottom — major indices + all holding symbols with price and daily % change.
-- **Holdings table**: deduplicated by ticker symbol (positions across multiple accounts summed client-side). Investments page keeps per-account detail.
+- **Holdings table**: deduplicated by ticker symbol (positions across multiple accounts summed client-side). Investments page keeps per-account detail. Asset class badges are color-coded to match the allocation donut.
 - **Alerts**: allocation drift ≥ 3%, TLH candidates (from `tax.tlh_candidates`), journal milestones.
+
+## Transaction fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `txn_date` | TEXT | ISO date |
+| `direction` | TEXT | `income`, `expense`, `transfer` |
+| `category` | TEXT | Must match a `budget_categories` name (orphaned values preserved in dropdowns) |
+| `amount` | REAL | Always positive; sign implied by direction |
+| `payee` | TEXT | Optional — counterparty name (merchant, recipient) |
+| `description` | TEXT | Optional — free-text memo |
+| `account_id` | INTEGER | FK to `accounts` |
 
 ## API shape notes
 
 - `GET /api/tax` returns an **object**: `{tlh_candidates, unrealized_total, tlh_total, ytd_income_total, ytd_income_breakdown}` — not a plain array. Dashboard accesses `tlh.tlh_candidates` for alerts.
 - `GET /api/accounts/{id}` returns the account row + `balance` computed live by `_compute_balances`.
 - `GET /api/real-estate` returns properties with `mortgage_balance` substituted from the linked loan account when `account_id` is set, plus `linked_account_name`.
+- `POST /api/reset` requires JSON body `{"confirm": "RESET"}` — returns 400 otherwise.

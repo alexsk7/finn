@@ -82,6 +82,12 @@ Single-process, local-only web app. No authentication, no external API dependenc
 
 ---
 
+## Security note
+
+finctl has **no authentication**. `./run.sh` binds to `127.0.0.1` (loopback only) so it is not reachable from other machines by default. Do not expose it on a public or shared network interface without adding an authentication layer first (e.g., an authenticating reverse proxy).
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

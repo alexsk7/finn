@@ -369,7 +369,7 @@ async function loadDashboard() {
   document.getElementById('kpi-eq').textContent   = fmt(dash.home_equity);
   document.getElementById('kpi-debt').textContent = dash.debt_total > 0 ? fmt(dash.debt_total) : '—';
   document.getElementById('kpi-debt-detail').innerHTML = (dash.liabilities || []).map(l =>
-    `<span style="display:block;font-size:10px;">${l.name}: ${fmt(l.balance)}</span>`
+    `<span style="display:block;font-size:10px;">${esc(l.name)}: ${fmt(l.balance)}</span>`
   ).join('');
 
   function setKpiSub(momId, ytdId, momPct, ytdPct) {
@@ -464,9 +464,9 @@ async function loadDashboard() {
     const barW   = (h.market_value / maxVal * 100).toFixed(0);
     const gColor = h.gain_pct >= 0 ? 'var(--green)' : 'var(--red)';
     return `<tr>
-      <td><strong style="color:var(--text-head);">${h.symbol}</strong></td>
-      <td style="color:var(--text-dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.name||''}</td>
-      <td><span class="badge blue">${CLASS_LABELS[h.asset_class]||h.asset_class}</span></td>
+      <td><strong style="color:var(--text-head);">${esc(h.symbol)}</strong></td>
+      <td style="color:var(--text-dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(h.name||'')}</td>
+      <td><span class="badge" style="background:${COLORS[h.asset_class]||'#506070'}26;color:${COLORS[h.asset_class]||'#506070'};">${CLASS_LABELS[h.asset_class]||h.asset_class}</span></td>
       <td class="num">${fmt(h.market_value)}</td>
       <td class="num" style="color:${gColor}">${pct(h.gain_pct)}</td>
       <td><div class="bar-track"><div class="bar-fill" style="width:${barW}%;background:${gColor};"></div></div></td>
@@ -485,11 +485,11 @@ async function loadDashboard() {
   });
   (tlh.tlh_candidates || []).slice(0,2).forEach(t => {
     alertItems.push({ type: 'warn', label: 'TLH Opportunity',
-      text: `${t.symbol}: ${fmt(t.unrealized_loss)} unrealized loss — harvest before year-end` });
+      text: `${esc(t.symbol)}: ${fmt(t.unrealized_loss)} unrealized loss — harvest before year-end` });
   });
   const milestones = journal.filter(j => j.is_milestone);
   if (milestones.length) {
-    alertItems.push({ type: 'milestone', label: 'Milestone', text: milestones[0].title });
+    alertItems.push({ type: 'milestone', label: 'Milestone', text: esc(milestones[0].title) });
   }
   if (!alertItems.length) {
     alertItems.push({ type: 'good', label: 'Status', text: 'Portfolio on track — no actions needed.' });
@@ -504,7 +504,7 @@ async function loadDashboard() {
   document.getElementById('recent-journal').innerHTML = journal.slice(0,3).map(j => `
     <div class="journal-entry ${j.is_milestone ? 'milestone' : ''}">
       <div class="journal-date">${j.entry_date}</div>
-      <div class="journal-title">${j.is_milestone ? '★ ' : ''}${j.title}</div>
+      <div class="journal-title">${j.is_milestone ? '★ ' : ''}${esc(j.title)}</div>
     </div>`).join('');
 
   buildTicker(ticker);

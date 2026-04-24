@@ -104,13 +104,14 @@ tr.txn-edit-row td { background:var(--bg3); }
         <thead>
           <tr>
             <th>Date</th>
+            <th>Payee</th>
             <th>Description</th>
             <th>Category</th>
             <th class="num">Amount</th>
             <th></th>
           </tr>
         </thead>
-        <tbody id="txn-body"><tr><td colspan="5" class="txn-empty">Loading…</td></tr></tbody>
+        <tbody id="txn-body"><tr><td colspan="6" class="txn-empty">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -146,12 +147,12 @@ async function load() {
   document.getElementById('acct-header').innerHTML = `
     <div class="acct-header">
       <div class="acct-header-main">
-        <div class="acct-name">${acct.name}</div>
+        <div class="acct-name">${esc(acct.name)}</div>
         <div class="acct-meta">
-          <span>${acct.institution}</span>
+          <span>${esc(acct.institution)}</span>
           <span style="color:var(--border);">·</span>
           <span class="badge blue">${TYPE_LABEL[acct.type] || acct.type}</span>
-          ${acct.notes ? `<span style="color:var(--border);">·</span><span>${acct.notes}</span>` : ''}
+          ${acct.notes ? `<span style="color:var(--border);">·</span><span>${esc(acct.notes)}</span>` : ''}
         </div>
       </div>
       <div class="acct-balance">
@@ -244,7 +245,7 @@ function renderTxns(txns) {
 
   if (!txns.length) {
     document.getElementById('txn-body').innerHTML =
-      '<tr><td colspan="5" class="txn-empty">No transactions for this account yet.<br>' +
+      '<tr><td colspan="6" class="txn-empty">No transactions for this account yet.<br>' +
       '<a href="/data#transactions" style="color:var(--accent);font-size:11px;">Add one on the Data page →</a></td></tr>';
     return;
   }
@@ -257,7 +258,7 @@ function renderTxns(txns) {
     if (mo !== lastMonth) {
       const d = new Date(t.txn_date + 'T00:00:00');
       const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      html += `<tr class="month-sep"><td colspan="5">${label}</td></tr>`;
+      html += `<tr class="month-sep"><td colspan="6">${label}</td></tr>`;
       lastMonth = mo;
     }
 
@@ -270,8 +271,9 @@ function renderTxns(txns) {
     html += `
     <tr id="atrow-${t.id}">
       <td style="color:var(--text-dim);white-space:nowrap;">${dateLabel}</td>
-      <td style="color:var(--text-dim);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.description || '—'}</td>
-      <td><span class="badge blue">${t.category}</span></td>
+      <td style="color:var(--text-head);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.payee) || '—'}</td>
+      <td style="color:var(--text-dim);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.description) || ''}</td>
+      <td><span class="badge blue">${esc(t.category)}</span></td>
       <td class="num" style="color:${color};font-variant-numeric:tabular-nums;">${sign}${fmt(t.amount)}</td>
       <td style="text-align:right;white-space:nowrap;">
         <div style="display:flex;gap:5px;justify-content:flex-end;">
@@ -282,7 +284,8 @@ function renderTxns(txns) {
     </tr>
     <tr id="atrow-edit-${t.id}" class="txn-edit-row">
       <td><input type="date" class="field-input" id="ae-date-${t.id}" value="${t.txn_date}" style="width:130px;" /></td>
-      <td><input type="text" class="field-input" id="ae-desc-${t.id}" value="${t.description||''}" placeholder="Description" style="width:180px;" /></td>
+      <td><input type="text" class="field-input" id="ae-payee-${t.id}" value="${esc(t.payee||'')}" placeholder="Payee" style="width:150px;" /></td>
+      <td><input type="text" class="field-input" id="ae-desc-${t.id}" value="${esc(t.description||'')}" placeholder="Description" style="width:160px;" /></td>
       <td>
         <div style="display:flex;gap:4px;">
           <select class="field-input" id="ae-cat-${t.id}" style="width:130px;">${buildCatOpts(allBudgetCats, t.category)}</select>
@@ -321,6 +324,7 @@ async function saveEdit(id) {
     direction:   document.getElementById(`ae-dir-${id}`).value,
     category:    document.getElementById(`ae-cat-${id}`).value.trim(),
     amount:      parseFloat(document.getElementById(`ae-amt-${id}`).value),
+    payee:       document.getElementById(`ae-payee-${id}`).value.trim() || null,
     description: document.getElementById(`ae-desc-${id}`).value.trim() || null,
     account_id:  ACCOUNT_ID,
   };

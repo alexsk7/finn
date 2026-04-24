@@ -166,11 +166,11 @@ async function loadRebalance() {
           ${trades.map(t => `
             <tr>
               <td>
-                <strong style="color:var(--text-head);">${t.symbol}</strong>
-                ${t.name ? `<br><span style="font-size:10px;color:var(--text-dim);">${t.name}</span>` : ''}
+                <strong style="color:var(--text-head);">${esc(t.symbol)}</strong>
+                ${t.name ? `<br><span style="font-size:10px;color:var(--text-dim);">${esc(t.name)}</span>` : ''}
               </td>
-              <td style="color:var(--text-dim);">${t.account_name}</td>
-              <td><span style="font-size:11px;color:${COLORS[t.asset_class]||'#888'}">${CLASS_LABELS[t.asset_class]||t.asset_class}</span></td>
+              <td style="color:var(--text-dim);">${esc(t.account_name)}</td>
+              <td><span class="badge" style="background:${COLORS[t.asset_class]||'#506070'}26;color:${COLORS[t.asset_class]||'#506070'};">${CLASS_LABELS[t.asset_class]||t.asset_class}</span></td>
               <td class="num">${t.shares.toFixed(3)}</td>
               <td class="num" style="font-weight:600;">${fmt(t.amount)}</td>
               <td class="num" style="color:${clr(t.unrealized)}">${fmt(t.unrealized)}</td>
@@ -206,7 +206,7 @@ async function loadRebalance() {
             const color = COLORS[t.asset_class] || '#888';
             const syms  = t.existing_symbols.length
               ? t.existing_symbols.map(s =>
-                  `<span style="font-size:11px;color:var(--text-dim);">${s.symbol} (${s.account_name})</span>`
+                  `<span style="font-size:11px;color:var(--text-dim);">${esc(s.symbol)} (${esc(s.account_name)})</span>`
                 ).join(', ')
               : '<span style="color:var(--text-dim);">no existing position</span>';
             return `<tr>

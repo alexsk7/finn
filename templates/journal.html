@@ -77,16 +77,15 @@ async function loadJournal() {
   const entries = await fetch('/api/journal').then(r=>r.json());
 
   document.getElementById('journal-list').innerHTML = entries.map(j => {
-    const tags = j.tags ? j.tags.split(',').map(t=>`<span class="tag">${t.trim()}</span>`).join('') : '';
-    const esc = s => (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    const tags = j.tags ? j.tags.split(',').map(t=>`<span class="tag">${esc(t.trim())}</span>`).join('') : '';
     return `<div class="journal-entry ${j.is_milestone?'milestone':''}" id="jentry-${j.id}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
         <div style="flex:1;">
           <div class="journal-date">${j.entry_date}</div>
-          <div class="journal-title">${j.is_milestone ? '★ ' : ''}${j.title}
+          <div class="journal-title">${j.is_milestone ? '★ ' : ''}${esc(j.title)}
             ${j.milestone_value ? `<span style="color:var(--purple);font-size:11px;margin-left:8px;">${fmt(j.milestone_value)}</span>` : ''}
           </div>
-          ${j.body ? `<div class="journal-body">${j.body}</div>` : ''}
+          ${j.body ? `<div class="journal-body">${esc(j.body)}</div>` : ''}
           ${tags ? `<div style="margin-top:6px;">${tags}</div>` : ''}
         </div>
         <div class="j-entry-actions">
@@ -125,7 +124,7 @@ async function loadJournal() {
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
         <span style="color:var(--purple);font-size:16px;">★</span>
         <div>
-          <div style="font-size:12px;color:var(--text-head);">${m.title}</div>
+          <div style="font-size:12px;color:var(--text-head);">${esc(m.title)}</div>
           <div style="font-size:10px;color:var(--text-dim);">${m.entry_date}${m.milestone_value?' · '+fmt(m.milestone_value):''}</div>
         </div>
       </div>`).join('')

@@ -12,6 +12,7 @@ No build step. All JS is vanilla + Chart.js + Alpine.js (loaded from jsDelivr CD
   - `fmt(n)` — currency formatter
   - `pct(n)` — percentage formatter
   - `clr(n)` — returns green/red CSS var based on sign
+  - `esc(s)` — HTML-escapes `&`, `<`, `>`, `"`, `'`; use on all user-entered strings in `innerHTML` contexts
   - `buildCatOpts(cats, selectedVal)` — builds `<option>` HTML for category dropdowns, preserves orphaned values
   - `refreshPrices()` — triggers manual price refresh
   - `toggleSidebar()` — opens/closes the sidebar drawer
@@ -36,6 +37,16 @@ Named layout classes (`.layout-main-aside`, `.layout-alloc-row`, etc.) are defin
 
 Two `<tr>` per row: `#hrow-{id}` (display) and `#hrow-edit-{id}` (edit, hidden via `tr.hrow-edit { display:none }`). Toggle with `style.display = 'table-row'` — not `''`, which reverts to `display:none`. Used in holdings, budget categories, and transactions tables on `/data`.
 
+## Asset class badges
+
+Asset class labels are displayed as color-coded badges everywhere they appear in tables (dashboard holdings, investments all-holdings, data holdings, rebalance sells). Badge style:
+
+```js
+`<span class="badge" style="background:${COLORS[h.asset_class]||'#506070'}26;color:${COLORS[h.asset_class]||'#506070'};">${CLASS_LABELS[h.asset_class]||h.asset_class}</span>`
+```
+
+The `26` suffix on the hex color is `0x26 = 15%` opacity — tinted background matching the donut chart color.
+
 ## `loadData()` pattern
 
 The `/data` page fetches all APIs in a single `Promise.all`. If any fetch fails, none of the `build*` functions run. Add new data sources to the `Promise.all` array and destructure the result.
@@ -59,3 +70,7 @@ All transaction category fields use `<select>` populated by `buildCatOpts(cats, 
 ## Number inputs
 
 Browser spinners are hidden globally via `style.css` (`-webkit-appearance: none` + `-moz-appearance: textfield`).
+
+## XSS safety rule
+
+Any user-entered string rendered inside a template literal that is assigned to `innerHTML` must go through `esc(s)`. Numbers, dates, enum values (direction, account type), and computed values (fmt output, percentages) do not need escaping.

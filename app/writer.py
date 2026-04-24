@@ -174,14 +174,15 @@ def add_journal_entry(title: str, body: str | None = None,
 # ── Transactions ──────────────────────────────────────────────────────────────
 
 def add_transaction(txn_date: str, amount: float, direction: str,
-                    category: str, description: str | None = None,
+                    category: str, payee: str | None = None,
+                    description: str | None = None,
                     account_id: int | None = None, recurring: bool = False) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
             """INSERT INTO transactions
-               (txn_date, account_id, amount, direction, category, description, recurring)
-               VALUES (?,?,?,?,?,?,?)""",
-            (txn_date, account_id, amount, direction, category, description, int(recurring)),
+               (txn_date, account_id, amount, direction, category, payee, description, recurring)
+               VALUES (?,?,?,?,?,?,?,?)""",
+            (txn_date, account_id, amount, direction, category, payee, description, int(recurring)),
         )
         row_id = cur.lastrowid
     return {"id": row_id, "txn_date": txn_date, "amount": amount, "direction": direction}
@@ -192,13 +193,20 @@ def add_transaction(txn_date: str, amount: float, direction: str,
 def add_holding(account_id: int, symbol: str, asset_class: str,
                 shares: float, cost_basis: float, name: str | None = None) -> dict:
     today = date.today().isoformat()
+    sym = symbol.upper()
     with get_conn() as conn:
-        cur = conn.execute(
+        conn.execute(
             """INSERT INTO holdings (account_id, symbol, name, asset_class, shares, cost_basis, updated_at)
-               VALUES (?,?,?,?,?,?,?)""",
-            (account_id, symbol.upper(), name, asset_class, shares, cost_basis, today),
+               VALUES (?,?,?,?,?,?,?)
+               ON CONFLICT(account_id, symbol) DO UPDATE SET
+                   name=excluded.name, asset_class=excluded.asset_class,
+                   shares=excluded.shares, cost_basis=excluded.cost_basis,
+                   updated_at=excluded.updated_at""",
+            (account_id, sym, name, asset_class, shares, cost_basis, today),
         )
-        row = conn.execute("SELECT * FROM holdings WHERE id=?", (cur.lastrowid,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM holdings WHERE account_id=? AND symbol=?", (account_id, sym)
+        ).fetchone()
     return dict(row)
 
 
@@ -798,14 +806,16 @@ def delete_journal_entry(entry_id: int) -> None:
 # ── Transactions ── delete ────────────────────────────────────────────────────
 
 def update_transaction(txn_id: int, txn_date: str, amount: float, direction: str,
-                       category: str, description: str | None = None,
+                       category: str, payee: str | None = None,
+                       description: str | None = None,
                        account_id: int | None = None) -> dict:
     with get_conn() as conn:
         conn.execute(
             """UPDATE transactions
-               SET txn_date=?, account_id=?, amount=?, direction=?, category=?, description=?
+               SET txn_date=?, account_id=?, amount=?, direction=?, category=?,
+                   payee=?, description=?
                WHERE id=?""",
-            (txn_date, account_id, amount, direction, category, description, txn_id),
+            (txn_date, account_id, amount, direction, category, payee, description, txn_id),
         )
         row = conn.execute("SELECT * FROM transactions WHERE id=?", (txn_id,)).fetchone()
     return dict(row)

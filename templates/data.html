@@ -380,6 +380,10 @@ VXUS,Vanguard Total International,18,58.72"
           <select id="txn-cat" class="field-input"></select>
         </div>
         <div>
+          <label class="field-label">Payee (optional)</label>
+          <input type="text" id="txn-payee" class="field-input" />
+        </div>
+        <div>
           <label class="field-label">Description (optional)</label>
           <input type="text" id="txn-desc" class="field-input" />
         </div>
@@ -451,6 +455,7 @@ VXUS,Vanguard Total International,18,58.72"
               <th>Direction</th>
               <th>Category</th>
               <th class="num">Amount</th>
+              <th>Payee</th>
               <th>Description</th>
               <th>Account</th>
               <th></th>
@@ -690,7 +695,7 @@ VXUS,Vanguard Total International,18,58.72"
   }
 
   function buildAccountSelects(accounts) {
-    const opts = accounts.map(a => `<option value="${a.id}">${a.name} (${TYPE_LABEL[a.type] || a.type})</option>`).join('');
+    const opts = accounts.map(a => `<option value="${a.id}">${esc(a.name)} (${TYPE_LABEL[a.type] || a.type})</option>`).join('');
     const prefixes = {
       'txn-acct': '<option value="">— none —</option>',
       'txn-csv-acct': '<option value="">— auto / column —</option>',
@@ -722,7 +727,7 @@ VXUS,Vanguard Total International,18,58.72"
 
     tbody.innerHTML = holdings.map(h => {
       const acctOpts = allAccounts.map(a =>
-        `<option value="${a.id}"${a.id === h.account_id ? ' selected' : ''}>${a.name}</option>`
+        `<option value="${a.id}"${a.id === h.account_id ? ' selected' : ''}>${esc(a.name)}</option>`
       ).join('');
       const classOpts = CLASS_OPTS.map(([v, l]) =>
         `<option value="${v}"${v === h.asset_class ? ' selected' : ''}>${l}</option>`
@@ -730,10 +735,10 @@ VXUS,Vanguard Total International,18,58.72"
 
       return `
     <tr id="hrow-${h.id}">
-      <td><strong style="color:var(--text-head);">${h.symbol}</strong></td>
-      <td style="color:var(--text-dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.name || '—'}</td>
-      <td><span style="font-size:10px;color:var(--text-dim);">${CLASS_LABELS[h.asset_class] || h.asset_class}</span></td>
-      <td style="font-size:11px;color:var(--text-dim);">${h.account_name}</td>
+      <td><strong style="color:var(--text-head);">${esc(h.symbol)}</strong></td>
+      <td style="color:var(--text-dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(h.name || '—')}</td>
+      <td><span class="badge" style="background:${COLORS[h.asset_class]||'#506070'}26;color:${COLORS[h.asset_class]||'#506070'};">${CLASS_LABELS[h.asset_class]||h.asset_class}</span></td>
+      <td style="font-size:11px;color:var(--text-dim);">${esc(h.account_name)}</td>
       <td class="num">${h.shares}</td>
       <td class="num">${h.cost_basis ? '$' + Number(h.cost_basis).toFixed(2) : '—'}</td>
       <td style="white-space:nowrap;">
@@ -744,8 +749,8 @@ VXUS,Vanguard Total International,18,58.72"
       </td>
     </tr>
     <tr id="hrow-edit-${h.id}" class="hrow-edit">
-      <td><input class="field-input" id="he-sym-${h.id}" value="${h.symbol}" style="text-transform:uppercase;width:70px;" /></td>
-      <td><input class="field-input" id="he-name-${h.id}" value="${h.name || ''}" /></td>
+      <td><input class="field-input" id="he-sym-${h.id}" value="${esc(h.symbol)}" style="text-transform:uppercase;width:70px;" /></td>
+      <td><input class="field-input" id="he-name-${h.id}" value="${esc(h.name || '')}" /></td>
       <td><select class="field-input" id="he-cls-${h.id}">${classOpts}</select></td>
       <td><select class="field-input" id="he-acct-${h.id}">${acctOpts}</select></td>
       <td class="num"><input type="number" class="field-input" id="he-shr-${h.id}" value="${h.shares}" step="0.001" style="width:80px;text-align:right;" /></td>
@@ -851,10 +856,10 @@ VXUS,Vanguard Total International,18,58.72"
       const minPayDisplay = isDebt && a.minimum_payment != null ? fmt(a.minimum_payment) : '—';
       return `
       <tr id="arow-${a.id}">
-        <td><strong style="color:var(--text-head);">${a.name}</strong></td>
-        <td style="color:var(--text-dim);">${a.institution}</td>
+        <td><strong style="color:var(--text-head);">${esc(a.name)}</strong></td>
+        <td style="color:var(--text-dim);">${esc(a.institution)}</td>
         <td><span style="font-size:10px;color:var(--text-dim);">${TYPE_LABEL[a.type] || a.type}</span></td>
-        <td style="font-size:11px;color:var(--text-dim);">${a.notes || ''}</td>
+        <td style="font-size:11px;color:var(--text-dim);">${esc(a.notes || '')}</td>
         <td class="num" style="font-size:11px;color:var(--text-dim);">${rateDisplay}</td>
         <td class="num" style="font-size:11px;color:var(--text-dim);">${minPayDisplay}</td>
         <td style="white-space:nowrap;">
@@ -866,7 +871,7 @@ VXUS,Vanguard Total International,18,58.72"
       </tr>
       ${canEdit ? `
       <tr id="arow-edit-${a.id}" class="hrow-edit">
-        <td colspan="${isDebt ? 2 : 4}" style="color:var(--text-dim);font-size:11px;">${a.name} — ${a.institution}</td>
+        <td colspan="${isDebt ? 2 : 4}" style="color:var(--text-dim);font-size:11px;">${esc(a.name)} — ${esc(a.institution)}</td>
         ${isDebt ? `
         <td class="num">
           <input type="number" class="field-input" id="ae-rate-${a.id}"
@@ -973,8 +978,8 @@ VXUS,Vanguard Total International,18,58.72"
     document.getElementById('snap-accounts').innerHTML = filtered.map(a => `
     <div class="acct-row">
       <div>
-        <div style="font-size:12px;">${a.name}</div>
-        <div style="font-size:10px;color:var(--text-dim);">${a.institution} · ${TYPE_LABEL[a.type] || a.type}</div>
+        <div style="font-size:12px;">${esc(a.name)}</div>
+        <div style="font-size:10px;color:var(--text-dim);">${esc(a.institution)} · ${TYPE_LABEL[a.type] || a.type}</div>
       </div>
       <input type="number" step="0.01" min="0" class="field-input"
         id="snap-bal-${a.id}"
@@ -1061,7 +1066,7 @@ VXUS,Vanguard Total International,18,58.72"
   function buildREForm(re) {
     const loanAccounts = allAccounts.filter(a => a.type === 'loan');
     const loanOpts = `<option value="">— manual entry —</option>` +
-      loanAccounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+      loanAccounts.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
 
     document.getElementById('re-form').innerHTML = re.length
       ? re.map(p => {
@@ -1069,7 +1074,7 @@ VXUS,Vanguard Total International,18,58.72"
         return `
           <div style="margin-bottom:14px;" id="re-prop-${p.id}">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-              <div style="font-size:12px;font-weight:600;color:var(--text-head);">${p.name}</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text-head);">${esc(p.name)}</div>
               <button class="btn-danger" onclick="deleteProperty(${p.id},'${p.name.replace(/'/g, "\\'")}')">Delete</button>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -1167,11 +1172,11 @@ VXUS,Vanguard Total International,18,58.72"
     const tbody = document.getElementById('txn-tbody');
     if (!tbody) return;
     if (!txns.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px;">No transactions yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px;">No transactions yet.</td></tr>`;
       return;
     }
     const DIR_COLOR = { income: 'var(--green)', expense: 'var(--red)', transfer: 'var(--text-dim)' };
-    const acctOpts = allAccounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+    const acctOpts = allAccounts.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
 
     tbody.innerHTML = txns.map(t => {
       const dc = DIR_COLOR[t.direction] || '';
@@ -1179,10 +1184,11 @@ VXUS,Vanguard Total International,18,58.72"
     <tr id="trow-${t.id}">
       <td>${t.txn_date}</td>
       <td><span style="color:${dc};font-size:10px;">${t.direction}</span></td>
-      <td>${t.category}</td>
+      <td>${esc(t.category)}</td>
       <td class="num" style="color:${dc}">${fmt(t.amount)}</td>
-      <td style="color:var(--text-dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.description || ''}</td>
-      <td style="color:var(--text-dim);font-size:11px;">${t.account_name || ''}</td>
+      <td style="color:var(--text-head);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.payee || '')}</td>
+      <td style="color:var(--text-dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.description || '')}</td>
+      <td style="color:var(--text-dim);font-size:11px;">${esc(t.account_name || '')}</td>
       <td style="white-space:nowrap;">
         <div style="display:flex;gap:5px;justify-content:flex-end;">
           <button class="btn-secondary" onclick="startTxnEdit(${t.id})">Edit</button>
@@ -1201,7 +1207,8 @@ VXUS,Vanguard Total International,18,58.72"
       </td>
       <td><select class="field-input" id="te-cat-${t.id}" style="width:140px;">${buildCatOpts(allBudgetCats, t.category)}</select></td>
       <td class="num"><input type="number" class="field-input" id="te-amt-${t.id}" value="${t.amount}" step="0.01" min="0" style="width:90px;text-align:right;" /></td>
-      <td><input type="text" class="field-input" id="te-desc-${t.id}" value="${t.description || ''}" style="width:160px;" /></td>
+      <td><input type="text" class="field-input" id="te-payee-${t.id}" value="${esc(t.payee || '')}" placeholder="Payee" style="width:130px;" /></td>
+      <td><input type="text" class="field-input" id="te-desc-${t.id}" value="${esc(t.description || '')}" style="width:140px;" /></td>
       <td>
         <select class="field-input" id="te-acct-${t.id}" style="width:140px;">
           <option value="">— none —</option>${acctOpts.replace(
@@ -1233,6 +1240,7 @@ VXUS,Vanguard Total International,18,58.72"
       direction: document.getElementById(`te-dir-${id}`).value,
       category: document.getElementById(`te-cat-${id}`).value.trim(),
       amount: parseFloat(document.getElementById(`te-amt-${id}`).value),
+      payee: document.getElementById(`te-payee-${id}`).value.trim() || null,
       description: document.getElementById(`te-desc-${id}`).value.trim() || null,
       account_id: parseInt(document.getElementById(`te-acct-${id}`).value) || null,
     };
@@ -1265,6 +1273,7 @@ VXUS,Vanguard Total International,18,58.72"
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         txn_date: txnDate, amount, direction: dir, category: cat,
+        payee: document.getElementById('txn-payee').value.trim() || null,
         description: document.getElementById('txn-desc').value.trim() || null,
         account_id: parseInt(document.getElementById('txn-acct').value) || null,
       }),
@@ -1272,6 +1281,7 @@ VXUS,Vanguard Total International,18,58.72"
     if (res.ok) {
       statusEl.textContent = '✓ Added'; statusEl.style.color = 'var(--green)';
       document.getElementById('txn-amount').value = '';
+      document.getElementById('txn-payee').value = '';
       document.getElementById('txn-desc').value = '';
       setTimeout(() => { statusEl.textContent = ''; }, 3000);
       const txns = await fetch('/api/transactions').then(r => r.json());
@@ -1324,7 +1334,7 @@ VXUS,Vanguard Total International,18,58.72"
     tbody.innerHTML = cats.length
       ? cats.map(c => `
         <tr id="bcrow-${c.id}">
-          <td>${c.name}</td>
+          <td>${esc(c.name)}</td>
           <td><span style="font-size:10px;color:var(--text-dim);">${c.direction}</span></td>
           <td class="num">${fmt(c.monthly_target)}</td>
           <td>
@@ -1335,7 +1345,7 @@ VXUS,Vanguard Total International,18,58.72"
           </td>
         </tr>
         <tr id="bcrow-edit-${c.id}" class="hrow-edit">
-          <td><input class="field-input" id="bc-n-${c.id}" value="${c.name.replace(/"/g, '&quot;')}" /></td>
+          <td><input class="field-input" id="bc-n-${c.id}" value="${esc(c.name)}" /></td>
           <td><span style="font-size:10px;color:var(--text-dim);">${c.direction}</span></td>
           <td class="num"><input type="number" class="field-input" id="bc-t-${c.id}" value="${c.monthly_target}" step="10" style="width:80px;text-align:right;" /></td>
           <td>
@@ -1660,7 +1670,7 @@ VXUS,Vanguard Total International,18,58.72"
       document.getElementById('reset-status').textContent = 'Type RESET to confirm.';
       document.getElementById('reset-status').style.color = 'var(--red)'; return;
     }
-    await fetch('/api/reset', { method: 'POST' });
+    await fetch('/api/reset', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({confirm:'RESET'}) });
     document.getElementById('reset-status').textContent = '✓ All data cleared. Reload to start fresh.';
     document.getElementById('reset-status').style.color = 'var(--green)';
     document.getElementById('reset-confirm').style.display = 'none';
@@ -1679,7 +1689,7 @@ VXUS,Vanguard Total International,18,58.72"
     portfolios.forEach((p, i) => {
       rows += `
       <tr id="pfrow-${i}">
-        <td style="font-weight:600;color:var(--text-head);">${p.name}</td>
+        <td style="font-weight:600;color:var(--text-head);">${esc(p.name)}</td>
         <td style="font-size:11px;color:var(--text-dim);">${p.path}</td>
         <td style="color:var(--text-dim);font-size:11px;">${p.created_at ? p.created_at.slice(0, 10) : '—'}</td>
         <td>${p.is_active ? '<span class="badge blue">Active</span>' : ''}</td>
@@ -1694,7 +1704,7 @@ VXUS,Vanguard Total International,18,58.72"
       <tr id="pfrow-edit-${i}" style="display:none;">
         <td colspan="5" style="background:var(--bg3);padding:8px 12px;">
           <div style="display:flex;gap:8px;align-items:center;">
-            <input type="text" id="pf-rename-${i}" class="field-input" value="${p.name}" style="width:220px;" />
+            <input type="text" id="pf-rename-${i}" class="field-input" value="${esc(p.name)}" style="width:220px;" />
             <button class="btn-primary" style="font-size:12px;padding:5px 12px;" onclick="savePfRename(${i})">Save</button>
             <button class="btn-secondary" onclick="cancelPfEdit(${i})">✕</button>
           </div>

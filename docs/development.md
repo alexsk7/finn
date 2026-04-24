@@ -27,6 +27,29 @@ Follow the snapshot tab pattern: add a second card below the main form in the re
 
 Add idempotent `ALTER TABLE` statements inside the try/except block after `executescript` in `db.py`. Each migration should be safe to run on a database that already has the column.
 
+Indexes are created with `CREATE INDEX IF NOT EXISTS` — add them after the try/except migration block, not inside try/except (they are safe to re-run). Example:
+
+```python
+conn.execute("""
+    CREATE INDEX IF NOT EXISTS idx_transactions_account_id
+    ON transactions(account_id)
+""")
+```
+
+For a new `UNIQUE` constraint on an existing table, deduplicate first, then create a unique index:
+
+```python
+try:
+    conn.execute("DELETE FROM t WHERE id NOT IN (SELECT MAX(id) FROM t GROUP BY col_a, col_b)")
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_t_cols ON t(col_a, col_b)")
+except Exception:
+    pass
+```
+
+## XSS safety
+
+All user-entered strings rendered via `innerHTML` must be passed through `esc(s)`, the global HTML-escape helper defined in `base.html`. It escapes `&`, `<`, `>`, `"`, and `'`. Apply it to any string field from the API that appears in a template literal assigned to `innerHTML`.
+
 ## Running one-off Python
 
 ```bash

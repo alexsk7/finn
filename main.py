@@ -2,7 +2,7 @@
 
 import atexit
 import logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -284,6 +284,7 @@ class TransactionBody(BaseModel):
     amount: float
     direction: str
     category: str
+    payee: Optional[str] = None
     description: Optional[str] = None
     account_id: Optional[int] = None
     recurring: bool = False
@@ -292,7 +293,7 @@ class TransactionBody(BaseModel):
 async def api_transaction_post(txn: TransactionBody):
     return add_transaction(
         txn.txn_date, txn.amount, txn.direction,
-        txn.category, txn.description, txn.account_id, txn.recurring,
+        txn.category, txn.payee, txn.description, txn.account_id, txn.recurring,
     )
 
 
@@ -497,6 +498,7 @@ class TransactionUpdateBody(BaseModel):
     amount: float
     direction: str
     category: str
+    payee: Optional[str] = None
     description: Optional[str] = None
     account_id: Optional[int] = None
 
@@ -504,7 +506,7 @@ class TransactionUpdateBody(BaseModel):
 async def api_transaction_update(txn_id: int, body: TransactionUpdateBody):
     return update_transaction(
         txn_id, body.txn_date, body.amount, body.direction,
-        body.category, body.description, body.account_id,
+        body.category, body.payee, body.description, body.account_id,
     )
 
 @app.delete("/api/transactions/{txn_id}")
@@ -547,8 +549,13 @@ async def api_holdings_import_csv(body: HoldingsImportBody):
 
 # ── Reset ──────────────────────────────────────────────────────────────────────
 
+class ResetBody(BaseModel):
+    confirm: str
+
 @app.post("/api/reset")
-async def api_reset():
+async def api_reset(body: ResetBody):
+    if body.confirm != "RESET":
+        raise HTTPException(status_code=400, detail="confirm must be 'RESET'")
     reset_all_data()
     return {"ok": True}
 

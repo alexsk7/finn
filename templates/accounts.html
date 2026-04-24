@@ -63,11 +63,11 @@ async function loadAccounts() {
       rows += `<tr>
         <td><a href="/accounts/${a.id}" style="color:var(--text-head);font-weight:600;text-decoration:none;"
                onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-head)'"
-               >${a.name}</a></td>
-        <td style="color:var(--text-dim);">${a.institution}</td>
+               >${esc(a.name)}</a></td>
+        <td style="color:var(--text-dim);">${esc(a.institution)}</td>
         <td><span class="badge blue">${TYPE_LABEL[a.type]||a.type}</span></td>
         <td class="num" style="color:${balColor}">${bal!=null ? fmt(isLiab?-bal:bal) : '—'}</td>
-        <td style="color:var(--text-dim);font-size:11px;">${a.notes||''}</td>
+        <td style="color:var(--text-dim);font-size:11px;">${esc(a.notes||'')}</td>
       </tr>`;
     });
   });

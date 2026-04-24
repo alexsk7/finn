@@ -11,6 +11,10 @@ def get_conn(db_path=None) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute("PRAGMA synchronous=NORMAL")   # safe with WAL; faster writes
+    conn.execute("PRAGMA temp_store=MEMORY")    # temp tables in RAM
+    conn.execute("PRAGMA trusted_schema=OFF")   # harden against malicious schema objects
+    conn.execute("PRAGMA secure_delete=ON")     # overwrite freed pages on delete
     return conn
 
 
@@ -89,6 +93,7 @@ def init_db(db_path=None) -> None:
                 amount      REAL NOT NULL,
                 direction   TEXT NOT NULL CHECK(direction IN ('income','expense','transfer')),
                 category    TEXT NOT NULL DEFAULT 'uncategorized',
+                payee       TEXT,
                 description TEXT,
                 recurring   INTEGER NOT NULL DEFAULT 0
             );
@@ -163,5 +168,42 @@ def init_db(db_path=None) -> None:
             pass
         try:
             conn.execute("ALTER TABLE real_estate ADD COLUMN account_id INTEGER REFERENCES accounts(id)")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE transactions ADD COLUMN payee TEXT")
+        except Exception:
+            pass
+
+        # Indexes — idempotent via IF NOT EXISTS
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_transactions_account_id
+            ON transactions(account_id)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_transactions_txn_date
+            ON transactions(txn_date)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_prices_symbol_recorded
+            ON prices(symbol, recorded_at)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_snapshots_date
+            ON snapshots(snapshot_date)
+        """)
+
+        # Unique constraint on holdings(account_id, symbol) — deduplicate first,
+        # then enforce via a unique index.
+        try:
+            conn.execute("""
+                DELETE FROM holdings WHERE id NOT IN (
+                    SELECT MAX(id) FROM holdings GROUP BY account_id, symbol
+                )
+            """)
+            conn.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_holdings_account_symbol
+                ON holdings(account_id, symbol)
+            """)
         except Exception:
             pass
