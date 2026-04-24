@@ -7,8 +7,8 @@
 - [x] Investments: full holdings table, allocation vs target, class performance
 - [x] Accounts: grouped account list with balances; account names link to drill-down
 - [x] Account drill-down: `/accounts/{id}` — transaction history, month separators, inline edit/delete
-- [x] Real Estate: equity, LTV, appreciation
-- [x] Tax & TLH: loss candidates, full taxable gain/loss table
+- [x] Real Estate: equity, LTV, appreciation, amortization, capex log
+- [x] Tax & TLH: loss candidates, full taxable gain/loss table, YTD investment income
 - [x] Budget: MTD income/expense vs target, savings rate
 - [x] Journal: log with tags and milestones, inline edit/delete
 - [x] Price refresh: `yfinance` integration, manual "Refresh Prices" button
@@ -16,26 +16,21 @@
 - [x] Market ticker strip: scrolling marquee — major indices + holdings, daily % change, `prev_close` in prices table
 - [x] Snapshot workflow: per-account balance form + "Record Snapshot"
 - [x] Transaction entry: add income/expense entries from /data page
+- [x] Transaction-based balance architecture: `_compute_balances()` — live from transactions + holdings, not snapshots
+- [x] Debt tracking: credit/loan accounts compute balance from transactions; opening_balance anchor; payoff projection on account detail
+- [x] Real estate ↔ loan account link: `real_estate.account_id` → mortgage balance from linked loan; double-count prevention in `debt_total`
 
-## Tier 2 — Data import
+## Tier 2 — Data import (complete)
 
 - [x] CSV snapshot import — inside Snapshot tab on /data; date + NW + cash + invested + equity columns; upsert on date; backfill up to 10 years of history
 - [x] CSV transaction import — bank export → transactions table; inside Transactions tab on /data
-- [ ] CSV holdings import — Fidelity/Schwab/Vanguard format → holdings table; inside Holdings tab on /data
+- [x] CSV holdings import — Fidelity/Schwab/Vanguard format → holdings table; inside Holdings tab on /data; account selector; INSERT OR REPLACE keyed on (account_id, symbol)
 
 ## Tier 3 — Analysis depth
 
-- [ ] Realized gains this year — tax page addition; sum of (sell price − cost basis) for closed positions
-- [ ] Rebalance calculator — exact buy/sell amounts to hit targets, tax-aware:
-  — prioritize selling losers (TLH candidates) in taxable accounts first
-  — prefer rebalancing via buys in taxable + sells in tax-advantaged (IRA/401k) to minimize tax drag
-  — surface TLH opportunities alongside rebalance trades, not as a separate step
-- [ ] Net worth projection — extrapolate from trailing CAGR; 5/10/20yr overlay chart
-- [ ] Debt tracking — credit cards + loans UI surface:
-  — `accounts` schema already supports `credit` and `loan` types
-  — dashboard debt KPI card or section (net worth already deducts debt via `debt_total` in snapshots)
-  — per-account payoff timeline / interest projection
-  — data entry: balance + interest rate + minimum payment per account
+- [x] Realized gains / investment income YTD — Tax page: 3 KPI tiles (unrealized total, YTD income, harvestable losses) + YTD income breakdown by category + all holdings table
+- [x] Net worth projection — "Proj" toggle on dashboard NW chart; dashed 10-year overlay using trailing CAGR from visible history slice; anchored to live NW value
+- [x] Rebalance calculator — `/rebalance` page + `GET /api/rebalance?new_cash=N`; tax-aware priority: TLH candidates first → tax-advantaged (IRA/401k/HSA) → taxable gains; buy targets show existing symbols per class; new cash input shifts targets to reduce/eliminate sells
 
 ## Tier 4 — Mobile & responsive UI (complete)
 
@@ -48,9 +43,10 @@
 
 - [x] Dashboard viewport fit: all content visible without scrolling; ticker strip always in view
 - [x] NW chart: multi-line (Net Worth, Invested, Cash, Home Equity) with period filters (30D/QTD/YTD/1Y/2Y/5Y/MAX)
+- [x] NW chart: "Proj" toggle adds dashed 10-year projection using trailing CAGR, anchored to live NW
 - [x] KPI tiles: MoM + YTD % change sub-stats on all four tiles
 - [x] KPI tiles: inline SVG sparklines (last 24 snapshots, color-coded per metric)
-- [x] KPI tile order: Net Worth → Invested → Home Equity → Liquid Cash
+- [x] KPI tile order: Net Worth → Invested → Home Equity → Liquid Cash → Total Debt
 - [x] Dashboard holdings: consolidate duplicate tickers into one row; investments page keeps per-account breakdown
 - [x] Allocation donut: tooltip shows dollar amounts + %, legend shows all classes with values
 - [x] Mortgage amortization: loan config, per-month schedule, principal/interest split, equity projection
@@ -60,10 +56,10 @@
 ## Data management (complete)
 
 - [x] Holdings: add/edit/delete (Holdings tab on /data, two-row inline edit)
-- [x] Accounts: add/delete (Accounts tab on /data)
+- [x] Accounts: add/delete/edit (Accounts tab on /data); opening balance + APR + min payment for credit/loan
 - [x] Allocation targets: edit target % per asset class (Allocation tab on /data)
 - [x] Budget categories: add/edit/delete (Budget tab on /data)
-- [x] Real estate: add/update/delete properties (Real Estate tab on /data)
+- [x] Real estate: add/update/delete properties (Real Estate tab on /data); linked loan account selector
 - [x] Real estate: mortgage config + amortization per-property
 - [x] Journal entries: add/edit/delete (inline on /journal)
 - [x] Transactions: add/edit/delete (/data Transactions tab, two-row inline edit)

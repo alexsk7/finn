@@ -21,6 +21,10 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
 html, body {
   background: var(--bg);
   color: var(--text);
@@ -176,6 +180,7 @@ a:hover { color: var(--text-head); }
 /* ── Grid helpers ──────────────────────────────────────────────── */
 
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap); }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); }
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap); }
 .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: var(--gap); }
@@ -436,6 +441,7 @@ body.sidebar-open .sidebar-backdrop { display:block; }
 
   /* KPI grids → 2-col */
   .grid-4 { grid-template-columns:1fr 1fr; }
+  .grid-5 { grid-template-columns:1fr 1fr 1fr; }
   .grid-3 { grid-template-columns:1fr 1fr; }
 
   /* All named layouts → single column */
@@ -465,7 +471,7 @@ body.sidebar-open .sidebar-backdrop { display:block; }
 
 /* ── Extra-small ≤480px ────────────────────────────────────────── */
 @media (max-width: 480px) {
-  .grid-4, .grid-3 { grid-template-columns:1fr; }
+  .grid-4, .grid-5, .grid-3 { grid-template-columns:1fr; }
   .card-value { font-size:20px; }
 }
 

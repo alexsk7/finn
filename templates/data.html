@@ -3,57 +3,152 @@
 
 {% block head %}
 <style>
-.field-label {
-  display:block;font-size:9px;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;
-}
-.field-input {
-  width:100%;background:var(--bg3);border:1px solid var(--border);
-  border-radius:4px;color:var(--text-head);font-family:var(--font);
-  font-size:12px;padding:6px 8px;outline:none;transition:border-color .15s;
-}
-.field-input:focus { border-color:var(--accent); }
-.field-input option { background:var(--bg2); }
-.btn-primary {
-  background:var(--accent);border:none;border-radius:4px;color:#fff;
-  cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;
-  padding:7px 14px;transition:opacity .15s;white-space:nowrap;
-}
-.btn-primary:hover { opacity:.85; }
-.btn-primary:disabled { opacity:.4;cursor:default; }
-.btn-secondary {
-  background:transparent;border:1px solid var(--border);border-radius:4px;
-  color:var(--text-dim);cursor:pointer;font-family:var(--font);
-  font-size:11px;padding:4px 10px;transition:color .15s,border-color .15s;white-space:nowrap;
-}
-.btn-secondary:hover { color:var(--text-head);border-color:var(--text-dim); }
-.btn-danger {
-  background:transparent;border:1px solid var(--red);border-radius:4px;
-  color:var(--red);cursor:pointer;font-family:var(--font);
-  font-size:11px;padding:4px 10px;transition:background .15s,color .15s;white-space:nowrap;
-}
-.btn-danger:hover { background:var(--red);color:#fff; }
-.acct-row { display:grid;grid-template-columns:1fr 130px;align-items:center;gap:8px;margin-bottom:7px; }
+  .field-label {
+    display: block;
+    font-size: 9px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
 
-/* Tab nav */
-.tab-nav {
-  display:flex;gap:2px;margin-bottom:var(--gap);
-  border-bottom:1px solid var(--border);padding-bottom:0;
-}
-.tab-btn {
-  background:transparent;border:none;border-bottom:2px solid transparent;
-  color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:11px;
-  letter-spacing:.06em;padding:8px 14px;margin-bottom:-1px;
-  text-transform:uppercase;transition:color .15s,border-color .15s;
-}
-.tab-btn:hover { color:var(--text); }
-.tab-btn.active { color:var(--text-head);border-bottom-color:var(--accent); }
-.tab-panel { display:none; }
-.tab-panel.active { display:block; }
+  .field-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-head);
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 6px 8px;
+    outline: none;
+    transition: border-color .15s;
+  }
 
-/* Edit row is a second <tr> hidden by default; toggled via JS */
-tr.hrow-edit { display:none; }
-tr.hrow-edit td { background:var(--bg3); }
+  .field-input:focus {
+    border-color: var(--accent);
+  }
+
+  .field-input option {
+    background: var(--bg2);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 14px;
+    transition: opacity .15s;
+    white-space: nowrap;
+  }
+
+  .btn-primary:hover {
+    opacity: .85;
+  }
+
+  .btn-primary:disabled {
+    opacity: .4;
+    cursor: default;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 11px;
+    padding: 4px 10px;
+    transition: color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+
+  .btn-secondary:hover {
+    color: var(--text-head);
+    border-color: var(--text-dim);
+  }
+
+  .btn-danger {
+    background: transparent;
+    border: 1px solid var(--red);
+    border-radius: 4px;
+    color: var(--red);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 11px;
+    padding: 4px 10px;
+    transition: background .15s, color .15s;
+    white-space: nowrap;
+  }
+
+  .btn-danger:hover {
+    background: var(--red);
+    color: #fff;
+  }
+
+  .acct-row {
+    display: grid;
+    grid-template-columns: 1fr 130px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+
+  /* Tab nav */
+  .tab-nav {
+    display: flex;
+    gap: 2px;
+    margin-bottom: var(--gap);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+
+  .tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 11px;
+    letter-spacing: .06em;
+    padding: 8px 14px;
+    margin-bottom: -1px;
+    text-transform: uppercase;
+    transition: color .15s, border-color .15s;
+  }
+
+  .tab-btn:hover {
+    color: var(--text);
+  }
+
+  .tab-btn.active {
+    color: var(--text-head);
+    border-bottom-color: var(--accent);
+  }
+
+  .tab-panel {
+    display: none;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+
+  /* Edit row is a second <tr> hidden by default; toggled via JS */
+  tr.hrow-edit {
+    display: none;
+  }
+
+  tr.hrow-edit td {
+    background: var(--bg3);
+  }
 </style>
 {% endblock %}
 
@@ -117,7 +212,7 @@ tr.hrow-edit td { background:var(--bg3); }
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" style="margin-bottom:var(--gap);">
       <div class="section-title">
         All Holdings
         <span id="h-count" style="color:var(--text-dim);font-size:10px;"></span>
@@ -126,14 +221,56 @@ tr.hrow-edit td { background:var(--bg3); }
         <table class="data-table" id="holdings-table">
           <thead>
             <tr>
-              <th>Symbol</th><th>Name</th><th>Class</th><th>Account</th>
-              <th class="num">Shares</th><th class="num">Cost/Share</th>
+              <th>Symbol</th>
+              <th>Name</th>
+              <th>Class</th>
+              <th>Account</th>
+              <th class="num">Shares</th>
+              <th class="num">Cost/Share</th>
               <th style="width:120px;"></th>
             </tr>
           </thead>
           <tbody id="holdings-tbody"></tbody>
         </table>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Import Holdings CSV</div>
+      <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">
+        Import from a Fidelity, Schwab, or Vanguard positions export. The CSV must contain a
+        <code style="color:var(--accent);">Symbol</code> column — all other metadata rows are skipped automatically.
+        Re-importing the same file updates existing positions rather than duplicating them.
+      </p>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+        <label class="btn-secondary" style="cursor:pointer;display:inline-block;">
+          Choose file
+          <input type="file" accept=".csv,.txt" id="hold-csv-file" onchange="loadHoldCSVFile(this)" style="display:none;">
+        </label>
+        <span style="font-size:11px;color:var(--text-dim);">or paste below</span>
+        <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+          <label class="field-label" style="margin:0;white-space:nowrap;">Import into account:</label>
+          <select id="hold-csv-acct" class="field-input" style="width:220px;">
+            <option value="">— select account —</option>
+          </select>
+        </div>
+      </div>
+
+      <textarea id="hold-csv-paste" rows="8" class="field-input" placeholder="Symbol,Description,Quantity,Average Cost Basis
+VTI,Vanguard Total Stock Market ETF,42.5,201.34
+VXUS,Vanguard Total International,18,58.72" style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);" oninput="previewHoldCSV()"></textarea>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn-primary" onclick="importHoldCSV()">Import</button>
+        <button class="btn-secondary" onclick="
+          document.getElementById('hold-csv-paste').value='';
+          document.getElementById('hold-csv-preview').innerHTML='';
+          document.getElementById('hold-csv-result').textContent='';">Clear</button>
+        <span id="hold-csv-result" style="font-size:11px;"></span>
+      </div>
+
+      <div id="hold-csv-preview" style="margin-top:16px;"></div>
     </div>
   </div>
 
@@ -153,7 +290,7 @@ tr.hrow-edit td { background:var(--bg3); }
           </div>
           <div>
             <label class="field-label">Type</label>
-            <select id="a-type" class="field-input">
+            <select id="a-type" class="field-input" onchange="toggleDebtFields()">
               <option value="checking">Checking</option>
               <option value="savings">Savings</option>
               <option value="brokerage">Brokerage</option>
@@ -170,6 +307,20 @@ tr.hrow-edit td { background:var(--bg3); }
             <label class="field-label">Notes (optional)</label>
             <input type="text" id="a-notes" class="field-input" placeholder="" />
           </div>
+          <div id="a-opening-field">
+            <label class="field-label">Opening Balance</label>
+            <input type="number" id="a-opening" class="field-input" placeholder="0.00" step="0.01" />
+          </div>
+          <div id="a-debt-fields" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
+            <div>
+              <label class="field-label">APR %</label>
+              <input type="number" id="a-rate" class="field-input" placeholder="24.99" step="0.01" min="0" />
+            </div>
+            <div>
+              <label class="field-label">Min. Payment</label>
+              <input type="number" id="a-minpay" class="field-input" placeholder="25.00" step="1" min="0" />
+            </div>
+          </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <button class="btn-primary" onclick="addAccount()">Add Account</button>
             <span id="a-status" style="font-size:11px;"></span>
@@ -180,7 +331,12 @@ tr.hrow-edit td { background:var(--bg3); }
       <div class="card">
         <div class="section-title">Existing Accounts</div>
         <table class="data-table">
-          <thead><tr><th>Name</th><th>Institution</th><th>Type</th><th>Notes</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Name</th><th>Institution</th><th>Type</th><th>Notes</th>
+              <th class="num">APR</th><th class="num">Min. Pay</th><th></th>
+            </tr>
+          </thead>
           <tbody id="accounts-tbody"></tbody>
         </table>
       </div>
@@ -227,18 +383,14 @@ tr.hrow-edit td { background:var(--bg3); }
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <label class="btn-secondary" style="cursor:pointer;display:inline-block;">
           Choose file
-          <input type="file" accept=".csv,.txt" id="csv-file-input"
-                 onchange="loadCSVFile(this)" style="display:none;">
+          <input type="file" accept=".csv,.txt" id="csv-file-input" onchange="loadCSVFile(this)" style="display:none;">
         </label>
         <span style="font-size:11px;color:var(--text-dim);">or paste below</span>
       </div>
 
-      <textarea id="csv-paste" rows="8" class="field-input"
-        placeholder="date,net_worth,liquid_cash,invested_total,home_equity
+      <textarea id="csv-paste" rows="8" class="field-input" placeholder="date,net_worth,liquid_cash,invested_total,home_equity
 2015-01-01,320000,18000,140000,80000
-2016-01-01,370000,22000,165000,85000"
-        style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);"
-        oninput="previewCSV()"></textarea>
+2016-01-01,370000,22000,165000,85000" style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);" oninput="previewCSV()"></textarea>
 
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
         <button class="btn-primary" onclick="importCSV()">Import</button>
@@ -265,7 +417,13 @@ tr.hrow-edit td { background:var(--bg3); }
         Use manual override to correct any symbol that fails.
       </p>
       <table class="data-table">
-        <thead><tr><th>Symbol</th><th class="num">Last Price</th><th class="num">Manual Override</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th class="num">Last Price</th>
+            <th class="num">Manual Override</th>
+          </tr>
+        </thead>
         <tbody id="price-rows"></tbody>
       </table>
     </div>
@@ -302,7 +460,9 @@ tr.hrow-edit td { background:var(--bg3); }
         </div>
         <div>
           <label class="field-label">Account</label>
-          <select id="txn-acct" class="field-input"><option value="">— none —</option></select>
+          <select id="txn-acct" class="field-input">
+            <option value="">— none —</option>
+          </select>
         </div>
         <div style="display:flex;align-items:flex-end;gap:8px;">
           <button class="btn-primary" onclick="addTransaction()">Add</button>
@@ -320,8 +480,13 @@ tr.hrow-edit td { background:var(--bg3); }
         <table class="data-table">
           <thead>
             <tr>
-              <th>Date</th><th>Direction</th><th>Category</th>
-              <th class="num">Amount</th><th>Description</th><th>Account</th><th></th>
+              <th>Date</th>
+              <th>Direction</th>
+              <th>Category</th>
+              <th class="num">Amount</th>
+              <th>Description</th>
+              <th>Account</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="txn-tbody"></tbody>
@@ -341,8 +506,7 @@ tr.hrow-edit td { background:var(--bg3); }
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
         <label class="btn-secondary" style="cursor:pointer;display:inline-block;">
           Choose file
-          <input type="file" accept=".csv,.txt" id="txn-csv-file"
-                 onchange="loadTxnCSVFile(this)" style="display:none;">
+          <input type="file" accept=".csv,.txt" id="txn-csv-file" onchange="loadTxnCSVFile(this)" style="display:none;">
         </label>
         <span style="font-size:11px;color:var(--text-dim);">or paste below</span>
         <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
@@ -353,13 +517,10 @@ tr.hrow-edit td { background:var(--bg3); }
         </div>
       </div>
 
-      <textarea id="txn-csv-paste" rows="8" class="field-input"
-        placeholder="date,amount,direction,category,description
+      <textarea id="txn-csv-paste" rows="8" class="field-input" placeholder="date,amount,direction,category,description
 2026-01-15,9800,income,Salary,Paycheck
 2026-01-16,-634,,Groceries,Whole Foods
-2026-01-20,-265,,Dining,Restaurants"
-        style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);"
-        oninput="previewTxnCSV()"></textarea>
+2026-01-20,-265,,Dining,Restaurants" style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);" oninput="previewTxnCSV()"></textarea>
 
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
         <button class="btn-primary" onclick="importTxnCSV()">Import</button>
@@ -425,7 +586,12 @@ tr.hrow-edit td { background:var(--bg3); }
         Targets don't need to sum to 100%.
       </p>
       <table class="data-table" style="margin-bottom:12px;">
-        <thead><tr><th>Asset Class</th><th class="num" style="width:120px;">Target %</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Asset Class</th>
+            <th class="num" style="width:120px;">Target %</th>
+          </tr>
+        </thead>
         <tbody id="alloc-target-tbody"></tbody>
       </table>
       <div style="display:flex;align-items:center;gap:10px;">
@@ -466,7 +632,14 @@ tr.hrow-edit td { background:var(--bg3); }
       <div class="card">
         <div class="section-title">Categories</div>
         <table class="data-table">
-          <thead><tr><th>Name</th><th>Direction</th><th class="num">Monthly Target</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Direction</th>
+              <th class="num">Monthly Target</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody id="bc-tbody"></tbody>
         </table>
       </div>
@@ -503,111 +676,104 @@ tr.hrow-edit td { background:var(--bg3); }
 
 {% block scripts %}
 <script>
-const TYPE_LABEL = {
-  checking:'Checking', savings:'Savings', brokerage:'Brokerage',
-  retirement_401k:'401(k)', retirement_ira:'IRA / Roth', hsa:'HSA',
-  credit:'Credit Card', loan:'Loan', crypto:'Crypto', other:'Other'
-};
-const SKIP_SNAP = new Set(['loan']);
-const LIQUID   = new Set(['checking','savings']);
-const INVESTED = new Set(['brokerage','retirement_401k','retirement_ira','hsa','crypto']);
-const DEBT     = new Set(['credit']);
+  const TYPE_LABEL = {
+    checking: 'Checking', savings: 'Savings', brokerage: 'Brokerage',
+    retirement_401k: '401(k)', retirement_ira: 'IRA / Roth', hsa: 'HSA',
+    credit: 'Credit Card', loan: 'Loan', crypto: 'Crypto', other: 'Other'
+  };
+  const SKIP_SNAP = new Set(['loan']);
+  const LIQUID = new Set(['checking', 'savings']);
+  const INVESTED = new Set(['brokerage', 'retirement_401k', 'retirement_ira', 'hsa', 'crypto']);
+  const DEBT = new Set(['credit']);
 
-let allAccounts = [];
-let allBudgetCats = [];
+  let allAccounts = [];
+  let allBudgetCats = [];
 
-function buildCatOpts(selectedVal) {
-  const known = allBudgetCats.some(c => c.name === selectedVal);
-  const orphan = selectedVal && !known
-    ? `<option value="${selectedVal}" selected>${selectedVal}</option>` : '';
-  return `<option value="">— select category —</option>${orphan}` +
-    allBudgetCats.map(c =>
-      `<option value="${c.name}"${c.name === selectedVal ? ' selected' : ''}>${c.name}</option>`
-    ).join('');
-}
-
-// ── Tab switching ──────────────────────────────────────────────────────────────
-function showTab(id) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  const panel = document.getElementById('tab-' + id);
-  if (!panel) return;
-  panel.classList.add('active');
-  const btn = document.querySelector(`.tab-btn[data-tab="${id}"]`);
-  if (btn) btn.classList.add('active');
-  history.replaceState(null, '', '#' + id);
-}
-
-// ── Boot ───────────────────────────────────────────────────────────────────────
-async function loadData() {
-  const [accounts, alloc, re, allocTargets, budgetCats, txns] = await Promise.all([
-    fetch('/api/accounts').then(r=>r.json()),
-    fetch('/api/allocation').then(r=>r.json()),
-    fetch('/api/real-estate').then(r=>r.json()),
-    fetch('/api/allocation-targets').then(r=>r.json()),
-    fetch('/api/budget-categories').then(r=>r.json()),
-    fetch('/api/transactions').then(r=>r.json()),
-  ]);
-
-  allAccounts = accounts;
-  buildAccountSelects(accounts);
-  buildHoldingsTable();
-  buildAccountsTable(accounts);
-  buildSnapForm(accounts);
-  buildPriceRows(alloc);
-  buildREForm(re);
-  buildAllocTargets(allocTargets);
-  buildBudgetCats(budgetCats);
-  buildTxnTable(txns);
-
-  document.getElementById('snap-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('txn-date').value  = new Date().toISOString().slice(0,10);
-}
-
-function buildAccountSelects(accounts) {
-  const opts = accounts.map(a => `<option value="${a.id}">${a.name} (${TYPE_LABEL[a.type]||a.type})</option>`).join('');
-  ['h-acct','txn-acct','txn-csv-acct'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const prefix = (id === 'txn-acct' || id === 'txn-csv-acct')
-      ? '<option value="">— auto / column —</option>' : '';
-    el.innerHTML = prefix + opts;
-  });
-}
-
-// ── Holdings ───────────────────────────────────────────────────────────────────
-async function buildHoldingsTable() {
-  const holdings = await fetch('/api/holdings').then(r=>r.json());
-  document.getElementById('h-count').textContent = `${holdings.length} position${holdings.length!==1?'s':''}`;
-
-  const tbody = document.getElementById('holdings-tbody');
-  if (!holdings.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px;">No holdings yet.</td></tr>`;
-    return;
+  // ── Tab switching ──────────────────────────────────────────────────────────────
+  function showTab(id) {
+    const panel = document.getElementById('tab-' + id);
+    if (!panel) return;
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    panel.classList.add('active');
+    const btn = document.querySelector(`.tab-btn[data-tab="${id}"]`);
+    if (btn) btn.classList.add('active');
+    history.replaceState(null, '', '#' + id);
   }
 
-  const CLASS_OPTS = [
-    ['us_equity','US Equity'],['intl_equity','Intl Equity'],['bond','Bond'],
-    ['real_estate_fund','Real Estate Fund'],['cash_equiv','Cash / MM'],
-    ['commodity','Commodity'],['crypto','Crypto'],['other','Other'],
-  ];
+  // ── Boot ───────────────────────────────────────────────────────────────────────
+  async function loadData() {
+    const [accounts, alloc, re, allocTargets, budgetCats, txns] = await Promise.all([
+      fetch('/api/accounts').then(r => r.json()),
+      fetch('/api/allocation').then(r => r.json()),
+      fetch('/api/real-estate').then(r => r.json()),
+      fetch('/api/allocation-targets').then(r => r.json()),
+      fetch('/api/budget-categories').then(r => r.json()),
+      fetch('/api/transactions').then(r => r.json()),
+    ]);
 
-  tbody.innerHTML = holdings.map(h => {
-    const acctOpts = allAccounts.map(a =>
-      `<option value="${a.id}"${a.id===h.account_id?' selected':''}>${a.name}</option>`
-    ).join('');
-    const classOpts = CLASS_OPTS.map(([v,l]) =>
-      `<option value="${v}"${v===h.asset_class?' selected':''}>${l}</option>`
-    ).join('');
+    allAccounts = accounts;
+    buildAccountSelects(accounts);
+    buildHoldingsTable();
+    buildAccountsTable(accounts);
+    buildSnapForm(accounts);
+    buildPriceRows(alloc);
+    buildREForm(re);
+    buildAllocTargets(allocTargets);
+    buildBudgetCats(budgetCats);
+    buildTxnTable(txns);
 
-    return `
+    document.getElementById('snap-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('txn-date').value = new Date().toISOString().slice(0, 10);
+  }
+
+  function buildAccountSelects(accounts) {
+    const opts = accounts.map(a => `<option value="${a.id}">${a.name} (${TYPE_LABEL[a.type] || a.type})</option>`).join('');
+    const prefixes = {
+      'txn-acct': '<option value="">— none —</option>',
+      'txn-csv-acct': '<option value="">— auto / column —</option>',
+      'hold-csv-acct': '<option value="">— select account —</option>',
+    };
+    ['h-acct', 'txn-acct', 'txn-csv-acct', 'hold-csv-acct'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = (prefixes[id] || '') + opts;
+    });
+  }
+
+  // ── Holdings ───────────────────────────────────────────────────────────────────
+  async function buildHoldingsTable() {
+    const holdings = await fetch('/api/holdings').then(r => r.json());
+    document.getElementById('h-count').textContent = `${holdings.length} position${holdings.length !== 1 ? 's' : ''}`;
+
+    const tbody = document.getElementById('holdings-tbody');
+    if (!holdings.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px;">No holdings yet.</td></tr>`;
+      return;
+    }
+
+    const CLASS_OPTS = [
+      ['us_equity', 'US Equity'], ['intl_equity', 'Intl Equity'], ['bond', 'Bond'],
+      ['real_estate_fund', 'Real Estate Fund'], ['cash_equiv', 'Cash / MM'],
+      ['commodity', 'Commodity'], ['crypto', 'Crypto'], ['other', 'Other'],
+    ];
+
+    tbody.innerHTML = holdings.map(h => {
+      const acctOpts = allAccounts.map(a =>
+        `<option value="${a.id}"${a.id === h.account_id ? ' selected' : ''}>${a.name}</option>`
+      ).join('');
+      const classOpts = CLASS_OPTS.map(([v, l]) =>
+        `<option value="${v}"${v === h.asset_class ? ' selected' : ''}>${l}</option>`
+      ).join('');
+
+      return `
     <tr id="hrow-${h.id}">
       <td><strong style="color:var(--text-head);">${h.symbol}</strong></td>
-      <td style="color:var(--text-dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.name||'—'}</td>
-      <td><span style="font-size:10px;color:var(--text-dim);">${CLASS_LABELS[h.asset_class]||h.asset_class}</span></td>
+      <td style="color:var(--text-dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.name || '—'}</td>
+      <td><span style="font-size:10px;color:var(--text-dim);">${CLASS_LABELS[h.asset_class] || h.asset_class}</span></td>
       <td style="font-size:11px;color:var(--text-dim);">${h.account_name}</td>
       <td class="num">${h.shares}</td>
-      <td class="num">${h.cost_basis ? '$'+Number(h.cost_basis).toFixed(2) : '—'}</td>
+      <td class="num">${h.cost_basis ? '$' + Number(h.cost_basis).toFixed(2) : '—'}</td>
       <td style="white-space:nowrap;">
         <div style="display:flex;gap:5px;justify-content:flex-end;">
           <button class="btn-secondary" onclick="startEdit(${h.id})">Edit</button>
@@ -617,7 +783,7 @@ async function buildHoldingsTable() {
     </tr>
     <tr id="hrow-edit-${h.id}" class="hrow-edit">
       <td><input class="field-input" id="he-sym-${h.id}" value="${h.symbol}" style="text-transform:uppercase;width:70px;" /></td>
-      <td><input class="field-input" id="he-name-${h.id}" value="${h.name||''}" /></td>
+      <td><input class="field-input" id="he-name-${h.id}" value="${h.name || ''}" /></td>
       <td><select class="field-input" id="he-cls-${h.id}">${classOpts}</select></td>
       <td><select class="field-input" id="he-acct-${h.id}">${acctOpts}</select></td>
       <td class="num"><input type="number" class="field-input" id="he-shr-${h.id}" value="${h.shares}" step="0.001" style="width:80px;text-align:right;" /></td>
@@ -629,314 +795,432 @@ async function buildHoldingsTable() {
         </div>
       </td>
     </tr>`;
-  }).join('');
-}
-
-function startEdit(id) {
-  document.getElementById(`hrow-${id}`).style.display = 'none';
-  document.getElementById(`hrow-edit-${id}`).style.display = 'table-row';
-}
-function cancelEdit(id) {
-  document.getElementById(`hrow-${id}`).style.display = '';
-  document.getElementById(`hrow-edit-${id}`).style.display = 'none';
-}
-
-async function saveHolding(id) {
-  const body = {
-    account_id:  parseInt(document.getElementById(`he-acct-${id}`).value),
-    symbol:      document.getElementById(`he-sym-${id}`).value.trim().toUpperCase(),
-    name:        document.getElementById(`he-name-${id}`).value.trim() || null,
-    asset_class: document.getElementById(`he-cls-${id}`).value,
-    shares:      parseFloat(document.getElementById(`he-shr-${id}`).value),
-    cost_basis:  parseFloat(document.getElementById(`he-cst-${id}`).value),
-  };
-  await fetch(`/api/holdings/${id}`, {
-    method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body),
-  });
-  buildHoldingsTable();
-}
-
-async function deleteHolding(id, symbol) {
-  if (!confirm(`Delete ${symbol}? This cannot be undone.`)) return;
-  await fetch(`/api/holdings/${id}`, {method:'DELETE'});
-  buildHoldingsTable();
-}
-
-async function addHolding() {
-  const symbol = document.getElementById('h-sym').value.trim().toUpperCase();
-  const shares = parseFloat(document.getElementById('h-shares').value);
-  const cost   = parseFloat(document.getElementById('h-cost').value);
-  const statusEl = document.getElementById('h-status');
-
-  if (!symbol || !shares || !cost) {
-    statusEl.textContent = 'Symbol, shares, and cost required.';
-    statusEl.style.color = 'var(--red)'; return;
+    }).join('');
   }
-  statusEl.textContent = 'Adding…'; statusEl.style.color = 'var(--text-dim)';
 
-  const res = await fetch('/api/holdings', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      account_id:  parseInt(document.getElementById('h-acct').value),
-      symbol, shares, cost_basis: cost,
-      name:        document.getElementById('h-name').value.trim() || null,
-      asset_class: document.getElementById('h-class').value,
-    }),
-  });
+  function startEdit(id) {
+    document.getElementById(`hrow-${id}`).style.display = 'none';
+    document.getElementById(`hrow-edit-${id}`).style.display = 'table-row';
+  }
+  function cancelEdit(id) {
+    document.getElementById(`hrow-${id}`).style.display = '';
+    document.getElementById(`hrow-edit-${id}`).style.display = 'none';
+  }
 
-  if (res.ok) {
-    statusEl.textContent = `✓ ${symbol} added`; statusEl.style.color = 'var(--green)';
-    document.getElementById('h-sym').value = '';
-    document.getElementById('h-name').value = '';
-    document.getElementById('h-shares').value = '';
-    document.getElementById('h-cost').value = '';
-    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+  async function saveHolding(id) {
+    const body = {
+      account_id: parseInt(document.getElementById(`he-acct-${id}`).value),
+      symbol: document.getElementById(`he-sym-${id}`).value.trim().toUpperCase(),
+      name: document.getElementById(`he-name-${id}`).value.trim() || null,
+      asset_class: document.getElementById(`he-cls-${id}`).value,
+      shares: parseFloat(document.getElementById(`he-shr-${id}`).value),
+      cost_basis: parseFloat(document.getElementById(`he-cst-${id}`).value),
+    };
+    await fetch(`/api/holdings/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
     buildHoldingsTable();
-  } else {
-    statusEl.textContent = '✗ Error'; statusEl.style.color = 'var(--red)';
   }
-}
 
-// ── Accounts ───────────────────────────────────────────────────────────────────
-function buildAccountsTable(accounts) {
-  document.getElementById('accounts-tbody').innerHTML = accounts.length
-    ? accounts.map(a => `
-        <tr>
-          <td><strong style="color:var(--text-head);">${a.name}</strong></td>
-          <td style="color:var(--text-dim);">${a.institution}</td>
-          <td><span style="font-size:10px;color:var(--text-dim);">${TYPE_LABEL[a.type]||a.type}</span></td>
-          <td style="font-size:11px;color:var(--text-dim);">${a.notes||''}</td>
-          <td><button class="btn-danger" onclick="deleteAccount(${a.id},'${a.name.replace(/'/g,"\\'")}')">Del</button></td>
-        </tr>`).join('')
-    : `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:20px;">No accounts yet.</td></tr>`;
-}
-
-async function addAccount() {
-  const name = document.getElementById('a-name').value.trim();
-  const inst = document.getElementById('a-inst').value.trim();
-  const type = document.getElementById('a-type').value;
-  const statusEl = document.getElementById('a-status');
-
-  if (!name || !inst) {
-    statusEl.textContent = 'Name and institution required.';
-    statusEl.style.color = 'var(--red)'; return;
+  async function deleteHolding(id, symbol) {
+    if (!confirm(`Delete ${symbol}? This cannot be undone.`)) return;
+    await fetch(`/api/holdings/${id}`, { method: 'DELETE' });
+    buildHoldingsTable();
   }
-  const res = await fetch('/api/accounts', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ name, institution: inst, type,
-      notes: document.getElementById('a-notes').value.trim() || null }),
-  });
-  if (res.ok) {
-    statusEl.textContent = '✓ Added'; statusEl.style.color = 'var(--green)';
-    document.getElementById('a-name').value = '';
-    document.getElementById('a-inst').value = '';
-    document.getElementById('a-notes').value = '';
-    setTimeout(() => { statusEl.textContent = ''; }, 3000);
-    const accounts = await fetch('/api/accounts').then(r=>r.json());
+
+  async function addHolding() {
+    const symbol = document.getElementById('h-sym').value.trim().toUpperCase();
+    const shares = parseFloat(document.getElementById('h-shares').value);
+    const cost = parseFloat(document.getElementById('h-cost').value);
+    const statusEl = document.getElementById('h-status');
+
+    if (!symbol || !shares || !cost) {
+      statusEl.textContent = 'Symbol, shares, and cost required.';
+      statusEl.style.color = 'var(--red)'; return;
+    }
+    statusEl.textContent = 'Adding…'; statusEl.style.color = 'var(--text-dim)';
+
+    const res = await fetch('/api/holdings', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        account_id: parseInt(document.getElementById('h-acct').value),
+        symbol, shares, cost_basis: cost,
+        name: document.getElementById('h-name').value.trim() || null,
+        asset_class: document.getElementById('h-class').value,
+      }),
+    });
+
+    if (res.ok) {
+      statusEl.textContent = `✓ ${symbol} added`; statusEl.style.color = 'var(--green)';
+      document.getElementById('h-sym').value = '';
+      document.getElementById('h-name').value = '';
+      document.getElementById('h-shares').value = '';
+      document.getElementById('h-cost').value = '';
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+      buildHoldingsTable();
+    } else {
+      statusEl.textContent = '✗ Error'; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  // ── Accounts ───────────────────────────────────────────────────────────────────
+  const DEBT_TYPES       = new Set(['credit', 'loan']);
+  const INVESTMENT_TYPES = new Set(['brokerage', 'retirement_401k', 'retirement_ira', 'hsa', 'crypto']);
+
+  function toggleDebtFields() {
+    const type = document.getElementById('a-type').value;
+    const isDebt = DEBT_TYPES.has(type);
+    const isInvestment = INVESTMENT_TYPES.has(type);
+    document.getElementById('a-debt-fields').style.display = isDebt ? 'grid' : 'none';
+    document.getElementById('a-opening-field').style.display = isInvestment ? 'none' : '';
+  }
+
+  function buildAccountsTable(accounts) {
+    const tbody = document.getElementById('accounts-tbody');
+    if (!accounts.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px;">No accounts yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = accounts.map(a => {
+      const isDebt       = DEBT_TYPES.has(a.type);
+      const isInvestment = INVESTMENT_TYPES.has(a.type);
+      const canEdit      = !isInvestment;
+      const rateDisplay  = isDebt && a.interest_rate   != null ? a.interest_rate.toFixed(2) + '%' : '—';
+      const minPayDisplay = isDebt && a.minimum_payment != null ? fmt(a.minimum_payment) : '—';
+      return `
+      <tr id="arow-${a.id}">
+        <td><strong style="color:var(--text-head);">${a.name}</strong></td>
+        <td style="color:var(--text-dim);">${a.institution}</td>
+        <td><span style="font-size:10px;color:var(--text-dim);">${TYPE_LABEL[a.type] || a.type}</span></td>
+        <td style="font-size:11px;color:var(--text-dim);">${a.notes || ''}</td>
+        <td class="num" style="font-size:11px;color:var(--text-dim);">${rateDisplay}</td>
+        <td class="num" style="font-size:11px;color:var(--text-dim);">${minPayDisplay}</td>
+        <td style="white-space:nowrap;">
+          <div style="display:flex;gap:5px;justify-content:flex-end;">
+            ${canEdit ? `<button class="btn-secondary" onclick="openAcctEdit(${a.id})">Edit</button>` : ''}
+            <button class="btn-danger" onclick="deleteAccount(${a.id},'${a.name.replace(/'/g, "\\'")}')">Del</button>
+          </div>
+        </td>
+      </tr>
+      ${canEdit ? `
+      <tr id="arow-edit-${a.id}" class="hrow-edit">
+        <td colspan="${isDebt ? 2 : 4}" style="color:var(--text-dim);font-size:11px;">${a.name} — ${a.institution}</td>
+        ${isDebt ? `
+        <td class="num">
+          <input type="number" class="field-input" id="ae-rate-${a.id}"
+            value="${a.interest_rate ?? ''}" placeholder="APR %" step="0.01" min="0"
+            style="width:80px;text-align:right;" />
+        </td>
+        <td class="num">
+          <input type="number" class="field-input" id="ae-minpay-${a.id}"
+            value="${a.minimum_payment ?? ''}" placeholder="Min $" step="1" min="0"
+            style="width:90px;text-align:right;" />
+        </td>` : ''}
+        <td class="num" ${isDebt ? '' : 'colspan="2"'}>
+          <input type="number" class="field-input" id="ae-opening-${a.id}"
+            value="${a.opening_balance ?? 0}" placeholder="Opening $" step="0.01"
+            style="width:110px;text-align:right;" />
+        </td>
+        <td style="white-space:nowrap;">
+          <div style="display:flex;gap:5px;justify-content:flex-end;">
+            <button class="btn-primary" style="font-size:11px;padding:4px 10px;" onclick="saveAcctEdit(${a.id})">Save</button>
+            <button class="btn-secondary" onclick="closeAcctEdit(${a.id})">✕</button>
+          </div>
+        </td>
+      </tr>` : ''}`;
+    }).join('');
+  }
+
+  function openAcctEdit(id) {
+    document.getElementById(`arow-${id}`).style.display = 'none';
+    document.getElementById(`arow-edit-${id}`).style.display = 'table-row';
+  }
+  function closeAcctEdit(id) {
+    document.getElementById(`arow-${id}`).style.display = '';
+    document.getElementById(`arow-edit-${id}`).style.display = 'none';
+  }
+
+  async function saveAcctEdit(id) {
+    const rateEl   = document.getElementById(`ae-rate-${id}`);
+    const minpayEl = document.getElementById(`ae-minpay-${id}`);
+    const rate     = rateEl   ? parseFloat(rateEl.value)   || null : null;
+    const minpay   = minpayEl ? parseFloat(minpayEl.value) || null : null;
+    const opening  = parseFloat(document.getElementById(`ae-opening-${id}`).value) || 0;
+    await fetch(`/api/accounts/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ interest_rate: rate, minimum_payment: minpay, opening_balance: opening }),
+    });
+    const accounts = await fetch('/api/accounts').then(r => r.json());
     allAccounts = accounts;
     buildAccountSelects(accounts);
     buildAccountsTable(accounts);
     buildSnapForm(accounts);
   }
-}
 
-async function deleteAccount(id, name) {
-  if (!confirm(`Delete account "${name}"?`)) return;
-  const res = await fetch(`/api/accounts/${id}`, {method:'DELETE'});
-  const data = await res.json();
-  if (!data.ok) { alert(data.error); return; }
-  const accounts = await fetch('/api/accounts').then(r=>r.json());
-  allAccounts = accounts;
-  buildAccountSelects(accounts);
-  buildAccountsTable(accounts);
-  buildSnapForm(accounts);
-}
+  async function addAccount() {
+    const name = document.getElementById('a-name').value.trim();
+    const inst = document.getElementById('a-inst').value.trim();
+    const type = document.getElementById('a-type').value;
+    const statusEl = document.getElementById('a-status');
 
-// ── Snapshot ───────────────────────────────────────────────────────────────────
-function buildSnapForm(accounts) {
-  const filtered = accounts.filter(a => !SKIP_SNAP.has(a.type));
-  document.getElementById('snap-accounts').innerHTML = filtered.map(a => `
+    if (!name || !inst) {
+      statusEl.textContent = 'Name and institution required.';
+      statusEl.style.color = 'var(--red)'; return;
+    }
+    const isDebt = DEBT_TYPES.has(type);
+    const res = await fetch('/api/accounts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name, institution: inst, type,
+        notes:           document.getElementById('a-notes').value.trim() || null,
+        interest_rate:   isDebt ? parseFloat(document.getElementById('a-rate').value)   || null : null,
+        minimum_payment: isDebt ? parseFloat(document.getElementById('a-minpay').value) || null : null,
+        opening_balance: !INVESTMENT_TYPES.has(type) ? parseFloat(document.getElementById('a-opening').value) || 0 : 0,
+      }),
+    });
+    if (res.ok) {
+      statusEl.textContent = '✓ Added'; statusEl.style.color = 'var(--green)';
+      ['a-name','a-inst','a-notes','a-rate','a-minpay','a-opening'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      toggleDebtFields();
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+      const accounts = await fetch('/api/accounts').then(r => r.json());
+      allAccounts = accounts;
+      buildAccountSelects(accounts);
+      buildAccountsTable(accounts);
+      buildSnapForm(accounts);
+    }
+  }
+
+  async function deleteAccount(id, name) {
+    if (!confirm(`Delete account "${name}"?`)) return;
+    const res = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!data.ok) { alert(data.error); return; }
+    const accounts = await fetch('/api/accounts').then(r => r.json());
+    allAccounts = accounts;
+    buildAccountSelects(accounts);
+    buildAccountsTable(accounts);
+    buildSnapForm(accounts);
+  }
+
+  // ── Snapshot ───────────────────────────────────────────────────────────────────
+  function buildSnapForm(accounts) {
+    const filtered = accounts.filter(a => !SKIP_SNAP.has(a.type));
+    document.getElementById('snap-accounts').innerHTML = filtered.map(a => `
     <div class="acct-row">
       <div>
         <div style="font-size:12px;">${a.name}</div>
-        <div style="font-size:10px;color:var(--text-dim);">${a.institution} · ${TYPE_LABEL[a.type]||a.type}</div>
+        <div style="font-size:10px;color:var(--text-dim);">${a.institution} · ${TYPE_LABEL[a.type] || a.type}</div>
       </div>
       <input type="number" step="0.01" min="0" class="field-input"
         id="snap-bal-${a.id}"
         value="${a.balance != null ? a.balance : ''}"
         placeholder="0.00" oninput="updateSnapPreview()" />
     </div>`).join('');
-}
+  }
 
-function updateSnapPreview() {
-  const filtered = allAccounts.filter(a => !SKIP_SNAP.has(a.type));
-  let liquid=0, invested=0, debt=0;
-  filtered.forEach(a => {
-    const val = parseFloat(document.getElementById('snap-bal-'+a.id)?.value) || 0;
-    if (LIQUID.has(a.type)) liquid += val;
-    else if (INVESTED.has(a.type)) invested += val;
-    else if (DEBT.has(a.type)) debt += val;
-  });
-  const card = document.getElementById('snap-preview-card');
-  card.style.display = 'block';
-  document.getElementById('snap-preview-body').innerHTML = `
+  function updateSnapPreview() {
+    const filtered = allAccounts.filter(a => !SKIP_SNAP.has(a.type));
+    let liquid = 0, invested = 0, debt = 0;
+    filtered.forEach(a => {
+      const val = parseFloat(document.getElementById('snap-bal-' + a.id)?.value) || 0;
+      if (LIQUID.has(a.type)) liquid += val;
+      else if (INVESTED.has(a.type)) invested += val;
+      else if (DEBT.has(a.type)) debt += val;
+    });
+    const card = document.getElementById('snap-preview-card');
+    card.style.display = 'block';
+    document.getElementById('snap-preview-body').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr auto;gap:2px 16px;color:var(--text-dim);">
       <span>Liquid</span><span style="text-align:right;color:var(--text-head);font-variant-numeric:tabular-nums;">${fmt(liquid)}</span>
       <span>Invested</span><span style="text-align:right;color:var(--text-head);font-variant-numeric:tabular-nums;">${fmt(invested)}</span>
       <span>Other debt</span><span style="text-align:right;color:var(--red);font-variant-numeric:tabular-nums;">${fmt(debt)}</span>
       <span>Home equity</span><span style="text-align:right;font-size:10px;">from RE tab</span>
     </div>`;
-}
+  }
 
-async function recordSnapshot() {
-  const filtered = allAccounts.filter(a => !SKIP_SNAP.has(a.type));
-  const balances = filtered.map(a => ({
-    account_id: a.id,
-    balance: parseFloat(document.getElementById('snap-bal-'+a.id)?.value) || 0,
-  }));
-  const statusEl = document.getElementById('snap-status');
-  statusEl.textContent = 'Saving…'; statusEl.style.color = 'var(--text-dim)';
-  const res = await fetch('/api/snapshot', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      account_balances: balances,
-      snapshot_date: document.getElementById('snap-date').value,
-      notes: document.getElementById('snap-notes').value.trim() || null,
-    }),
-  });
-  const data = await res.json();
-  statusEl.textContent = `✓ Net Worth: ${fmt(data.net_worth)}`;
-  statusEl.style.color = 'var(--green)';
-}
+  async function recordSnapshot() {
+    const filtered = allAccounts.filter(a => !SKIP_SNAP.has(a.type));
+    const balances = filtered.map(a => ({
+      account_id: a.id,
+      balance: parseFloat(document.getElementById('snap-bal-' + a.id)?.value) || 0,
+    }));
+    const statusEl = document.getElementById('snap-status');
+    statusEl.textContent = 'Saving…'; statusEl.style.color = 'var(--text-dim)';
+    const res = await fetch('/api/snapshot', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        account_balances: balances,
+        snapshot_date: document.getElementById('snap-date').value,
+        notes: document.getElementById('snap-notes').value.trim() || null,
+      }),
+    });
+    const data = await res.json();
+    statusEl.textContent = `✓ Net Worth: ${fmt(data.net_worth)}`;
+    statusEl.style.color = 'var(--green)';
+  }
 
-// ── Prices ─────────────────────────────────────────────────────────────────────
-function buildPriceRows(alloc) {
-  const prices = {};
-  alloc.holdings.forEach(h => { prices[h.symbol] = h.price; });
-  const symbols = [...new Set(alloc.holdings.map(h=>h.symbol))].sort();
-  document.getElementById('price-rows').innerHTML = symbols.length
-    ? symbols.map(sym => `
+  // ── Prices ─────────────────────────────────────────────────────────────────────
+  function buildPriceRows(alloc) {
+    const prices = {};
+    alloc.holdings.forEach(h => { prices[h.symbol] = h.price; });
+    const symbols = [...new Set(alloc.holdings.map(h => h.symbol))].sort();
+    document.getElementById('price-rows').innerHTML = symbols.length
+      ? symbols.map(sym => `
         <tr>
           <td><strong style="color:var(--text-head);">${sym}</strong></td>
-          <td class="num">${prices[sym] ? '$'+prices[sym].toFixed(2) : '—'}</td>
+          <td class="num">${prices[sym] ? '$' + prices[sym].toFixed(2) : '—'}</td>
           <td class="num">
             <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
               <input type="number" step="0.01" min="0" class="field-input"
-                id="price-${sym}" placeholder="${prices[sym]?.toFixed(2)||'price'}"
+                id="price-${sym}" placeholder="${prices[sym]?.toFixed(2) || 'price'}"
                 style="width:90px;text-align:right;" />
               <button class="btn-secondary" onclick="manualPrice('${sym}')">Set</button>
             </div>
           </td>
         </tr>`).join('')
-    : `<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:20px;">Add holdings first.</td></tr>`;
-}
+      : `<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:20px;">Add holdings first.</td></tr>`;
+  }
 
-async function manualPrice(symbol) {
-  const val = parseFloat(document.getElementById('price-'+symbol)?.value);
-  if (!val || val <= 0) return;
-  await fetch('/api/prices/manual', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({symbol, price: val}),
-  });
-  const inp = document.getElementById('price-'+symbol);
-  if (inp) { inp.style.borderColor='var(--green)'; setTimeout(()=>inp.style.borderColor='',2000); }
-}
+  async function manualPrice(symbol) {
+    const val = parseFloat(document.getElementById('price-' + symbol)?.value);
+    if (!val || val <= 0) return;
+    await fetch('/api/prices/manual', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol, price: val }),
+    });
+    const inp = document.getElementById('price-' + symbol);
+    if (inp) { inp.style.borderColor = 'var(--green)'; setTimeout(() => inp.style.borderColor = '', 2000); }
+  }
 
-// ── Real Estate ────────────────────────────────────────────────────────────────
-function buildREForm(re) {
-  document.getElementById('re-form').innerHTML = re.length
-    ? re.map(p => `
-        <div style="margin-bottom:14px;" id="re-prop-${p.id}">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="font-size:12px;font-weight:600;color:var(--text-head);">${p.name}</div>
-            <button class="btn-danger" onclick="deleteProperty(${p.id},'${p.name.replace(/'/g,"\\'")}')">Delete</button>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div><label class="field-label">Est. Market Value</label>
-              <input type="number" step="1000" class="field-input" id="re-val-${p.id}" value="${p.estimated_value}" /></div>
-            <div><label class="field-label">Mortgage Balance</label>
-              <input type="number" step="100" class="field-input" id="re-mort-${p.id}" value="${p.mortgage_balance}" /></div>
-          </div>
-          <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
-            <button class="btn-secondary" onclick="updateRE(${p.id})">Save</button>
-            <span id="re-status-${p.id}" style="font-size:11px;"></span>
-          </div>
-        </div>`).join('<hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">')
-    : '<div style="font-size:11px;color:var(--text-dim);">No properties yet. Add one above.</div>';
-}
+  // ── Real Estate ────────────────────────────────────────────────────────────────
+  function buildREForm(re) {
+    const loanAccounts = allAccounts.filter(a => a.type === 'loan');
+    const loanOpts = `<option value="">— manual entry —</option>` +
+      loanAccounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
 
-async function addProperty() {
-  const name = document.getElementById('re-new-name').value.trim();
-  const statusEl = document.getElementById('re-add-status');
-  if (!name) { statusEl.textContent = 'Name required.'; statusEl.style.color='var(--red)'; return; }
-  statusEl.textContent = 'Adding…'; statusEl.style.color = 'var(--text-dim)';
-  const res = await fetch('/api/real-estate', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      name,
-      estimated_value:  parseFloat(document.getElementById('re-new-val').value) || 0,
-      mortgage_balance: parseFloat(document.getElementById('re-new-mort').value) || 0,
-      purchase_price:   parseFloat(document.getElementById('re-new-purchase').value) || 0,
-      address:  document.getElementById('re-new-addr').value.trim() || null,
-      purchase_date: document.getElementById('re-new-date').value || null,
-    }),
-  });
-  if (res.ok) {
-    statusEl.textContent = `✓ ${name} added`; statusEl.style.color = 'var(--green)';
-    ['re-new-name','re-new-val','re-new-mort','re-new-purchase','re-new-addr','re-new-date']
-      .forEach(id => { document.getElementById(id).value = ''; });
-    setTimeout(() => { statusEl.textContent = ''; }, 3000);
-    const re = await fetch('/api/real-estate').then(r=>r.json());
+    document.getElementById('re-form').innerHTML = re.length
+      ? re.map(p => {
+          const linked = p.account_id != null;
+          return `
+          <div style="margin-bottom:14px;" id="re-prop-${p.id}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:12px;font-weight:600;color:var(--text-head);">${p.name}</div>
+              <button class="btn-danger" onclick="deleteProperty(${p.id},'${p.name.replace(/'/g, "\\'")}')">Delete</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div><label class="field-label">Est. Market Value</label>
+                <input type="number" step="1000" class="field-input" id="re-val-${p.id}" value="${p.estimated_value}" /></div>
+              <div><label class="field-label">Mortgage Balance</label>
+                ${linked
+                  ? `<div style="padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;font-size:12px;color:var(--text-dim);">
+                       Auto — linked to <strong style="color:var(--accent);">${p.linked_account_name || 'account'}</strong>
+                     </div>`
+                  : `<input type="number" step="100" class="field-input" id="re-mort-${p.id}" value="${p.mortgage_balance}" />`
+                }
+              </div>
+            </div>
+            <div style="margin-top:8px;">
+              <label class="field-label">Linked Loan Account</label>
+              <select class="field-input" id="re-acct-${p.id}" onchange="linkREAccount(${p.id})"
+                style="max-width:260px;">
+                ${loanOpts.replace(`value="${p.account_id}"`, `value="${p.account_id}" selected`)}
+              </select>
+            </div>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+              <button class="btn-secondary" onclick="updateRE(${p.id})">Save Value</button>
+              <span id="re-status-${p.id}" style="font-size:11px;"></span>
+            </div>
+          </div>`;
+        }).join('<hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">')
+      : '<div style="font-size:11px;color:var(--text-dim);">No properties yet. Add one above.</div>';
+  }
+
+  async function addProperty() {
+    const name = document.getElementById('re-new-name').value.trim();
+    const statusEl = document.getElementById('re-add-status');
+    if (!name) { statusEl.textContent = 'Name required.'; statusEl.style.color = 'var(--red)'; return; }
+    statusEl.textContent = 'Adding…'; statusEl.style.color = 'var(--text-dim)';
+    const res = await fetch('/api/real-estate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        estimated_value: parseFloat(document.getElementById('re-new-val').value) || 0,
+        mortgage_balance: parseFloat(document.getElementById('re-new-mort').value) || 0,
+        purchase_price: parseFloat(document.getElementById('re-new-purchase').value) || 0,
+        address: document.getElementById('re-new-addr').value.trim() || null,
+        purchase_date: document.getElementById('re-new-date').value || null,
+      }),
+    });
+    if (res.ok) {
+      statusEl.textContent = `✓ ${name} added`; statusEl.style.color = 'var(--green)';
+      ['re-new-name', 're-new-val', 're-new-mort', 're-new-purchase', 're-new-addr', 're-new-date']
+        .forEach(id => { document.getElementById(id).value = ''; });
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+      const re = await fetch('/api/real-estate').then(r => r.json());
+      buildREForm(re);
+    }
+  }
+
+  async function deleteProperty(id, name) {
+    if (!confirm(`Delete "${name}"? This also removes its mortgage config and cost records.`)) return;
+    const res = await fetch(`/api/real-estate/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!data.ok) { alert(data.error); return; }
+    const re = await fetch('/api/real-estate').then(r => r.json());
     buildREForm(re);
   }
-}
 
-async function deleteProperty(id, name) {
-  if (!confirm(`Delete "${name}"? This also removes its mortgage config and cost records.`)) return;
-  const res = await fetch(`/api/real-estate/${id}`, {method:'DELETE'});
-  const data = await res.json();
-  if (!data.ok) { alert(data.error); return; }
-  const re = await fetch('/api/real-estate').then(r=>r.json());
-  buildREForm(re);
-}
-
-async function updateRE(id) {
-  const val  = parseFloat(document.getElementById(`re-val-${id}`).value) || 0;
-  const mort = parseFloat(document.getElementById(`re-mort-${id}`).value) || 0;
-  const statusEl = document.getElementById(`re-status-${id}`);
-  statusEl.textContent = 'Saving…';
-  const res = await fetch('/api/real-estate/update', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({property_id: id, estimated_value: val, mortgage_balance: mort}),
-  });
-  const data = await res.json();
-  statusEl.textContent = `✓ Equity: ${fmt(data.estimated_value - data.mortgage_balance)}`;
-  statusEl.style.color = 'var(--green)';
-}
-
-// ── Transactions ───────────────────────────────────────────────────────────────
-function buildTxnTable(txns) {
-  const countEl = document.getElementById('txn-count');
-  if (countEl) countEl.textContent = `${txns.length} shown`;
-  const tbody = document.getElementById('txn-tbody');
-  if (!tbody) return;
-  if (!txns.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px;">No transactions yet.</td></tr>`;
-    return;
+  async function linkREAccount(id) {
+    const accountId = parseInt(document.getElementById(`re-acct-${id}`).value) || null;
+    await fetch(`/api/real-estate/${id}/link-account`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account_id: accountId }),
+    });
+    const re = await fetch('/api/real-estate').then(r => r.json());
+    buildREForm(re);
   }
-  const DIR_COLOR = { income: 'var(--green)', expense: 'var(--red)', transfer: 'var(--text-dim)' };
-  const acctOpts = allAccounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
 
-  tbody.innerHTML = txns.map(t => {
-    const dc = DIR_COLOR[t.direction] || '';
-    return `
+  async function updateRE(id) {
+    const val = parseFloat(document.getElementById(`re-val-${id}`).value) || 0;
+    const mortEl = document.getElementById(`re-mort-${id}`);
+    const mort = mortEl ? parseFloat(mortEl.value) || 0 : 0;
+    const statusEl = document.getElementById(`re-status-${id}`);
+    statusEl.textContent = 'Saving…';
+    const res = await fetch('/api/real-estate/update', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ property_id: id, estimated_value: val, mortgage_balance: mort }),
+    });
+    const data = await res.json();
+    statusEl.textContent = `✓ Equity: ${fmt(data.estimated_value - data.mortgage_balance)}`;
+    statusEl.style.color = 'var(--green)';
+  }
+
+  // ── Transactions ───────────────────────────────────────────────────────────────
+  function buildTxnTable(txns) {
+    const countEl = document.getElementById('txn-count');
+    if (countEl) countEl.textContent = `${txns.length} shown`;
+    const tbody = document.getElementById('txn-tbody');
+    if (!tbody) return;
+    if (!txns.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px;">No transactions yet.</td></tr>`;
+      return;
+    }
+    const DIR_COLOR = { income: 'var(--green)', expense: 'var(--red)', transfer: 'var(--text-dim)' };
+    const acctOpts = allAccounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+
+    tbody.innerHTML = txns.map(t => {
+      const dc = DIR_COLOR[t.direction] || '';
+      return `
     <tr id="trow-${t.id}">
       <td>${t.txn_date}</td>
       <td><span style="color:${dc};font-size:10px;">${t.direction}</span></td>
       <td>${t.category}</td>
       <td class="num" style="color:${dc}">${fmt(t.amount)}</td>
-      <td style="color:var(--text-dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.description||''}</td>
-      <td style="color:var(--text-dim);font-size:11px;">${t.account_name||''}</td>
+      <td style="color:var(--text-dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.description || ''}</td>
+      <td style="color:var(--text-dim);font-size:11px;">${t.account_name || ''}</td>
       <td style="white-space:nowrap;">
         <div style="display:flex;gap:5px;justify-content:flex-end;">
           <button class="btn-secondary" onclick="startTxnEdit(${t.id})">Edit</button>
@@ -948,18 +1232,18 @@ function buildTxnTable(txns) {
       <td><input type="date" class="field-input" id="te-date-${t.id}" value="${t.txn_date}" style="width:130px;" /></td>
       <td>
         <select class="field-input" id="te-dir-${t.id}" style="width:100px;">
-          <option value="income"${t.direction==='income'?' selected':''}>income</option>
-          <option value="expense"${t.direction==='expense'?' selected':''}>expense</option>
-          <option value="transfer"${t.direction==='transfer'?' selected':''}>transfer</option>
+          <option value="income"${t.direction === 'income' ? ' selected' : ''}>income</option>
+          <option value="expense"${t.direction === 'expense' ? ' selected' : ''}>expense</option>
+          <option value="transfer"${t.direction === 'transfer' ? ' selected' : ''}>transfer</option>
         </select>
       </td>
-      <td><select class="field-input" id="te-cat-${t.id}" style="width:140px;">${buildCatOpts(t.category)}</select></td>
+      <td><select class="field-input" id="te-cat-${t.id}" style="width:140px;">${buildCatOpts(allBudgetCats, t.category)}</select></td>
       <td class="num"><input type="number" class="field-input" id="te-amt-${t.id}" value="${t.amount}" step="0.01" min="0" style="width:90px;text-align:right;" /></td>
-      <td><input type="text" class="field-input" id="te-desc-${t.id}" value="${t.description||''}" style="width:160px;" /></td>
+      <td><input type="text" class="field-input" id="te-desc-${t.id}" value="${t.description || ''}" style="width:160px;" /></td>
       <td>
         <select class="field-input" id="te-acct-${t.id}" style="width:140px;">
           <option value="">— none —</option>${acctOpts.replace(
-            `value="${t.account_id}"`, `value="${t.account_id}" selected`)}
+        `value="${t.account_id}"`, `value="${t.account_id}" selected`)}
         </select>
       </td>
       <td style="white-space:nowrap;">
@@ -969,81 +1253,81 @@ function buildTxnTable(txns) {
         </div>
       </td>
     </tr>`;
-  }).join('');
-}
-
-function startTxnEdit(id) {
-  document.getElementById(`trow-${id}`).style.display = 'none';
-  document.getElementById(`trow-edit-${id}`).style.display = 'table-row';
-}
-function cancelTxnEdit(id) {
-  document.getElementById(`trow-${id}`).style.display = '';
-  document.getElementById(`trow-edit-${id}`).style.display = 'none';
-}
-
-async function saveTxnEdit(id) {
-  const body = {
-    txn_date:    document.getElementById(`te-date-${id}`).value,
-    direction:   document.getElementById(`te-dir-${id}`).value,
-    category:    document.getElementById(`te-cat-${id}`).value.trim(),
-    amount:      parseFloat(document.getElementById(`te-amt-${id}`).value),
-    description: document.getElementById(`te-desc-${id}`).value.trim() || null,
-    account_id:  parseInt(document.getElementById(`te-acct-${id}`).value) || null,
-  };
-  await fetch(`/api/transactions/${id}`, {
-    method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body),
-  });
-  const txns = await fetch('/api/transactions').then(r=>r.json());
-  buildTxnTable(txns);
-}
-
-async function deleteTxn(id) {
-  if (!confirm('Delete this transaction?')) return;
-  await fetch(`/api/transactions/${id}`, {method:'DELETE'});
-  const txns = await fetch('/api/transactions').then(r=>r.json());
-  buildTxnTable(txns);
-}
-
-async function addTransaction() {
-  const txnDate = document.getElementById('txn-date').value;
-  const amount  = parseFloat(document.getElementById('txn-amount').value);
-  const dir     = document.getElementById('txn-dir').value;
-  const cat     = document.getElementById('txn-cat').value.trim();
-  const statusEl = document.getElementById('txn-status');
-
-  if (!txnDate || !amount || !cat) {
-    statusEl.textContent = 'Date, amount, and category required.';
-    statusEl.style.color = 'var(--red)'; return;
+    }).join('');
   }
-  const res = await fetch('/api/transactions', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      txn_date: txnDate, amount, direction: dir, category: cat,
-      description: document.getElementById('txn-desc').value.trim() || null,
-      account_id: parseInt(document.getElementById('txn-acct').value) || null,
-    }),
-  });
-  if (res.ok) {
-    statusEl.textContent = '✓ Added'; statusEl.style.color = 'var(--green)';
-    document.getElementById('txn-amount').value = '';
-    document.getElementById('txn-desc').value = '';
-    setTimeout(() => { statusEl.textContent = ''; }, 3000);
-    const txns = await fetch('/api/transactions').then(r=>r.json());
+
+  function startTxnEdit(id) {
+    document.getElementById(`trow-${id}`).style.display = 'none';
+    document.getElementById(`trow-edit-${id}`).style.display = 'table-row';
+  }
+  function cancelTxnEdit(id) {
+    document.getElementById(`trow-${id}`).style.display = '';
+    document.getElementById(`trow-edit-${id}`).style.display = 'none';
+  }
+
+  async function saveTxnEdit(id) {
+    const body = {
+      txn_date: document.getElementById(`te-date-${id}`).value,
+      direction: document.getElementById(`te-dir-${id}`).value,
+      category: document.getElementById(`te-cat-${id}`).value.trim(),
+      amount: parseFloat(document.getElementById(`te-amt-${id}`).value),
+      description: document.getElementById(`te-desc-${id}`).value.trim() || null,
+      account_id: parseInt(document.getElementById(`te-acct-${id}`).value) || null,
+    };
+    await fetch(`/api/transactions/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const txns = await fetch('/api/transactions').then(r => r.json());
     buildTxnTable(txns);
   }
-}
 
-// ── Allocation Targets ─────────────────────────────────────────────────────────
-const ALL_CLASSES = [
-  ['us_equity','US Equity'], ['intl_equity','Intl Equity'], ['bond','Bond'],
-  ['real_estate_fund','Real Estate Fund'], ['cash_equiv','Cash / MM'],
-  ['commodity','Commodity'], ['crypto','Crypto'], ['other','Other'],
-];
+  async function deleteTxn(id) {
+    if (!confirm('Delete this transaction?')) return;
+    await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+    const txns = await fetch('/api/transactions').then(r => r.json());
+    buildTxnTable(txns);
+  }
 
-function buildAllocTargets(targets) {
-  const map = {};
-  targets.forEach(t => { map[t.asset_class] = t.target_pct; });
-  document.getElementById('alloc-target-tbody').innerHTML = ALL_CLASSES.map(([cls, label]) => `
+  async function addTransaction() {
+    const txnDate = document.getElementById('txn-date').value;
+    const amount = parseFloat(document.getElementById('txn-amount').value);
+    const dir = document.getElementById('txn-dir').value;
+    const cat = document.getElementById('txn-cat').value.trim();
+    const statusEl = document.getElementById('txn-status');
+
+    if (!txnDate || !amount || !cat) {
+      statusEl.textContent = 'Date, amount, and category required.';
+      statusEl.style.color = 'var(--red)'; return;
+    }
+    const res = await fetch('/api/transactions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        txn_date: txnDate, amount, direction: dir, category: cat,
+        description: document.getElementById('txn-desc').value.trim() || null,
+        account_id: parseInt(document.getElementById('txn-acct').value) || null,
+      }),
+    });
+    if (res.ok) {
+      statusEl.textContent = '✓ Added'; statusEl.style.color = 'var(--green)';
+      document.getElementById('txn-amount').value = '';
+      document.getElementById('txn-desc').value = '';
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+      const txns = await fetch('/api/transactions').then(r => r.json());
+      buildTxnTable(txns);
+    }
+  }
+
+  // ── Allocation Targets ─────────────────────────────────────────────────────────
+  const ALL_CLASSES = [
+    ['us_equity', 'US Equity'], ['intl_equity', 'Intl Equity'], ['bond', 'Bond'],
+    ['real_estate_fund', 'Real Estate Fund'], ['cash_equiv', 'Cash / MM'],
+    ['commodity', 'Commodity'], ['crypto', 'Crypto'], ['other', 'Other'],
+  ];
+
+  function buildAllocTargets(targets) {
+    const map = {};
+    targets.forEach(t => { map[t.asset_class] = t.target_pct; });
+    document.getElementById('alloc-target-tbody').innerHTML = ALL_CLASSES.map(([cls, label]) => `
     <tr>
       <td>${label}</td>
       <td class="num">
@@ -1052,31 +1336,31 @@ function buildAllocTargets(targets) {
           style="width:80px;text-align:right;" />
       </td>
     </tr>`).join('');
-}
+  }
 
-async function saveAllTargets() {
-  const statusEl = document.getElementById('alloc-status');
-  statusEl.textContent = 'Saving…'; statusEl.style.color = 'var(--text-dim)';
-  await Promise.all(ALL_CLASSES.map(([cls]) => {
-    const val = parseFloat(document.getElementById(`at-${cls}`).value) || 0;
-    return fetch('/api/allocation-targets', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({asset_class: cls, target_pct: val}),
-    });
-  }));
-  statusEl.textContent = '✓ Saved'; statusEl.style.color = 'var(--green)';
-  setTimeout(() => { statusEl.textContent = ''; }, 3000);
-}
+  async function saveAllTargets() {
+    const statusEl = document.getElementById('alloc-status');
+    statusEl.textContent = 'Saving…'; statusEl.style.color = 'var(--text-dim)';
+    await Promise.all(ALL_CLASSES.map(([cls]) => {
+      const val = parseFloat(document.getElementById(`at-${cls}`).value) || 0;
+      return fetch('/api/allocation-targets', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ asset_class: cls, target_pct: val }),
+      });
+    }));
+    statusEl.textContent = '✓ Saved'; statusEl.style.color = 'var(--green)';
+    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+  }
 
-// ── Budget Categories ──────────────────────────────────────────────────────────
-function buildBudgetCats(cats) {
-  allBudgetCats = cats;
-  const txnCat = document.getElementById('txn-cat');
-  if (txnCat) txnCat.innerHTML = buildCatOpts(txnCat.value);
+  // ── Budget Categories ──────────────────────────────────────────────────────────
+  function buildBudgetCats(cats) {
+    allBudgetCats = cats;
+    const txnCat = document.getElementById('txn-cat');
+    if (txnCat) txnCat.innerHTML = buildCatOpts(allBudgetCats, txnCat.value);
 
-  const tbody = document.getElementById('bc-tbody');
-  tbody.innerHTML = cats.length
-    ? cats.map(c => `
+    const tbody = document.getElementById('bc-tbody');
+    tbody.innerHTML = cats.length
+      ? cats.map(c => `
         <tr id="bcrow-${c.id}">
           <td>${c.name}</td>
           <td><span style="font-size:10px;color:var(--text-dim);">${c.direction}</span></td>
@@ -1084,12 +1368,12 @@ function buildBudgetCats(cats) {
           <td>
             <div style="display:flex;gap:5px;justify-content:flex-end;">
               <button class="btn-secondary" onclick="openBCEdit(${c.id})">Edit</button>
-              <button class="btn-danger" onclick="deleteBudgetCat(${c.id},'${c.name.replace(/'/g,"\\'")}')">Del</button>
+              <button class="btn-danger" onclick="deleteBudgetCat(${c.id},'${c.name.replace(/'/g, "\\'")}')">Del</button>
             </div>
           </td>
         </tr>
         <tr id="bcrow-edit-${c.id}" class="hrow-edit">
-          <td><input class="field-input" id="bc-n-${c.id}" value="${c.name.replace(/"/g,'&quot;')}" /></td>
+          <td><input class="field-input" id="bc-n-${c.id}" value="${c.name.replace(/"/g, '&quot;')}" /></td>
           <td><span style="font-size:10px;color:var(--text-dim);">${c.direction}</span></td>
           <td class="num"><input type="number" class="field-input" id="bc-t-${c.id}" value="${c.monthly_target}" step="10" style="width:80px;text-align:right;" /></td>
           <td>
@@ -1099,246 +1383,332 @@ function buildBudgetCats(cats) {
             </div>
           </td>
         </tr>`).join('')
-    : `<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:20px;">No categories yet.</td></tr>`;
-}
+      : `<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:20px;">No categories yet.</td></tr>`;
+  }
 
-function openBCEdit(id) {
-  document.getElementById(`bcrow-${id}`).style.display = 'none';
-  document.getElementById(`bcrow-edit-${id}`).style.display = 'table-row';
-}
-function closeBCEdit(id) {
-  document.getElementById(`bcrow-${id}`).style.display = '';
-  document.getElementById(`bcrow-edit-${id}`).style.display = 'none';
-}
+  function openBCEdit(id) {
+    document.getElementById(`bcrow-${id}`).style.display = 'none';
+    document.getElementById(`bcrow-edit-${id}`).style.display = 'table-row';
+  }
+  function closeBCEdit(id) {
+    document.getElementById(`bcrow-${id}`).style.display = '';
+    document.getElementById(`bcrow-edit-${id}`).style.display = 'none';
+  }
 
-async function saveBudgetCat(id) {
-  const name   = document.getElementById(`bc-n-${id}`).value.trim();
-  const target = parseFloat(document.getElementById(`bc-t-${id}`).value) || 0;
-  if (!name) return;
-  await fetch(`/api/budget-categories/${id}`, {
-    method:'PUT', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({name, monthly_target: target}),
-  });
-  const cats = await fetch('/api/budget-categories').then(r=>r.json());
-  buildBudgetCats(cats);
-}
-
-async function deleteBudgetCat(id, name) {
-  if (!confirm(`Delete category "${name}"?`)) return;
-  await fetch(`/api/budget-categories/${id}`, {method:'DELETE'});
-  const cats = await fetch('/api/budget-categories').then(r=>r.json());
-  buildBudgetCats(cats);
-}
-
-async function addBudgetCategory() {
-  const name   = document.getElementById('bc-name').value.trim();
-  const dir    = document.getElementById('bc-dir').value;
-  const target = parseFloat(document.getElementById('bc-target').value) || 0;
-  const statusEl = document.getElementById('bc-status');
-  if (!name) { statusEl.textContent = 'Name required.'; statusEl.style.color='var(--red)'; return; }
-  const res = await fetch('/api/budget-categories', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({name, direction: dir, monthly_target: target}),
-  });
-  if (res.ok) {
-    statusEl.textContent = '✓ Added'; statusEl.style.color = 'var(--green)';
-    document.getElementById('bc-name').value = '';
-    document.getElementById('bc-target').value = '';
-    setTimeout(() => { statusEl.textContent = ''; }, 3000);
-    const cats = await fetch('/api/budget-categories').then(r=>r.json());
+  async function saveBudgetCat(id) {
+    const name = document.getElementById(`bc-n-${id}`).value.trim();
+    const target = parseFloat(document.getElementById(`bc-t-${id}`).value) || 0;
+    if (!name) return;
+    await fetch(`/api/budget-categories/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, monthly_target: target }),
+    });
+    const cats = await fetch('/api/budget-categories').then(r => r.json());
     buildBudgetCats(cats);
   }
-}
 
-// ── CSV Import ─────────────────────────────────────────────────────────────────
-function loadCSVFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('csv-paste').value = e.target.result;
-    previewCSV();
-  };
-  reader.readAsText(file);
-}
+  async function deleteBudgetCat(id, name) {
+    if (!confirm(`Delete category "${name}"?`)) return;
+    await fetch(`/api/budget-categories/${id}`, { method: 'DELETE' });
+    const cats = await fetch('/api/budget-categories').then(r => r.json());
+    buildBudgetCats(cats);
+  }
 
-function previewCSV() {
-  const text = document.getElementById('csv-paste').value.trim();
-  const previewEl = document.getElementById('csv-preview');
-  if (!text) { previewEl.innerHTML = ''; return; }
-
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
-  if (!lines.length) { previewEl.innerHTML = ''; return; }
-
-  const firstCols = lines[0].split(',').map(c => c.trim().toLowerCase());
-  const isHeader = ['date','net_worth','nw','snapshot_date','cash','invested'].some(k => firstCols.includes(k));
-
-  const preview = lines.slice(0, 6);
-  const tableRows = preview.map((line, i) => {
-    const cols = line.split(',');
-    if (i === 0 && isHeader) {
-      return `<tr>${cols.map(c => `<th style="padding:4px 8px;color:var(--accent);font-size:10px;letter-spacing:.06em;">${c.trim()}</th>`).join('')}</tr>`;
+  async function addBudgetCategory() {
+    const name = document.getElementById('bc-name').value.trim();
+    const dir = document.getElementById('bc-dir').value;
+    const target = parseFloat(document.getElementById('bc-target').value) || 0;
+    const statusEl = document.getElementById('bc-status');
+    if (!name) { statusEl.textContent = 'Name required.'; statusEl.style.color = 'var(--red)'; return; }
+    const res = await fetch('/api/budget-categories', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, direction: dir, monthly_target: target }),
+    });
+    if (res.ok) {
+      statusEl.textContent = '✓ Added'; statusEl.style.color = 'var(--green)';
+      document.getElementById('bc-name').value = '';
+      document.getElementById('bc-target').value = '';
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+      const cats = await fetch('/api/budget-categories').then(r => r.json());
+      buildBudgetCats(cats);
     }
-    return `<tr>${cols.map(c => `<td style="padding:4px 8px;font-size:11px;">${c.trim()}</td>`).join('')}</tr>`;
-  }).join('');
+  }
 
-  const more = lines.length > 6
-    ? `<div style="font-size:10px;color:var(--text-dim);margin-top:5px;">… ${lines.length - 6} more row${lines.length-6===1?'':'s'}</div>`
-    : '';
+  // ── CSV Import ─────────────────────────────────────────────────────────────────
+  function loadCSVFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('csv-paste').value = e.target.result;
+      previewCSV();
+    };
+    reader.readAsText(file);
+  }
 
-  previewEl.innerHTML = `
+  function previewCSV() {
+    const text = document.getElementById('csv-paste').value.trim();
+    const previewEl = document.getElementById('csv-preview');
+    if (!text) { previewEl.innerHTML = ''; return; }
+
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    if (!lines.length) { previewEl.innerHTML = ''; return; }
+
+    const firstCols = lines[0].split(',').map(c => c.trim().toLowerCase());
+    const isHeader = ['date', 'net_worth', 'nw', 'snapshot_date', 'cash', 'invested'].some(k => firstCols.includes(k));
+
+    const preview = lines.slice(0, 6);
+    const tableRows = preview.map((line, i) => {
+      const cols = line.split(',');
+      if (i === 0 && isHeader) {
+        return `<tr>${cols.map(c => `<th style="padding:4px 8px;color:var(--accent);font-size:10px;letter-spacing:.06em;">${c.trim()}</th>`).join('')}</tr>`;
+      }
+      return `<tr>${cols.map(c => `<td style="padding:4px 8px;font-size:11px;">${c.trim()}</td>`).join('')}</tr>`;
+    }).join('');
+
+    const more = lines.length > 6
+      ? `<div style="font-size:10px;color:var(--text-dim);margin-top:5px;">… ${lines.length - 6} more row${lines.length - 6 === 1 ? '' : 's'}</div>`
+      : '';
+
+    previewEl.innerHTML = `
     <div style="font-size:10px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em;">
-      Preview · ${lines.length} row${lines.length===1?'':'s'}${isHeader ? ' · header detected' : ''}
+      Preview · ${lines.length} row${lines.length === 1 ? '' : 's'}${isHeader ? ' · header detected' : ''}
     </div>
     <div class="table-scroll"><table class="data-table">${tableRows}</table></div>
     ${more}`;
-}
-
-async function importCSV() {
-  const text = document.getElementById('csv-paste').value.trim();
-  const resultEl = document.getElementById('csv-result');
-  if (!text) {
-    resultEl.textContent = 'Paste or load a CSV first.';
-    resultEl.style.color = 'var(--red)'; return;
   }
-  resultEl.textContent = 'Importing…';
-  resultEl.style.color = 'var(--text-dim)';
 
-  const res = await fetch('/api/snapshots/import-csv', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ csv_text: text }),
-  }).then(r => r.json());
-
-  const parts = [];
-  if (res.inserted) parts.push(`${res.inserted} inserted`);
-  if (res.updated)  parts.push(`${res.updated} updated`);
-  if (res.skipped)  parts.push(`${res.skipped} skipped`);
-
-  const ok = res.inserted > 0 || res.updated > 0;
-  resultEl.textContent = parts.length ? `✓ ${parts.join(' · ')}` : '✗ Nothing imported';
-  resultEl.style.color = ok ? 'var(--green)' : 'var(--red)';
-
-  if (res.errors && res.errors.length) {
-    const prevEl = document.getElementById('csv-preview');
-    prevEl.innerHTML += res.errors.map(e =>
-      `<div style="font-size:10px;color:var(--red);margin-top:3px;">${e}</div>`
-    ).join('');
-  }
-}
-
-// ── Transaction CSV Import ─────────────────────────────────────────────────────
-function loadTxnCSVFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('txn-csv-paste').value = e.target.result;
-    previewTxnCSV();
-  };
-  reader.readAsText(file);
-}
-
-function previewTxnCSV() {
-  const text = document.getElementById('txn-csv-paste').value.trim();
-  const previewEl = document.getElementById('txn-csv-preview');
-  if (!text) { previewEl.innerHTML = ''; return; }
-
-  const lines = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
-  if (!lines.length) { previewEl.innerHTML = ''; return; }
-
-  const KNOWN_COLS = new Set([
-    'date','txn_date','transaction_date','posted_date','post_date','posting_date',
-    'amount','amt','direction','type','dr_cr','transaction_type','credit_debit',
-    'category','merchant','payee','description','memo','note','narrative','details',
-    'account_id','account','recurring',
-  ]);
-  const firstCols = lines[0].split(',').map(c => c.toLowerCase().trim().replace(/^"|"$/g,''));
-  const isHeader = firstCols.some(c => KNOWN_COLS.has(c));
-
-  const preview = lines.slice(0, 7);
-  const tableRows = preview.map((line, i) => {
-    const cols = line.split(',');
-    if (i === 0 && isHeader) {
-      return `<tr>${cols.map(c=>`<th style="padding:4px 8px;color:var(--accent);font-size:10px;letter-spacing:.06em;">${c.trim()}</th>`).join('')}</tr>`;
+  async function importCSV() {
+    const text = document.getElementById('csv-paste').value.trim();
+    const resultEl = document.getElementById('csv-result');
+    if (!text) {
+      resultEl.textContent = 'Paste or load a CSV first.';
+      resultEl.style.color = 'var(--red)'; return;
     }
-    return `<tr>${cols.map(c=>`<td style="padding:4px 8px;font-size:11px;">${c.trim()}</td>`).join('')}</tr>`;
-  }).join('');
+    resultEl.textContent = 'Importing…';
+    resultEl.style.color = 'var(--text-dim)';
 
-  const more = lines.length > 7
-    ? `<div style="font-size:10px;color:var(--text-dim);margin-top:5px;">… ${lines.length-7} more row${lines.length-7===1?'':'s'}</div>`
-    : '';
+    const res = await fetch('/api/snapshots/import-csv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csv_text: text }),
+    }).then(r => r.json());
 
-  previewEl.innerHTML = `
+    const parts = [];
+    if (res.inserted) parts.push(`${res.inserted} inserted`);
+    if (res.updated) parts.push(`${res.updated} updated`);
+    if (res.skipped) parts.push(`${res.skipped} skipped`);
+
+    const ok = res.inserted > 0 || res.updated > 0;
+    resultEl.textContent = parts.length ? `✓ ${parts.join(' · ')}` : '✗ Nothing imported';
+    resultEl.style.color = ok ? 'var(--green)' : 'var(--red)';
+
+    if (res.errors && res.errors.length) {
+      const prevEl = document.getElementById('csv-preview');
+      prevEl.innerHTML += res.errors.map(e =>
+        `<div style="font-size:10px;color:var(--red);margin-top:3px;">${e}</div>`
+      ).join('');
+    }
+  }
+
+  // ── Transaction CSV Import ─────────────────────────────────────────────────────
+  function loadTxnCSVFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('txn-csv-paste').value = e.target.result;
+      previewTxnCSV();
+    };
+    reader.readAsText(file);
+  }
+
+  function previewTxnCSV() {
+    const text = document.getElementById('txn-csv-paste').value.trim();
+    const previewEl = document.getElementById('txn-csv-preview');
+    if (!text) { previewEl.innerHTML = ''; return; }
+
+    const lines = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+    if (!lines.length) { previewEl.innerHTML = ''; return; }
+
+    const KNOWN_COLS = new Set([
+      'date', 'txn_date', 'transaction_date', 'posted_date', 'post_date', 'posting_date',
+      'amount', 'amt', 'direction', 'type', 'dr_cr', 'transaction_type', 'credit_debit',
+      'category', 'merchant', 'payee', 'description', 'memo', 'note', 'narrative', 'details',
+      'account_id', 'account', 'recurring',
+    ]);
+    const firstCols = lines[0].split(',').map(c => c.toLowerCase().trim().replace(/^"|"$/g, ''));
+    const isHeader = firstCols.some(c => KNOWN_COLS.has(c));
+
+    const preview = lines.slice(0, 7);
+    const tableRows = preview.map((line, i) => {
+      const cols = line.split(',');
+      if (i === 0 && isHeader) {
+        return `<tr>${cols.map(c => `<th style="padding:4px 8px;color:var(--accent);font-size:10px;letter-spacing:.06em;">${c.trim()}</th>`).join('')}</tr>`;
+      }
+      return `<tr>${cols.map(c => `<td style="padding:4px 8px;font-size:11px;">${c.trim()}</td>`).join('')}</tr>`;
+    }).join('');
+
+    const more = lines.length > 7
+      ? `<div style="font-size:10px;color:var(--text-dim);margin-top:5px;">… ${lines.length - 7} more row${lines.length - 7 === 1 ? '' : 's'}</div>`
+      : '';
+
+    previewEl.innerHTML = `
     <div style="font-size:10px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em;">
-      Preview · ${lines.length} row${lines.length===1?'':'s'}${isHeader ? ' · header detected' : ''}
+      Preview · ${lines.length} row${lines.length === 1 ? '' : 's'}${isHeader ? ' · header detected' : ''}
     </div>
     <div class="table-scroll"><table class="data-table">${tableRows}</table></div>
     ${more}`;
-}
-
-async function importTxnCSV() {
-  const text = document.getElementById('txn-csv-paste').value.trim();
-  const resultEl = document.getElementById('txn-csv-result');
-  if (!text) {
-    resultEl.textContent = 'Paste or load a CSV first.';
-    resultEl.style.color = 'var(--red)'; return;
   }
-  const acctVal = document.getElementById('txn-csv-acct').value;
-  const acctId = acctVal ? parseInt(acctVal) : null;
-  resultEl.textContent = 'Importing…';
-  resultEl.style.color = 'var(--text-dim)';
 
-  const res = await fetch('/api/transactions/import-csv', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ csv_text: text, account_id: acctId }),
-  }).then(r => r.json());
+  async function importTxnCSV() {
+    const text = document.getElementById('txn-csv-paste').value.trim();
+    const resultEl = document.getElementById('txn-csv-result');
+    if (!text) {
+      resultEl.textContent = 'Paste or load a CSV first.';
+      resultEl.style.color = 'var(--red)'; return;
+    }
+    const acctVal = document.getElementById('txn-csv-acct').value;
+    const acctId = acctVal ? parseInt(acctVal) : null;
+    resultEl.textContent = 'Importing…';
+    resultEl.style.color = 'var(--text-dim)';
 
-  const parts = [];
-  if (res.inserted) parts.push(`${res.inserted} imported`);
-  if (res.skipped)  parts.push(`${res.skipped} skipped`);
-  const ok = res.inserted > 0;
-  resultEl.textContent = parts.length ? `✓ ${parts.join(' · ')}` : '✗ Nothing imported';
-  resultEl.style.color = ok ? 'var(--green)' : 'var(--red)';
+    const res = await fetch('/api/transactions/import-csv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csv_text: text, account_id: acctId }),
+    }).then(r => r.json());
 
-  if (res.errors && res.errors.length) {
-    document.getElementById('txn-csv-preview').innerHTML +=
-      res.errors.map(e => `<div style="font-size:10px;color:var(--red);margin-top:3px;">${e}</div>`).join('');
+    const parts = [];
+    if (res.inserted) parts.push(`${res.inserted} imported`);
+    if (res.skipped) parts.push(`${res.skipped} skipped`);
+    const ok = res.inserted > 0;
+    resultEl.textContent = parts.length ? `✓ ${parts.join(' · ')}` : '✗ Nothing imported';
+    resultEl.style.color = ok ? 'var(--green)' : 'var(--red)';
+
+    if (res.errors && res.errors.length) {
+      document.getElementById('txn-csv-preview').innerHTML +=
+        res.errors.map(e => `<div style="font-size:10px;color:var(--red);margin-top:3px;">${e}</div>`).join('');
+    }
+    if (ok) {
+      const txns = await fetch('/api/transactions').then(r => r.json());
+      buildTxnTable(txns);
+    }
   }
-  if (ok) {
-    const txns = await fetch('/api/transactions').then(r=>r.json());
-    buildTxnTable(txns);
+
+  // ── Holdings CSV Import ────────────────────────────────────────────────────────
+  function loadHoldCSVFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('hold-csv-paste').value = e.target.result;
+      previewHoldCSV();
+    };
+    reader.readAsText(file);
   }
-}
 
-// ── Danger Zone ────────────────────────────────────────────────────────────────
-function confirmReset() {
-  document.getElementById('reset-confirm').style.display = 'block';
-  document.getElementById('reset-confirm-input').value = '';
-  document.getElementById('reset-confirm-input').focus();
-}
-function cancelReset() {
-  document.getElementById('reset-confirm').style.display = 'none';
-}
-async function executeReset() {
-  if (document.getElementById('reset-confirm-input').value !== 'RESET') {
-    document.getElementById('reset-status').textContent = 'Type RESET to confirm.';
-    document.getElementById('reset-status').style.color = 'var(--red)'; return;
+  function previewHoldCSV() {
+    const text = document.getElementById('hold-csv-paste').value.trim();
+    const previewEl = document.getElementById('hold-csv-preview');
+    if (!text) { previewEl.innerHTML = ''; return; }
+
+    const lines = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+    if (!lines.length) { previewEl.innerHTML = ''; return; }
+
+    const HOLD_COLS = new Set([
+      'symbol', 'ticker', 'sym', 'description', 'quantity', 'shares', 'qty',
+      'average cost basis', 'average_cost_basis', 'avg_cost', 'cost_basis',
+      'cost basis', 'cost basis total', 'security_type', 'security type',
+      'last price', 'price', 'market value',
+    ]);
+    const firstCols = lines[0].split(',').map(c => c.toLowerCase().trim().replace(/^"|"$/g, ''));
+    const isHeader = firstCols.some(c => HOLD_COLS.has(c));
+
+    const preview = lines.slice(0, 7);
+    const tableRows = preview.map((line, i) => {
+      const cols = line.split(',');
+      if (i === 0 && isHeader) {
+        return `<tr>${cols.map(c => `<th style="padding:4px 8px;color:var(--accent);font-size:10px;letter-spacing:.06em;">${c.trim()}</th>`).join('')}</tr>`;
+      }
+      return `<tr>${cols.map(c => `<td style="padding:4px 8px;font-size:11px;">${c.trim()}</td>`).join('')}</tr>`;
+    }).join('');
+
+    const more = lines.length > 7
+      ? `<div style="font-size:10px;color:var(--text-dim);margin-top:5px;">… ${lines.length - 7} more row${lines.length - 7 === 1 ? '' : 's'}</div>`
+      : '';
+
+    previewEl.innerHTML = `
+    <div style="font-size:10px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em;">
+      Preview · ${lines.length} row${lines.length === 1 ? '' : 's'}${isHeader ? ' · header detected' : ''}
+    </div>
+    <div class="table-scroll"><table class="data-table">${tableRows}</table></div>
+    ${more}`;
   }
-  await fetch('/api/reset', {method:'POST'});
-  document.getElementById('reset-status').textContent = '✓ All data cleared. Reload to start fresh.';
-  document.getElementById('reset-status').style.color = 'var(--green)';
-  document.getElementById('reset-confirm').style.display = 'none';
-  // Reload after a beat so the user sees the confirmation
-  setTimeout(() => location.reload(), 2000);
-}
 
-const VALID_TABS = new Set(['holdings','accounts','snapshot','prices','transactions','realestate','allocation','budget','danger']);
+  async function importHoldCSV() {
+    const text = document.getElementById('hold-csv-paste').value.trim();
+    const acctVal = document.getElementById('hold-csv-acct').value;
+    const resultEl = document.getElementById('hold-csv-result');
 
-loadData().then(() => {
-  const hash = window.location.hash.slice(1);
-  if (hash && VALID_TABS.has(hash)) showTab(hash);
-});
+    if (!text) {
+      resultEl.textContent = 'Paste or load a CSV first.';
+      resultEl.style.color = 'var(--red)'; return;
+    }
+    if (!acctVal) {
+      resultEl.textContent = 'Select an account first.';
+      resultEl.style.color = 'var(--red)'; return;
+    }
+
+    resultEl.textContent = 'Importing…';
+    resultEl.style.color = 'var(--text-dim)';
+
+    const res = await fetch('/api/holdings/import-csv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csv_text: text, account_id: parseInt(acctVal) }),
+    }).then(r => r.json());
+
+    const parts = [];
+    if (res.inserted) parts.push(`${res.inserted} added`);
+    if (res.updated) parts.push(`${res.updated} updated`);
+    if (res.skipped) parts.push(`${res.skipped} skipped`);
+    const ok = (res.inserted + res.updated) > 0;
+    resultEl.textContent = parts.length ? `✓ ${parts.join(' · ')}` : '✗ Nothing imported';
+    resultEl.style.color = ok ? 'var(--green)' : 'var(--red)';
+
+    if (res.errors && res.errors.length) {
+      document.getElementById('hold-csv-preview').innerHTML +=
+        res.errors.map(e => `<div style="font-size:10px;color:var(--red);margin-top:3px;">${e}</div>`).join('');
+    }
+    if (ok) buildHoldingsTable();
+  }
+
+  // ── Danger Zone ────────────────────────────────────────────────────────────────
+  function confirmReset() {
+    document.getElementById('reset-confirm').style.display = 'block';
+    document.getElementById('reset-confirm-input').value = '';
+    document.getElementById('reset-confirm-input').focus();
+  }
+  function cancelReset() {
+    document.getElementById('reset-confirm').style.display = 'none';
+  }
+  async function executeReset() {
+    if (document.getElementById('reset-confirm-input').value !== 'RESET') {
+      document.getElementById('reset-status').textContent = 'Type RESET to confirm.';
+      document.getElementById('reset-status').style.color = 'var(--red)'; return;
+    }
+    await fetch('/api/reset', { method: 'POST' });
+    document.getElementById('reset-status').textContent = '✓ All data cleared. Reload to start fresh.';
+    document.getElementById('reset-status').style.color = 'var(--green)';
+    document.getElementById('reset-confirm').style.display = 'none';
+    // Reload after a beat so the user sees the confirmation
+    setTimeout(() => location.reload(), 2000);
+  }
+
+  loadData().then(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash) showTab(hash);
+  });
 </script>
 {% endblock %}

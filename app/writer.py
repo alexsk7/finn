@@ -234,13 +234,28 @@ def get_all_holdings_raw() -> list[dict]:
 # ── Accounts ──────────────────────────────────────────────────────────────────
 
 def add_account(name: str, institution: str, type: str,
-                notes: str | None = None) -> dict:
+                notes: str | None = None,
+                interest_rate: float | None = None,
+                minimum_payment: float | None = None,
+                opening_balance: float | None = None) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
-            "INSERT INTO accounts (name, institution, type, notes) VALUES (?,?,?,?)",
-            (name, institution, type, notes),
+            "INSERT INTO accounts (name, institution, type, notes, interest_rate, minimum_payment, opening_balance) VALUES (?,?,?,?,?,?,?)",
+            (name, institution, type, notes, interest_rate, minimum_payment, opening_balance or 0),
         )
         row = conn.execute("SELECT * FROM accounts WHERE id=?", (cur.lastrowid,)).fetchone()
+    return dict(row)
+
+
+def update_account(account_id: int, interest_rate: float | None,
+                   minimum_payment: float | None,
+                   opening_balance: float | None = None) -> dict:
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE accounts SET interest_rate=?, minimum_payment=?, opening_balance=? WHERE id=?",
+            (interest_rate, minimum_payment, opening_balance or 0, account_id),
+        )
+        row = conn.execute("SELECT * FROM accounts WHERE id=?", (account_id,)).fetchone()
     return dict(row)
 
 
@@ -481,6 +496,174 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
     }
 
 
+# ── CSV Holdings Import ───────────────────────────────────────────────────────
+
+def import_holdings_csv(csv_text: str, account_id: int) -> dict:
+    """
+    Import holdings from a brokerage CSV export (Fidelity, Schwab, Vanguard, etc.).
+
+    Auto-detects the header row by scanning for a line that contains 'symbol' or
+    'ticker' as a column — handles broker files that include account-metadata rows
+    above the actual header.
+
+    Recognized columns (case-insensitive):
+      symbol / ticker
+      description / name / investment name  → holding name
+      quantity / shares / qty
+      average cost basis / avg_cost         → per-share cost (preferred)
+      cost_basis / cost basis total         → total cost (divided by shares)
+      security_type / asset_class           → maps to holdings asset_class enum
+    """
+    import csv as _csv
+    import io
+
+    COL_ALIASES = {
+        'symbol': 'symbol', 'ticker': 'symbol', 'sym': 'symbol',
+        'description': 'name', 'name': 'name', 'security_name': 'name',
+        'security': 'name', 'investment name': 'name', 'fund name': 'name',
+        'quantity': 'shares', 'shares': 'shares', 'qty': 'shares', 'units': 'shares',
+        'average_cost_basis': 'cost_per_share', 'average cost basis': 'cost_per_share',
+        'avg_cost': 'cost_per_share', 'average_cost': 'cost_per_share',
+        'unit_cost': 'cost_per_share', 'cost_per_share': 'cost_per_share',
+        'cost_basis_per_share': 'cost_per_share',
+        'cost_basis': 'cost_total', 'cost basis': 'cost_total',
+        'cost_basis_total': 'cost_total', 'cost basis total': 'cost_total',
+        'total_cost': 'cost_total', 'total cost': 'cost_total',
+        'asset_class': 'asset_class', 'type': 'asset_class',
+        'security_type': 'asset_class', 'security type': 'asset_class',
+    }
+
+    CLASS_MAP = {
+        'equity': 'us_equity', 'stock': 'us_equity', 'etf': 'us_equity',
+        'mutual fund': 'us_equity', 'fund': 'us_equity',
+        'exchange-traded fund': 'us_equity', 'exchange traded fund': 'us_equity',
+        'bond': 'bond', 'fixed income': 'bond', 'fixed_income': 'bond',
+        'cash & money market': 'cash_equiv', 'cash and money market': 'cash_equiv',
+        'money market': 'cash_equiv',
+        'crypto': 'crypto', 'cryptocurrency': 'crypto',
+        'reit': 'real_estate_fund', 'real estate': 'real_estate_fund',
+        'commodity': 'commodity',
+    }
+
+    VALID_CLASSES = {
+        'us_equity', 'intl_equity', 'bond', 'real_estate_fund',
+        'commodity', 'cash_equiv', 'crypto', 'other',
+    }
+
+    SKIP_SYMBOLS = {
+        'account total', 'total', 'pending activity', 'pending',
+        'subtotal', 'grand total',
+    }
+
+    def clean_float(s: str) -> float:
+        return float(s.strip().replace('$', '').replace(',', '').replace('%', '').replace('+', '') or 0)
+
+    lines = [l for l in csv_text.strip().splitlines() if l.strip()]
+    if not lines:
+        return {"inserted": 0, "updated": 0, "skipped": 0, "errors": ["Empty input"], "total": 0}
+
+    # Find header row — first line with 'symbol' or 'ticker' as a column value
+    header_idx = None
+    for i, line in enumerate(lines):
+        cols = [c.strip().strip('"').lower() for c in line.split(',')]
+        if any(c in ('symbol', 'ticker', 'sym') for c in cols):
+            header_idx = i
+            break
+
+    if header_idx is None:
+        return {
+            "inserted": 0, "updated": 0, "skipped": 0,
+            "errors": ["Could not detect header row — CSV must contain a 'Symbol' column"],
+            "total": 0,
+        }
+
+    reader = _csv.DictReader(io.StringIO('\n'.join(lines[header_idx:])))
+
+    inserted = updated = skipped = 0
+    errors: list[str] = []
+    today = date.today().isoformat()
+
+    with get_conn() as conn:
+        for i, row in enumerate(reader, 1):
+            try:
+                norm = {
+                    COL_ALIASES.get(k.strip().strip('"').lower(), k.strip().lower()):
+                    (v or '').strip().strip('"')
+                    for k, v in row.items() if k
+                }
+
+                symbol = norm.get('symbol', '').strip().upper()
+                if not symbol or symbol.startswith('--') or symbol.lower() in SKIP_SYMBOLS:
+                    skipped += 1
+                    continue
+
+                shares_raw = norm.get('shares', '').strip()
+                if not shares_raw:
+                    skipped += 1
+                    continue
+                shares = clean_float(shares_raw)
+                if shares <= 0:
+                    skipped += 1
+                    continue
+
+                # Prefer explicit per-share cost; fall back to total ÷ shares
+                cost_raw = norm.get('cost_per_share', '').strip()
+                if cost_raw:
+                    cost_per_share = clean_float(cost_raw)
+                else:
+                    cost_total_raw = norm.get('cost_total', '').strip()
+                    if cost_total_raw:
+                        cost_total = clean_float(cost_total_raw)
+                        cost_per_share = round(cost_total / shares, 6) if shares else 0.0
+                    else:
+                        cost_per_share = 0.0
+
+                name = norm.get('name', '').strip() or None
+
+                cls_raw = norm.get('asset_class', '').strip().lower()
+                if cls_raw in VALID_CLASSES:
+                    asset_class = cls_raw
+                else:
+                    asset_class = CLASS_MAP.get(cls_raw, 'us_equity')
+
+                existing = conn.execute(
+                    "SELECT id FROM holdings WHERE account_id=? AND symbol=?",
+                    (account_id, symbol),
+                ).fetchone()
+
+                if existing:
+                    conn.execute(
+                        """UPDATE holdings
+                           SET name=?, asset_class=?, shares=?, cost_basis=?, updated_at=?
+                           WHERE id=?""",
+                        (name, asset_class, shares, cost_per_share, today, existing['id']),
+                    )
+                    updated += 1
+                else:
+                    conn.execute(
+                        """INSERT INTO holdings
+                           (account_id, symbol, name, asset_class, shares, cost_basis, updated_at)
+                           VALUES (?,?,?,?,?,?,?)""",
+                        (account_id, symbol, name, asset_class, shares, cost_per_share, today),
+                    )
+                    inserted += 1
+
+            except (ValueError, TypeError) as e:
+                errors.append(f"Row {i}: {e}")
+                skipped += 1
+            except Exception as e:
+                errors.append(f"Row {i}: {e}")
+                skipped += 1
+
+    return {
+        "inserted": inserted,
+        "updated":  updated,
+        "skipped":  skipped,
+        "errors":   errors[:20],
+        "total":    inserted + updated + skipped,
+    }
+
+
 # ── Reset ─────────────────────────────────────────────────────────────────────
 
 def reset_all_data() -> None:
@@ -637,16 +820,27 @@ def delete_transaction(txn_id: int) -> None:
 
 def add_real_estate(name: str, estimated_value: float, mortgage_balance: float,
                     address: str | None = None, purchase_price: float = 0,
-                    purchase_date: str | None = None) -> dict:
+                    purchase_date: str | None = None,
+                    account_id: int | None = None) -> dict:
     today = date.today().isoformat()
     with get_conn() as conn:
         cur = conn.execute(
             """INSERT INTO real_estate
-               (name, address, estimated_value, mortgage_balance, purchase_price, purchase_date, updated_at)
-               VALUES (?,?,?,?,?,?,?)""",
-            (name, address, estimated_value, mortgage_balance, purchase_price, purchase_date, today),
+               (name, address, estimated_value, mortgage_balance, purchase_price, purchase_date, updated_at, account_id)
+               VALUES (?,?,?,?,?,?,?,?)""",
+            (name, address, estimated_value, mortgage_balance, purchase_price, purchase_date, today, account_id),
         )
         row = conn.execute("SELECT * FROM real_estate WHERE id=?", (cur.lastrowid,)).fetchone()
+    return dict(row)
+
+
+def link_real_estate_account(property_id: int, account_id: int | None) -> dict:
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE real_estate SET account_id=? WHERE id=?",
+            (account_id, property_id),
+        )
+        row = conn.execute("SELECT * FROM real_estate WHERE id=?", (property_id,)).fetchone()
     return dict(row)
 
 

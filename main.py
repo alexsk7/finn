@@ -16,7 +16,8 @@ from app.seed import seed_demo
 from app.queries import (
     get_dashboard_summary,
     get_allocation,
-    get_tax_opportunities,
+    get_tax_summary,
+    get_rebalance,
     get_journal,
     get_cashflow_by_category,
     get_accounts_summary,
@@ -42,14 +43,17 @@ from app.writer import (
     update_real_estate,
     add_real_estate,
     delete_real_estate,
+    link_real_estate_account,
     add_holding,
     update_holding,
     delete_holding,
     get_all_holdings_raw,
     add_account,
+    update_account,
     delete_account,
     import_snapshot_csv,
     import_transaction_csv,
+    import_holdings_csv,
     reset_all_data,
     save_mortgage_config,
     upsert_property_cost,
@@ -132,6 +136,11 @@ async def tax_page(request: Request):
     return page(request, "tax.html", "tax")
 
 
+@app.get("/rebalance", response_class=HTMLResponse)
+async def rebalance_page(request: Request):
+    return page(request, "rebalance.html", "rebalance")
+
+
 @app.get("/journal", response_class=HTMLResponse)
 async def journal_page(request: Request):
     return page(request, "journal.html", "journal")
@@ -161,7 +170,12 @@ async def api_allocation():
 
 @app.get("/api/tax")
 async def api_tax():
-    return get_tax_opportunities()
+    return get_tax_summary()
+
+
+@app.get("/api/rebalance")
+async def api_rebalance(new_cash: float = 0.0):
+    return get_rebalance(new_cash)
 
 
 @app.get("/api/journal")
@@ -294,11 +308,19 @@ class RealEstateAdd(BaseModel):
     address: Optional[str] = None
     purchase_price: float = 0
     purchase_date: Optional[str] = None
+    account_id: Optional[int] = None
 
 @app.post("/api/real-estate")
 async def api_real_estate_add(body: RealEstateAdd):
     return add_real_estate(body.name, body.estimated_value, body.mortgage_balance,
-                           body.address, body.purchase_price, body.purchase_date)
+                           body.address, body.purchase_price, body.purchase_date, body.account_id)
+
+class RealEstateLinkBody(BaseModel):
+    account_id: Optional[int] = None
+
+@app.post("/api/real-estate/{property_id}/link-account")
+async def api_real_estate_link(property_id: int, body: RealEstateLinkBody):
+    return link_real_estate_account(property_id, body.account_id)
 
 @app.delete("/api/real-estate/{property_id}")
 async def api_real_estate_delete(property_id: int):
@@ -383,10 +405,23 @@ class AccountBody(BaseModel):
     institution: str
     type: str
     notes: Optional[str] = None
+    interest_rate: Optional[float] = None
+    minimum_payment: Optional[float] = None
+    opening_balance: Optional[float] = None
 
 @app.post("/api/accounts")
 async def api_account_add(body: AccountBody):
-    return add_account(body.name, body.institution, body.type, body.notes)
+    return add_account(body.name, body.institution, body.type, body.notes,
+                       body.interest_rate, body.minimum_payment, body.opening_balance)
+
+class AccountUpdateBody(BaseModel):
+    interest_rate: Optional[float] = None
+    minimum_payment: Optional[float] = None
+    opening_balance: Optional[float] = None
+
+@app.put("/api/accounts/{account_id}")
+async def api_account_update(account_id: int, body: AccountUpdateBody):
+    return update_account(account_id, body.interest_rate, body.minimum_payment, body.opening_balance)
 
 @app.delete("/api/accounts/{account_id}")
 async def api_account_delete(account_id: int):
@@ -492,6 +527,17 @@ class TransactionImportBody(BaseModel):
 @app.post("/api/transactions/import-csv")
 async def api_transaction_import_csv(body: TransactionImportBody):
     return import_transaction_csv(body.csv_text, body.account_id)
+
+
+# ── CSV Holdings Import ────────────────────────────────────────────────────────
+
+class HoldingsImportBody(BaseModel):
+    csv_text: str
+    account_id: int
+
+@app.post("/api/holdings/import-csv")
+async def api_holdings_import_csv(body: HoldingsImportBody):
+    return import_holdings_csv(body.csv_text, body.account_id)
 
 
 # ── Reset ──────────────────────────────────────────────────────────────────────

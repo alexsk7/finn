@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Rebalance{% endblock %}
+
+{% block head %}
+<style>
+.rebal-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gap);
+}
+@media (max-width: 768px) { .rebal-kpi-row { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px)  { .rebal-kpi-row { grid-template-columns: 1fr; } }
+
+.badge-tlh     { background: rgba(240,176,64,.18);  color: var(--yellow); border-radius: 4px; padding: 2px 7px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.badge-taxfree { background: rgba(34,211,160,.12);  color: var(--green);  border-radius: 4px; padding: 2px 7px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.badge-taxable { background: rgba(240,80,80,.12);   color: var(--red);    border-radius: 4px; padding: 2px 7px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+
+.color-dot { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; vertical-align:middle; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:var(--gap);">
+
+  <!-- New cash input -->
+  <div class="card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="font-size:13px;color:var(--text-dim);white-space:nowrap;">New cash to deploy:</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span style="color:var(--text-dim);">$</span>
+      <input type="number" id="new-cash-input" value="0" min="0" step="1000"
+             style="width:140px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:13px;">
+      <button class="btn-primary" onclick="loadRebalance()">Recalculate</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-dim);">
+      Adding new cash increases your target portfolio size, reducing or eliminating sells needed.
+    </div>
+  </div>
+
+  <!-- KPI tiles -->
+  <div class="rebal-kpi-row" id="rebal-kpis"></div>
+
+  <!-- Allocation drift table -->
+  <div class="card">
+    <div class="section-title">Allocation vs Target</div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Asset Class</th>
+            <th class="num">Current Value</th>
+            <th class="num">Current %</th>
+            <th class="num">Target %</th>
+            <th class="num">Target Value</th>
+            <th class="num">Drift</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="alloc-drift-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sell recommendations -->
+  <div class="card">
+    <div class="section-title">Sell Recommendations</div>
+    <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;line-height:1.6;">
+      Positions to trim in over-allocated classes. TLH opportunities are shown first — selling
+      at a loss harvests a tax deduction while rebalancing simultaneously. Tax-advantaged account
+      sells have no tax consequence. Remember the 30-day wash sale rule for TLH trades.
+    </p>
+    <div id="sell-content" class="table-scroll"></div>
+  </div>
+
+  <!-- Buy targets -->
+  <div class="card">
+    <div class="section-title">Buy Targets</div>
+    <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;line-height:1.6;">
+      Asset classes to add to. Amounts shown reflect sell proceeds — deploy them into your
+      existing funds or a new position in each class.
+    </p>
+    <div id="buy-content" class="table-scroll"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function taxBadge(note) {
+  if (!note) return '';
+  if (note === 'TLH opportunity')   return '<span class="badge-tlh">TLH</span>';
+  if (note === 'tax-free (IRA/401k)') return '<span class="badge-taxfree">Tax-Free</span>';
+  if (note === 'taxable gain')       return '<span class="badge-taxable">Taxable Gain</span>';
+  return `<span style="font-size:10px;color:var(--text-dim);">${note}</span>`;
+}
+
+function sellSortKey(t) {
+  if (t.tax_note === 'TLH opportunity')    return 1;
+  if (t.tax_note === 'tax-free (IRA/401k)') return 2;
+  if (t.tax_note === '')                    return 3;
+  return 4; // taxable gain last
+}
+
+async function loadRebalance() {
+  const newCash = parseFloat(document.getElementById('new-cash-input').value) || 0;
+  const r = await fetch(`/api/rebalance?new_cash=${newCash}`).then(res => res.json());
+
+  const tlhAmount = r.sell_trades
+    .filter(t => t.tax_note === 'TLH opportunity')
+    .reduce((s, t) => s + Math.abs(t.unrealized), 0);
+
+  // KPI tiles
+  document.getElementById('rebal-kpis').innerHTML = [
+    { label: 'Portfolio Value', val: fmt(r.total_portfolio),
+      sub: r.new_cash > 0 ? `incl. ${fmt(r.new_cash)} new cash` : 'current holdings', color: null },
+    { label: 'To Sell', val: r.total_sell > 0 ? fmt(r.total_sell) : '—',
+      sub: 'reduce over-allocated', color: r.total_sell > 0 ? 'var(--red)' : null },
+    { label: 'To Buy', val: r.total_buy > 0 ? fmt(r.total_buy) : '—',
+      sub: 'build under-allocated', color: r.total_buy > 0 ? 'var(--green)' : null },
+    { label: 'TLH in Sells', val: tlhAmount > 0 ? fmt(tlhAmount) : '—',
+      sub: 'harvestable losses included', color: tlhAmount > 0 ? 'var(--yellow)' : null },
+  ].map(k => `
+    <div class="card">
+      <div class="card-title">${k.label}</div>
+      <div class="card-value"${k.color ? ` style="color:${k.color}"` : ''}>${k.val}</div>
+      <div class="card-sub">${k.sub}</div>
+    </div>`).join('');
+
+  // Allocation drift table
+  document.getElementById('alloc-drift-body').innerHTML = r.allocation.map(a => {
+    const label = CLASS_LABELS[a.asset_class] || a.asset_class;
+    const color = COLORS[a.asset_class] || '#888';
+    const isOver  = a.drift >  10;
+    const isUnder = a.drift < -10;
+    const driftColor  = isOver ? 'var(--red)' : isUnder ? 'var(--accent)' : 'var(--green)';
+    const actionLabel = isOver ? 'SELL' : isUnder ? 'BUY' : 'Hold';
+    const actionColor = isOver ? 'var(--red)' : isUnder ? 'var(--green)' : 'var(--text-dim)';
+    const sign = a.drift > 0 ? '+' : '';
+    return `<tr>
+      <td><span class="color-dot" style="background:${color}"></span>${label}</td>
+      <td class="num">${fmt(a.actual)}</td>
+      <td class="num">${pct(a.actual_pct)}</td>
+      <td class="num" style="color:var(--text-dim);">${a.target_pct.toFixed(1)}%</td>
+      <td class="num" style="color:var(--text-dim);">${fmt(a.target)}</td>
+      <td class="num" style="color:${driftColor};font-weight:600;">${sign}${fmt(a.drift)}</td>
+      <td style="color:${actionColor};font-weight:700;font-size:11px;">${actionLabel}</td>
+    </tr>`;
+  }).join('');
+
+  // Sell recommendations
+  const sellEl = document.getElementById('sell-content');
+  if (!r.sell_trades.length) {
+    sellEl.innerHTML = `<div class="alert-item good"><div class="alert-label">All Clear</div>No sells needed — portfolio is within target allocation.</div>`;
+  } else {
+    const trades = [...r.sell_trades].sort((a, b) => sellSortKey(a) - sellSortKey(b) || b.amount - a.amount);
+    sellEl.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Symbol</th><th>Account</th><th>Asset Class</th>
+            <th class="num">Shares</th><th class="num">Amount</th>
+            <th class="num">Unrealized P/L</th><th>Tax</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${trades.map(t => `
+            <tr>
+              <td>
+                <strong style="color:var(--text-head);">${t.symbol}</strong>
+                ${t.name ? `<br><span style="font-size:10px;color:var(--text-dim);">${t.name}</span>` : ''}
+              </td>
+              <td style="color:var(--text-dim);">${t.account_name}</td>
+              <td><span style="font-size:11px;color:${COLORS[t.asset_class]||'#888'}">${CLASS_LABELS[t.asset_class]||t.asset_class}</span></td>
+              <td class="num">${t.shares.toFixed(3)}</td>
+              <td class="num" style="font-weight:600;">${fmt(t.amount)}</td>
+              <td class="num" style="color:${clr(t.unrealized)}">${fmt(t.unrealized)}</td>
+              <td>${taxBadge(t.tax_note)}</td>
+            </tr>`).join('')}
+        </tbody>
+        <tfoot>
+          <tr style="border-top:1px solid var(--border);">
+            <td colspan="4" style="font-weight:600;color:var(--text-head);">Total Sells</td>
+            <td class="num" style="font-weight:700;color:var(--red);">${fmt(r.total_sell)}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>`;
+  }
+
+  // Buy targets
+  const buyEl = document.getElementById('buy-content');
+  if (!r.buy_targets.length) {
+    buyEl.innerHTML = `<div class="alert-item good"><div class="alert-label">All Clear</div>No buys needed — portfolio is within target allocation.</div>`;
+  } else {
+    buyEl.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Asset Class</th><th>Existing Holdings</th>
+            <th>Suggested Account</th><th class="num">Amount to Buy</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${r.buy_targets.map(t => {
+            const label = CLASS_LABELS[t.asset_class] || t.asset_class;
+            const color = COLORS[t.asset_class] || '#888';
+            const syms  = t.existing_symbols.length
+              ? t.existing_symbols.map(s =>
+                  `<span style="font-size:11px;color:var(--text-dim);">${s.symbol} (${s.account_name})</span>`
+                ).join(', ')
+              : '<span style="color:var(--text-dim);">no existing position</span>';
+            return `<tr>
+              <td><span class="color-dot" style="background:${color}"></span><strong>${label}</strong></td>
+              <td>${syms}</td>
+              <td style="color:var(--text-dim);">${t.suggested_account || '—'}</td>
+              <td class="num" style="font-weight:600;color:var(--green);">${fmt(t.amount_needed)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+        <tfoot>
+          <tr style="border-top:1px solid var(--border);">
+            <td colspan="3" style="font-weight:600;color:var(--text-head);">Total to Buy</td>
+            <td class="num" style="font-weight:700;color:var(--green);">${fmt(r.total_buy)}</td>
+          </tr>
+        </tfoot>
+      </table>`;
+  }
+}
+
+loadRebalance();
+</script>
+{% endblock %}

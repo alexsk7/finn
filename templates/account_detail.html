@@ -113,6 +113,12 @@ tr.txn-edit-row td { background:var(--bg3); }
     <div style="color:var(--text-dim);font-size:12px;">Loading…</div>
   </div>
 
+  <!-- Payoff projection (credit/loan only) -->
+  <div class="card" id="payoff-card" style="display:none;">
+    <div class="section-title">Payoff Projection</div>
+    <div id="payoff-body" style="font-size:12px;line-height:1.8;"></div>
+  </div>
+
   <!-- Transaction list -->
   <div class="card">
     <div class="section-title" style="display:flex;align-items:center;gap:8px;">
@@ -143,16 +149,6 @@ tr.txn-edit-row td { background:var(--bg3); }
 const ACCOUNT_ID = {{ account_id }};
 let _txns = [];
 let allBudgetCats = [];
-
-function buildCatOpts(selectedVal) {
-  const known = allBudgetCats.some(c => c.name === selectedVal);
-  const orphan = selectedVal && !known
-    ? `<option value="${selectedVal}" selected>${selectedVal}</option>` : '';
-  return `<option value="">— select category —</option>${orphan}` +
-    allBudgetCats.map(c =>
-      `<option value="${c.name}"${c.name === selectedVal ? ' selected' : ''}>${c.name}</option>`
-    ).join('');
-}
 
 const TYPE_LABEL = {
   checking:'Checking', savings:'Savings', brokerage:'Brokerage',
@@ -185,15 +181,87 @@ async function load() {
         </div>
       </div>
       <div class="acct-balance">
-        <div class="acct-balance-label">Last Snapshot</div>
+        <div class="acct-balance-label">Current Balance</div>
         <div class="acct-balance-val" style="color:${balColor}">${balDisplay}</div>
       </div>
     </div>`;
 
   allBudgetCats = budgetCats;
 
+  renderPayoff(acct);
   _txns = txns;
   renderTxns(_txns);
+}
+
+function renderPayoff(acct) {
+  const card = document.getElementById('payoff-card');
+  if (acct.type !== 'credit' && acct.type !== 'loan') return;
+  card.style.display = 'block';
+
+  const balance = acct.balance || 0;
+  const apr     = acct.interest_rate;
+  const minPay  = acct.minimum_payment;
+  const body    = document.getElementById('payoff-body');
+
+  if (!balance) {
+    body.innerHTML = '<span style="color:var(--green);">Balance is $0 — paid off.</span>';
+    return;
+  }
+  if (!apr || !minPay) {
+    body.innerHTML = `<span style="color:var(--text-dim);">Set APR and minimum payment in
+      <a href="/data#accounts" style="color:var(--accent);">Data → Accounts</a> to see payoff projection.</span>`;
+    return;
+  }
+
+  const monthlyRate = apr / 100 / 12;
+  const monthlyInterest = balance * monthlyRate;
+
+  if (minPay <= monthlyInterest) {
+    body.innerHTML = `
+      <div style="color:var(--red);margin-bottom:6px;">
+        Minimum payment (${fmt(minPay)}/mo) doesn't cover monthly interest (${fmt(monthlyInterest)}/mo).
+        Balance will grow indefinitely.
+      </div>
+      <div style="color:var(--text-dim);font-size:11px;">Increase payment above ${fmt(monthlyInterest)} to make progress.</div>`;
+    return;
+  }
+
+  // Amortize
+  let bal = balance, totalInterest = 0, months = 0;
+  while (bal > 0 && months < 600) {
+    const interest = bal * monthlyRate;
+    const principal = Math.min(minPay - interest, bal);
+    totalInterest += interest;
+    bal -= principal;
+    months++;
+  }
+
+  const payoffDate = new Date();
+  payoffDate.setMonth(payoffDate.getMonth() + months);
+  const dateStr = payoffDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const years = Math.floor(months / 12), mos = months % 12;
+  const timeStr = years > 0
+    ? `${years}y ${mos}mo`
+    : `${months} month${months !== 1 ? 's' : ''}`;
+
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:8px;">
+      <div>
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;">Time to payoff</div>
+        <div style="color:var(--text-head);font-size:15px;font-weight:600;">${timeStr}</div>
+        <div style="font-size:10px;color:var(--text-dim);">${dateStr}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;">Total interest</div>
+        <div style="color:var(--red);font-size:15px;font-weight:600;">${fmt(totalInterest)}</div>
+        <div style="font-size:10px;color:var(--text-dim);">at ${apr}% APR</div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;">Total paid</div>
+        <div style="color:var(--text-head);font-size:15px;font-weight:600;">${fmt(balance + totalInterest)}</div>
+        <div style="font-size:10px;color:var(--text-dim);">${fmt(minPay)}/mo minimum</div>
+      </div>
+    </div>`;
 }
 
 function renderTxns(txns) {
@@ -243,7 +311,7 @@ function renderTxns(txns) {
       <td><input type="text" class="field-input" id="ae-desc-${t.id}" value="${t.description||''}" placeholder="Description" style="width:180px;" /></td>
       <td>
         <div style="display:flex;gap:4px;">
-          <select class="field-input" id="ae-cat-${t.id}" style="width:130px;">${buildCatOpts(t.category)}</select>
+          <select class="field-input" id="ae-cat-${t.id}" style="width:130px;">${buildCatOpts(allBudgetCats, t.category)}</select>
           <select class="field-input" id="ae-dir-${t.id}" style="width:90px;">
             <option value="income"${t.direction==='income'?' selected':''}>income</option>
             <option value="expense"${t.direction==='expense'?' selected':''}>expense</option>

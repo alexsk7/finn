@@ -149,3 +149,19 @@ def init_db() -> None:
             conn.execute("ALTER TABLE prices ADD COLUMN prev_close REAL")
         except Exception:
             pass
+        try:
+            conn.execute("ALTER TABLE accounts ADD COLUMN interest_rate REAL")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE accounts ADD COLUMN minimum_payment REAL")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE accounts ADD COLUMN opening_balance REAL DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE real_estate ADD COLUMN account_id INTEGER REFERENCES accounts(id)")
+        except Exception:
+            pass

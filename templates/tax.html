@@ -1,23 +1,72 @@
 {% extends "base.html" %}
 {% block title %}Tax & TLH{% endblock %}
+
+{% block head %}
+<style>
+.tax-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap);
+}
+@media (max-width: 768px) { .tax-kpi-row { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px)  { .tax-kpi-row { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
 {% block content %}
 <div style="display:flex;flex-direction:column;gap:var(--gap);">
 
+  <!-- KPI row -->
+  <div class="tax-kpi-row">
+    <div class="card">
+      <div class="card-title">Unrealized Gain / Loss</div>
+      <div class="card-value" id="kpi-unrealized">—</div>
+      <div class="card-sub">taxable brokerage holdings</div>
+    </div>
+    <div class="card">
+      <div class="card-title">YTD Investment Income</div>
+      <div class="card-value" id="kpi-ytd-income" style="color:var(--green);">—</div>
+      <div class="card-sub">dividends, realized gains logged</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Harvestable Losses</div>
+      <div class="card-value" id="kpi-tlh" style="color:var(--red);">—</div>
+      <div class="card-sub">positions ≥ $500 unrealized loss</div>
+    </div>
+  </div>
+
+  <!-- YTD realized gains & income breakdown -->
+  <div class="card">
+    <div class="section-title">YTD Realized Gains & Investment Income</div>
+    <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;line-height:1.6;">
+      Income transactions logged against brokerage, retirement, HSA, and crypto accounts
+      this calendar year, grouped by category. Log dividends, capital gains distributions,
+      and sale proceeds as <em>income</em> transactions on the relevant account.
+    </p>
+    <div id="ytd-income-content"></div>
+  </div>
+
+  <!-- TLH candidates -->
   <div class="card">
     <div class="section-title">Tax-Loss Harvesting Opportunities</div>
     <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">
-      Taxable brokerage holdings with unrealized losses ≥ $500. Consider harvesting before year-end to offset gains.
-      Remember the 30-day wash sale rule.
+      Taxable brokerage holdings with unrealized losses ≥ $500. Consider harvesting before
+      year-end to offset gains. Remember the 30-day wash sale rule.
     </p>
     <div id="tlh-content" class="table-scroll"></div>
   </div>
 
+  <!-- All taxable holdings -->
   <div class="card">
     <div class="section-title">All Taxable Holdings — Unrealized Gains / Losses</div>
     <div class="table-scroll">
       <table class="data-table">
         <thead>
-          <tr><th>Symbol</th><th>Name</th><th class="num">Shares</th><th class="num">Market Value</th><th class="num">Cost Basis</th><th class="num">Unrealized</th><th class="num">Return</th><th>Status</th></tr>
+          <tr>
+            <th>Symbol</th><th>Name</th><th class="num">Shares</th>
+            <th class="num">Market Value</th><th class="num">Cost Basis</th>
+            <th class="num">Unrealized</th><th class="num">Return</th><th>Status</th>
+          </tr>
         </thead>
         <tbody id="tax-all-body"></tbody>
       </table>
@@ -26,52 +75,99 @@
 
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script>
 async function loadTax() {
-  const [tlh, alloc] = await Promise.all([
-    fetch('/api/tax').then(r=>r.json()),
-    fetch('/api/allocation').then(r=>r.json()),
+  const [tax, alloc] = await Promise.all([
+    fetch('/api/tax').then(r => r.json()),
+    fetch('/api/allocation').then(r => r.json()),
   ]);
 
-  const tlhEl = document.getElementById('tlh-content');
-  if (!tlh.length) {
-    tlhEl.innerHTML = '<div class="alert-item good"><div class="alert-label">All Clear</div>No significant loss positions in taxable accounts.</div>';
+  // ── KPI tiles ─────────────────────────────────────────────────────────────
+  const unreal = tax.unrealized_total;
+  document.getElementById('kpi-unrealized').textContent = fmt(unreal);
+  document.getElementById('kpi-unrealized').style.color = unreal >= 0 ? 'var(--green)' : 'var(--red)';
+
+  document.getElementById('kpi-ytd-income').textContent =
+    tax.ytd_income_total > 0 ? fmt(tax.ytd_income_total) : '—';
+
+  document.getElementById('kpi-tlh').textContent =
+    tax.tlh_total < 0 ? fmt(Math.abs(tax.tlh_total)) : '—';
+
+  // ── YTD income breakdown ───────────────────────────────────────────────────
+  const ytdEl = document.getElementById('ytd-income-content');
+  if (!tax.ytd_income_breakdown.length) {
+    ytdEl.innerHTML = `<div style="font-size:12px;color:var(--text-dim);padding:8px 0;">
+      No investment income transactions recorded yet this year.
+      Log dividends or capital gains as <em>income</em> transactions on your brokerage or
+      retirement accounts — they'll appear here automatically.
+    </div>`;
   } else {
-    tlhEl.innerHTML = `
+    ytdEl.innerHTML = `
       <table class="data-table">
-        <thead><tr><th>Symbol</th><th>Name</th><th class="num">Market Value</th><th class="num">Cost Basis</th><th class="num">Unrealized Loss</th></tr></thead>
-        <tbody>${tlh.map(t=>`
-          <tr>
-            <td><strong style="color:var(--text-head);">${t.symbol}</strong></td>
-            <td style="color:var(--text-dim);">${t.name||''}</td>
-            <td class="num">${fmt(t.market_value)}</td>
-            <td class="num" style="color:var(--text-dim);">${fmt(t.cost_basis)}</td>
-            <td class="num" style="color:var(--red);font-weight:600;">${fmt(t.unrealized_loss)}</td>
-          </tr>`).join('')}
+        <thead>
+          <tr><th>Category</th><th class="num">Transactions</th><th class="num">YTD Total</th></tr>
+        </thead>
+        <tbody>
+          ${tax.ytd_income_breakdown.map(r => `
+            <tr>
+              <td><span class="badge blue">${r.category}</span></td>
+              <td class="num" style="color:var(--text-dim);">${r.count}</td>
+              <td class="num" style="color:var(--green);font-weight:600;">${fmt(r.total)}</td>
+            </tr>`).join('')}
+          <tr style="border-top:1px solid var(--border);">
+            <td style="font-weight:600;color:var(--text-head);">Total</td>
+            <td></td>
+            <td class="num" style="color:var(--green);font-weight:700;">${fmt(tax.ytd_income_total)}</td>
+          </tr>
         </tbody>
       </table>`;
   }
 
-  const taxable = alloc.holdings.filter(h => h.account_type === 'brokerage');
-  const totalTaxableGain = taxable.reduce((s,h)=>s+h.gain, 0);
+  // ── TLH candidates ─────────────────────────────────────────────────────────
+  const tlhEl = document.getElementById('tlh-content');
+  if (!tax.tlh_candidates.length) {
+    tlhEl.innerHTML = '<div class="alert-item good"><div class="alert-label">All Clear</div>No significant loss positions in taxable accounts.</div>';
+  } else {
+    tlhEl.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr><th>Symbol</th><th>Name</th><th class="num">Market Value</th><th class="num">Cost Basis</th><th class="num">Unrealized Loss</th></tr>
+        </thead>
+        <tbody>
+          ${tax.tlh_candidates.map(t => `
+            <tr>
+              <td><strong style="color:var(--text-head);">${t.symbol}</strong></td>
+              <td style="color:var(--text-dim);">${t.name || ''}</td>
+              <td class="num">${fmt(t.market_value)}</td>
+              <td class="num" style="color:var(--text-dim);">${fmt(t.cost_basis)}</td>
+              <td class="num" style="color:var(--red);font-weight:600;">${fmt(t.unrealized_loss)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
 
-  document.getElementById('tax-all-body').innerHTML = taxable.sort((a,b)=>a.gain-b.gain).map(h => {
-    const isTLH = h.gain < -500;
-    const isGain = h.gain > 0;
-    const statusLabel = isTLH ? 'TLH candidate' : isGain ? 'gain' : 'small loss';
-    const statusColor = isTLH ? 'var(--yellow)' : isGain ? 'var(--green)' : 'var(--text-dim)';
-    return `<tr>
-      <td><strong style="color:var(--text-head);">${h.symbol}</strong></td>
-      <td style="color:var(--text-dim);">${h.name||''}</td>
-      <td class="num">${h.shares.toFixed(3)}</td>
-      <td class="num">${fmt(h.market_value)}</td>
-      <td class="num" style="color:var(--text-dim);">${fmt(h.cost_basis)}</td>
-      <td class="num" style="color:${clr(h.gain)}">${fmt(h.gain)}</td>
-      <td class="num" style="color:${clr(h.gain_pct)}">${pct(h.gain_pct)}</td>
-      <td><span style="font-size:10px;color:${statusColor}">${statusLabel}</span></td>
-    </tr>`;
-  }).join('');
+  // ── All taxable holdings ───────────────────────────────────────────────────
+  const taxable = alloc.holdings.filter(h => h.account_type === 'brokerage');
+  document.getElementById('tax-all-body').innerHTML = taxable
+    .sort((a, b) => a.gain - b.gain)
+    .map(h => {
+      const isTLH    = h.gain < -500;
+      const isGain   = h.gain > 0;
+      const statusLabel = isTLH ? 'TLH candidate' : isGain ? 'gain' : 'small loss';
+      const statusColor = isTLH ? 'var(--yellow)' : isGain ? 'var(--green)' : 'var(--text-dim)';
+      return `<tr>
+        <td><strong style="color:var(--text-head);">${h.symbol}</strong></td>
+        <td style="color:var(--text-dim);">${h.name || ''}</td>
+        <td class="num">${h.shares.toFixed(3)}</td>
+        <td class="num">${fmt(h.market_value)}</td>
+        <td class="num" style="color:var(--text-dim);">${fmt(h.cost_basis)}</td>
+        <td class="num" style="color:${clr(h.gain)}">${fmt(h.gain)}</td>
+        <td class="num" style="color:${clr(h.gain_pct)}">${pct(h.gain_pct)}</td>
+        <td><span style="font-size:10px;color:${statusColor}">${statusLabel}</span></td>
+      </tr>`;
+    }).join('');
 }
 loadTax();
 </script>
