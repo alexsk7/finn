@@ -79,6 +79,7 @@ ASSET_TYPES    = {"checking", "savings", "brokerage", "retirement_401k",
 LIQUID_TYPES   = {"checking", "savings"}
 INVESTED_TYPES = {"brokerage", "retirement_401k", "retirement_ira", "hsa", "crypto"}
 DEBT_TYPES     = {"credit", "loan"}
+OTHER_TYPES    = {"other"}
 
 
 def save_snapshot(account_balances: list[dict], snapshot_date: str | None = None,
@@ -104,7 +105,7 @@ def save_snapshot(account_balances: list[dict], snapshot_date: str | None = None
 
     bal_map = {int(b["account_id"]): float(b["balance"]) for b in account_balances}
 
-    liquid, invested, debt = 0.0, 0.0, 0.0
+    liquid, invested, debt, other = 0.0, 0.0, 0.0, 0.0
     for acct_id, bal in bal_map.items():
         acct = accounts.get(acct_id)
         if not acct:
@@ -116,22 +117,25 @@ def save_snapshot(account_balances: list[dict], snapshot_date: str | None = None
             invested += bal
         elif t in DEBT_TYPES:
             debt += bal
+        elif t in OTHER_TYPES:
+            other += bal
 
-    net_worth = liquid + invested + home_equity - debt
+    net_worth = liquid + invested + home_equity + other - debt
 
     with get_conn() as conn:
         cur = conn.execute(
             """INSERT INTO snapshots
-               (snapshot_date, net_worth, liquid_cash, invested_total, home_equity, debt_total, notes)
-               VALUES (?,?,?,?,?,?,?)
+               (snapshot_date, net_worth, liquid_cash, invested_total, home_equity, debt_total, other_assets, notes)
+               VALUES (?,?,?,?,?,?,?,?)
                ON CONFLICT(snapshot_date) DO UPDATE SET
                  net_worth=excluded.net_worth,
                  liquid_cash=excluded.liquid_cash,
                  invested_total=excluded.invested_total,
                  home_equity=excluded.home_equity,
                  debt_total=excluded.debt_total,
+                 other_assets=excluded.other_assets,
                  notes=excluded.notes""",
-            (snap_date, net_worth, liquid, invested, home_equity, debt, notes),
+            (snap_date, net_worth, liquid, invested, home_equity, debt, other, notes),
         )
         snap_id = cur.lastrowid or conn.execute(
             "SELECT id FROM snapshots WHERE snapshot_date=?", (snap_date,)
@@ -151,6 +155,7 @@ def save_snapshot(account_balances: list[dict], snapshot_date: str | None = None
         "invested_total": round(invested, 2),
         "home_equity":    round(home_equity, 2),
         "debt_total":     round(debt, 2),
+        "other_assets":   round(other, 2),
     }
 
 

@@ -7,7 +7,7 @@
 | `accounts` | Account registry; `type` enum controls balance computation method and display. `opening_balance` anchors transaction-based balance computation. `interest_rate` + `minimum_payment` for credit/loan payoff projection. |
 | `holdings` | Positions by account; `cost_basis` is per-share. `UNIQUE(account_id, symbol)` enforced via unique index — add/import upserts on conflict. |
 | `prices` | One row per symbol per refresh; `prev_close` stores prior day's close for daily change calc; queries use correlated subquery for `MAX(recorded_at)` |
-| `snapshots` | Periodic net-worth snapshots (NW chart source); stores `liquid_cash`, `invested_total`, `home_equity`, `debt_total` per snapshot. **History only — not used for current balances.** |
+| `snapshots` | Periodic net-worth snapshots (NW chart source); stores `liquid_cash`, `invested_total`, `home_equity`, `debt_total`, `other_assets` per snapshot. **History only — not used for current balances.** |
 | `account_snapshots` | Per-account balances tied to a snapshot. Used for historical reference only. |
 | `real_estate` | Properties with `estimated_value` and `mortgage_balance`; `account_id` optionally links to a loan account (overrides `mortgage_balance` with computed balance) |
 | `mortgage_config` | One row per property: loan amount, rate, term, payment, start date, appreciation rate. Amortization computed in Python by `get_amortization()` — not stored row-by-row. |
@@ -23,6 +23,8 @@
 **`account.type`:** `checking`, `savings`, `brokerage`, `retirement_401k`, `retirement_ira`, `hsa`, `credit`, `loan`, `crypto`, `other`
 
 `credit` and `loan` are liabilities — balance = `opening_balance + net spending`.
+
+`other` accounts (vehicles, collectibles, etc.) — balance = `opening_balance + net inflows`. Included in net worth. KPI tile and NW chart line appear on the dashboard only when at least one `other` account has a non-zero balance.
 
 **`asset_class`:** `us_equity`, `intl_equity`, `bond`, `real_estate_fund`, `commodity`, `cash_equiv`, `crypto`, `other`
 

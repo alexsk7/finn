@@ -5,6 +5,7 @@ from .db import get_conn
 _INVESTMENT_TYPES = {'brokerage', 'retirement_401k', 'retirement_ira', 'hsa', 'crypto'}
 _DEBT_TYPES       = {'credit', 'loan'}
 _CASH_TYPES       = {'checking', 'savings'}
+_OTHER_TYPES      = {'other'}
 
 
 def _compute_balances(conn) -> dict[int, float]:
@@ -66,7 +67,8 @@ def get_dashboard_summary() -> dict:
         """).fetchone()
 
         history = conn.execute("""
-            SELECT snapshot_date, net_worth, liquid_cash, invested_total, home_equity, debt_total
+            SELECT snapshot_date, net_worth, liquid_cash, invested_total, home_equity, debt_total,
+                   COALESCE(other_assets, 0) as other_assets
             FROM snapshots ORDER BY snapshot_date ASC
         """).fetchall()
 
@@ -98,14 +100,15 @@ def get_dashboard_summary() -> dict:
     )
     home_equity = re_value - re_mortgage
 
-    invested    = sum(balances.get(a['id'], 0) for a in accounts if a['type'] in _INVESTMENT_TYPES)
-    liquid_cash = sum(balances.get(a['id'], 0) for a in accounts if a['type'] in _CASH_TYPES)
-    debt_total  = sum(
+    invested     = sum(balances.get(a['id'], 0) for a in accounts if a['type'] in _INVESTMENT_TYPES)
+    liquid_cash  = sum(balances.get(a['id'], 0) for a in accounts if a['type'] in _CASH_TYPES)
+    other_assets = sum(balances.get(a['id'], 0) for a in accounts if a['type'] in _OTHER_TYPES)
+    debt_total   = sum(
         balances.get(a['id'], 0)
         for a in accounts
         if a['type'] in _DEBT_TYPES and a['id'] not in linked_mortgage_ids
     )
-    net_worth   = invested + liquid_cash + home_equity - debt_total
+    net_worth    = invested + liquid_cash + home_equity + other_assets - debt_total
 
     liabilities = [
         {
@@ -143,6 +146,7 @@ def get_dashboard_summary() -> dict:
         "income_mtd":           cashflow["income"]    if cashflow else 0,
         "expenses_mtd":         cashflow["expenses"]  if cashflow else 0,
         "debt_total":           debt_total,
+        "other_assets":         other_assets,
         "liabilities":          liabilities,
         "history":              [dict(r) for r in history],
     }

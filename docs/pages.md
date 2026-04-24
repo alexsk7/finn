@@ -31,8 +31,8 @@ Holdings | Accounts | Snapshot | Prices | Transactions | Real Estate | Allocatio
 
 ## Dashboard features
 
-- **KPI tiles**: Net Worth → Invested → Home Equity → Liquid Cash → Total Debt. Each tile shows current value, MoM % change, YTD % change, and an inline SVG sparkline. All values computed live.
-- **NW chart**: multi-line — Net Worth (blue, filled), Invested (green), Cash (yellow), Home Equity (purple). Period filters: 30D, QTD, YTD, 1Y, 2Y, 5Y, MAX. "Proj" toggle adds a dashed 10-year projection line using CAGR from the visible history slice, anchored to current live NW.
+- **KPI tiles**: Net Worth → Invested → Home Equity → Liquid Cash → Total Debt → Other Assets (conditional). Each tile shows current value, MoM % change, YTD % change, and an inline SVG sparkline. All values computed live. The "Other Assets" tile only appears when at least one `other`-type account has a non-zero balance; the KPI row expands to 6 columns automatically.
+- **NW chart**: multi-line — Net Worth (blue, filled), Invested (green), Cash (yellow), Home Equity (purple), Other Assets (amber, conditional). Period filters: 30D, QTD, YTD, 1Y, 2Y, 5Y, MAX. "Proj" toggle adds a dashed 10-year projection line using CAGR from the visible history slice, anchored to current live NW. The Other Assets line and legend entry only appear when any snapshot has a non-zero `other_assets` value.
 - **Market ticker strip**: scrolling marquee at bottom — major indices + all holding symbols with price and daily % change.
 - **Holdings table**: deduplicated by ticker symbol (positions across multiple accounts summed client-side). Investments page keeps per-account detail. Asset class badges are color-coded to match the allocation donut.
 - **Alerts**: allocation drift ≥ 3%, TLH candidates (from `tax.tlh_candidates`), journal milestones.

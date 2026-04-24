@@ -209,6 +209,11 @@
       <div id="kpi-debt-detail" class="card-sub" style="white-space:normal;line-height:1.5;"></div>
       <div id="spark-debt" class="kpi-spark"></div>
     </div>
+    <div class="card" id="kpi-other-card" style="display:none;">
+      <div class="card-title">Other Assets</div>
+      <div class="card-value" id="kpi-other">—</div>
+      <div id="spark-other" class="kpi-spark"></div>
+    </div>
   </div>
 
   <!-- Row 2: NW chart | Cashflow + Allocation ──────────────────── -->
@@ -242,6 +247,9 @@
         </div>
         <div class="chart-legend-item">
           <div class="chart-legend-line" style="background:#8060f0;"></div>Equity
+        </div>
+        <div class="chart-legend-item" id="other-legend" style="display:none;">
+          <div class="chart-legend-line" style="background:#e0a060;"></div>Other
         </div>
         <div class="chart-legend-item" id="proj-legend" style="display:none;">
           <div class="chart-legend-line" style="background:#4080f0;opacity:.5;border-top:2px dashed #4080f0;height:0;width:18px;margin-top:6px;"></div>
@@ -371,6 +379,12 @@ async function loadDashboard() {
   document.getElementById('kpi-debt-detail').innerHTML = (dash.liabilities || []).map(l =>
     `<span style="display:block;font-size:10px;">${esc(l.name)}: ${fmt(l.balance)}</span>`
   ).join('');
+
+  if ((dash.other_assets || 0) > 0) {
+    document.getElementById('kpi-other').textContent = fmt(dash.other_assets);
+    document.getElementById('kpi-other-card').style.display = '';
+    document.getElementById('kpi-row').style.gridTemplateColumns = 'repeat(6, 1fr)';
+  }
 
   function setKpiSub(momId, ytdId, momPct, ytdPct) {
     const m = document.getElementById(momId);
@@ -567,6 +581,10 @@ function renderSparklines(history) {
   document.getElementById('spark-eq').innerHTML   = buildSparkSVG(slice.map(h => h.home_equity),    '#8060f0');
   document.getElementById('spark-cash').innerHTML = buildSparkSVG(slice.map(h => h.liquid_cash),    '#f0b040');
   document.getElementById('spark-debt').innerHTML = buildSparkSVG(slice.map(h => h.debt_total||0),  '#f05060');
+  const hasOther = slice.some(h => (h.other_assets || 0) > 0);
+  if (hasOther) {
+    document.getElementById('spark-other').innerHTML = buildSparkSVG(slice.map(h => h.other_assets||0), '#e0a060');
+  }
 }
 
 /* ── NW projection helper ────────────────────────────────────────── */
@@ -619,12 +637,19 @@ function renderNWChart(history) {
     spanGaps:             true,
   });
 
+  const hasOtherHistory = history.some(h => (h.other_assets || 0) > 0);
   const datasets = [
     ds('net_worth',      'Net Worth',   '#4080f0', 2,   true),
     ds('invested_total', 'Invested',    '#22d3a0', 1.5, false),
     ds('liquid_cash',    'Cash',        '#f0b040', 1.5, false),
     ds('home_equity',    'Home Equity', '#8060f0', 1.5, false),
   ];
+  if (hasOtherHistory) {
+    datasets.push(ds('other_assets', 'Other Assets', '#e0a060', 1.5, false));
+    document.getElementById('other-legend').style.display = '';
+  } else {
+    document.getElementById('other-legend').style.display = 'none';
+  }
 
   if (proj) {
     // Projection starts from today's live NW, appended after the last snapshot

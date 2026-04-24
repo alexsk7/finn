@@ -47,7 +47,8 @@
 - [x] NW chart: "Proj" toggle adds dashed 10-year projection using trailing CAGR, anchored to live NW
 - [x] KPI tiles: MoM + YTD % change sub-stats on all four tiles
 - [x] KPI tiles: inline SVG sparklines (last 24 snapshots, color-coded per metric)
-- [x] KPI tile order: Net Worth → Invested → Home Equity → Liquid Cash → Total Debt
+- [x] KPI tile order: Net Worth → Invested → Home Equity → Liquid Cash → Total Debt → Other Assets (conditional)
+- [x] Other Assets in Net Worth: `other`-type accounts included in live NW; conditional KPI tile + NW chart line appear only when non-zero other-type balances exist
 - [x] Dashboard holdings: consolidate duplicate tickers into one row; investments page keeps per-account breakdown
 - [x] Allocation donut: tooltip shows dollar amounts + %, legend shows all classes with values
 - [x] Mortgage amortization: loan config, per-month schedule, principal/interest split, equity projection

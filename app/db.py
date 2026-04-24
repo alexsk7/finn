@@ -65,6 +65,7 @@ def init_db(db_path=None) -> None:
                 invested_total  REAL NOT NULL DEFAULT 0,
                 home_equity     REAL NOT NULL DEFAULT 0,
                 debt_total      REAL NOT NULL DEFAULT 0,
+                other_assets    REAL NOT NULL DEFAULT 0,
                 notes           TEXT
             );
 
@@ -172,6 +173,10 @@ def init_db(db_path=None) -> None:
             pass
         try:
             conn.execute("ALTER TABLE transactions ADD COLUMN payee TEXT")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE snapshots ADD COLUMN other_assets REAL NOT NULL DEFAULT 0")
         except Exception:
             pass
 

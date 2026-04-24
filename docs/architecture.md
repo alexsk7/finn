@@ -52,7 +52,9 @@ APScheduler `BackgroundScheduler` starts at module load in `main.py`. One cron j
 
 **Snapshots are history-only.** They feed the NW chart and MoM/YTD % change comparisons but are not the source of truth for current balances.
 
-**Dashboard KPI values** (`net_worth`, `liquid_cash`, `invested`, `debt_total`, `home_equity`) are all computed live from `_compute_balances()` + real estate data.
+**Dashboard KPI values** (`net_worth`, `liquid_cash`, `invested`, `home_equity`, `debt_total`, `other_assets`) are all computed live from `_compute_balances()` + real estate data.
+
+**Net worth formula:** `invested + liquid_cash + home_equity + other_assets − debt_total`. The `other_assets` term covers `other`-type accounts (vehicles, valuables, etc.). The "Other Assets" KPI tile and NW chart line are only shown when `other_assets > 0`.
 
 **Double-count prevention:** Loan accounts linked to a real estate property via `real_estate.account_id` are excluded from `debt_total` — their balance is already captured as a reduction in `home_equity`. The set of `linked_mortgage_ids` is computed at query time.
 
