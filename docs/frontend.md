@@ -67,6 +67,19 @@ All transaction category fields use `<select>` populated by `buildCatOpts(cats, 
 
 `drift-pos` (over-allocated) = red. `drift-neg` (under-allocated) = accent/blue. `drift-zero` = green. This is intentionally inverted from the naive reading — being over-allocated in an asset class is the alert condition.
 
+## Conditional KPI tiles
+
+The "Other Assets" tile is hidden by default (`style="display:none"`) and shown in JS only when `dash.other_assets > 0`. When shown, the KPI row grid is also widened:
+
+```js
+if ((dash.other_assets || 0) > 0) {
+  document.getElementById('kpi-other-card').style.display = '';
+  document.getElementById('kpi-row').style.gridTemplateColumns = 'repeat(6, 1fr)';
+}
+```
+
+The matching NW chart dataset and chart-legend item follow the same conditional — checked against `history.some(h => (h.other_assets || 0) > 0)` in `renderNWChart()`. Use this pattern for any future metric that should only appear when data is present rather than showing as `—` permanently.
+
 ## Number inputs
 
 Browser spinners are hidden globally via `style.css` (`-webkit-appearance: none` + `-moz-appearance: textfield`).

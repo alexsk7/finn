@@ -96,9 +96,10 @@
 
 ## Infrastructure
 
+- [x] Auto-open browser on `./run.sh` — background subshell opens `http://localhost:$PORT` after 1.5s delay
 - [ ] `ruff` linting setup
 - [ ] Backup script (`finance.db` → timestamped `backups/`)
-- [ ] `Makefile` with `run`, `refresh`, `snapshot` targets
+- [ ] `Makefile` with `run`, `refresh`, `snapshot` targets; `install`/`uninstall` targets for optional desktop launcher (`.desktop` on Linux, `.command` on Mac) — opt-in, not required for basic use
 
 ## Security (complete)
 
@@ -115,4 +116,4 @@
 
 ## Supply chain
 
-- [ ] Add note in README about `yfinance` outbound dependency (fetches from Yahoo Finance); users in air-gapped environments should expect price refresh to fail silently
+- [x] Add note in README about `yfinance` outbound dependency (fetches from Yahoo Finance); users in air-gapped environments should expect price refresh to fail silently

@@ -46,6 +46,17 @@ except Exception:
     pass
 ```
 
+## Adding or moving an account type
+
+Account types are bucketed into four sets that control how balances flow into net worth. Both files must stay in sync:
+
+| File | Sets |
+|---|---|
+| `app/queries.py` | `_INVESTMENT_TYPES`, `_CASH_TYPES`, `_OTHER_TYPES`, `_DEBT_TYPES` |
+| `app/writer.py` | `INVESTED_TYPES`, `LIQUID_TYPES`, `OTHER_TYPES`, `DEBT_TYPES` |
+
+The `snapshots` table stores per-bucket totals (`invested_total`, `liquid_cash`, `other_assets`, `debt_total`). Adding a new bucket requires a schema migration and a new column. Dashboard KPI tiles and the NW chart dataset list in `dashboard.html` must also be updated to surface the new bucket.
+
 ## XSS safety
 
 All user-entered strings rendered via `innerHTML` must be passed through `esc(s)`, the global HTML-escape helper defined in `base.html`. It escapes `&`, `<`, `>`, `"`, and `'`. Apply it to any string field from the API that appears in a template literal assigned to `innerHTML`.

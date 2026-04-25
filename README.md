@@ -8,7 +8,7 @@ A local-first personal finance dashboard. Tracks net worth, investments, account
 
 ## Features
 
-- **Dashboard** — net worth history chart with projection overlay, KPI tiles (NW, invested, home equity, cash, debt), allocation donut, cashflow summary, alerts, market ticker strip
+- **Dashboard** — net worth history chart with projection overlay, KPI tiles (NW, invested, home equity, cash, debt, and other assets when present), allocation donut, cashflow summary, alerts, market ticker strip
 - **Investments** — holdings by account, allocation vs. target, asset class performance, tax-loss harvesting candidates
 - **Accounts** — grouped account list with live-computed balances; drill down into transaction history; payoff projection for credit/loan accounts
 - **Real Estate** — equity, LTV, mortgage amortization schedule, appreciation projection, capex log; optionally link a loan account for live mortgage balance tracking
@@ -34,7 +34,7 @@ cd finctl
 ./run.sh
 ```
 
-Open `http://localhost:8080`. A demo dataset loads on first run so the dashboard isn't empty.
+Your browser opens automatically once the server is ready. A demo dataset loads on first run so the dashboard isn't empty.
 
 To use a different port:
 
@@ -68,7 +68,7 @@ Single-process, local-only web app. No authentication, no external API dependenc
 
 **Current account balances are computed live from transactions and holdings**, not from stored snapshots. Snapshots are recorded periodically to build the net worth history chart.
 
-**Price data** is fetched from Yahoo Finance via `yfinance`. Prices auto-refresh Mon–Fri at 4:05 PM ET; you can also trigger a manual refresh from the Prices tab or the dashboard.
+**Price data** is fetched from Yahoo Finance via `yfinance`. Prices auto-refresh Mon–Fri at 4:05 PM ET; you can also trigger a manual refresh from the Prices tab or the dashboard. `yfinance` makes outbound HTTP requests to Yahoo Finance — price refresh will fail silently in air-gapped environments. All other features work offline.
 
 ---
 
