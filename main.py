@@ -387,16 +387,27 @@ class HoldingBody(BaseModel):
     shares: float
     cost_basis: float
     name: Optional[str] = None
+    is_manual: bool = False
 
 @app.post("/api/holdings")
 async def api_holding_add(body: HoldingBody):
-    return add_holding(body.account_id, body.symbol, body.asset_class,
-                       body.shares, body.cost_basis, body.name)
+    sym = body.symbol.strip().upper()
+    if body.is_manual and not sym.startswith("M:"):
+        raise HTTPException(status_code=400, detail="Manual holding symbols must start with 'M:'")
+    if not body.is_manual and sym.startswith("M:"):
+        raise HTTPException(status_code=400, detail="Non-manual symbols cannot start with 'M:'")
+    return add_holding(body.account_id, sym, body.asset_class,
+                       body.shares, body.cost_basis, body.name, body.is_manual)
 
 @app.put("/api/holdings/{holding_id}")
 async def api_holding_update(holding_id: int, body: HoldingBody):
-    return update_holding(holding_id, body.account_id, body.symbol, body.asset_class,
-                          body.shares, body.cost_basis, body.name)
+    sym = body.symbol.strip().upper()
+    if body.is_manual and not sym.startswith("M:"):
+        raise HTTPException(status_code=400, detail="Manual holding symbols must start with 'M:'")
+    if not body.is_manual and sym.startswith("M:"):
+        raise HTTPException(status_code=400, detail="Non-manual symbols cannot start with 'M:'")
+    return update_holding(holding_id, body.account_id, sym, body.asset_class,
+                          body.shares, body.cost_basis, body.name, body.is_manual)
 
 @app.delete("/api/holdings/{holding_id}")
 async def api_holding_delete(holding_id: int):

@@ -21,7 +21,7 @@ def refresh_prices(db_path=None) -> dict:
     seen: set[str] = set()
     symbols: list[str] = []
     for s in holding_symbols + INDEX_SYMBOLS:
-        if s not in seen:
+        if s not in seen and not s.upper().startswith("M:"):
             seen.add(s)
             symbols.append(s)
 
@@ -196,18 +196,19 @@ def add_transaction(txn_date: str, amount: float, direction: str,
 # ── Holdings ─────────────────────────────────────────────────────────────────
 
 def add_holding(account_id: int, symbol: str, asset_class: str,
-                shares: float, cost_basis: float, name: str | None = None) -> dict:
+                shares: float, cost_basis: float, name: str | None = None,
+                is_manual: bool = False) -> dict:
     today = date.today().isoformat()
     sym = symbol.upper()
     with get_conn() as conn:
         conn.execute(
-            """INSERT INTO holdings (account_id, symbol, name, asset_class, shares, cost_basis, updated_at)
-               VALUES (?,?,?,?,?,?,?)
+            """INSERT INTO holdings (account_id, symbol, name, asset_class, shares, cost_basis, updated_at, is_manual)
+               VALUES (?,?,?,?,?,?,?,?)
                ON CONFLICT(account_id, symbol) DO UPDATE SET
                    name=excluded.name, asset_class=excluded.asset_class,
                    shares=excluded.shares, cost_basis=excluded.cost_basis,
-                   updated_at=excluded.updated_at""",
-            (account_id, sym, name, asset_class, shares, cost_basis, today),
+                   updated_at=excluded.updated_at, is_manual=excluded.is_manual""",
+            (account_id, sym, name, asset_class, shares, cost_basis, today, int(is_manual)),
         )
         row = conn.execute(
             "SELECT * FROM holdings WHERE account_id=? AND symbol=?", (account_id, sym)
@@ -216,14 +217,15 @@ def add_holding(account_id: int, symbol: str, asset_class: str,
 
 
 def update_holding(holding_id: int, account_id: int, symbol: str, asset_class: str,
-                   shares: float, cost_basis: float, name: str | None = None) -> dict:
+                   shares: float, cost_basis: float, name: str | None = None,
+                   is_manual: bool = False) -> dict:
     today = date.today().isoformat()
     with get_conn() as conn:
         conn.execute(
             """UPDATE holdings
-               SET account_id=?, symbol=?, name=?, asset_class=?, shares=?, cost_basis=?, updated_at=?
+               SET account_id=?, symbol=?, name=?, asset_class=?, shares=?, cost_basis=?, updated_at=?, is_manual=?
                WHERE id=?""",
-            (account_id, symbol.upper(), name, asset_class, shares, cost_basis, today, holding_id),
+            (account_id, symbol.upper(), name, asset_class, shares, cost_basis, today, int(is_manual), holding_id),
         )
         row = conn.execute("SELECT * FROM holdings WHERE id=?", (holding_id,)).fetchone()
     return dict(row)

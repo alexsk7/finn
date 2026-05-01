@@ -200,6 +200,7 @@ def get_allocation() -> dict:
             "gain":         round(gain, 2),
             "gain_pct":     round(gain_pct, 2),
             "account_type": h["account_type"],
+            "is_manual":    bool(h["is_manual"]),
         })
 
     holding_rows.sort(key=lambda x: x["market_value"], reverse=True)
@@ -639,7 +640,9 @@ def get_ticker_data() -> list[dict]:
         """).fetchall()
 
         holding_symbols = {
-            r[0] for r in conn.execute("SELECT DISTINCT symbol FROM holdings").fetchall()
+            r[0] for r in conn.execute(
+                "SELECT DISTINCT symbol FROM holdings WHERE is_manual=0"
+            ).fetchall()
         }
 
     price_map = {r['symbol']: dict(r) for r in rows}

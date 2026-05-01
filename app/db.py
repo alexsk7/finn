@@ -179,6 +179,10 @@ def init_db(db_path=None) -> None:
             conn.execute("ALTER TABLE snapshots ADD COLUMN other_assets REAL NOT NULL DEFAULT 0")
         except Exception:
             pass
+        try:
+            conn.execute("ALTER TABLE holdings ADD COLUMN is_manual INTEGER NOT NULL DEFAULT 0")
+        except Exception:
+            pass
 
         # Indexes — idempotent via IF NOT EXISTS
         conn.execute("""
