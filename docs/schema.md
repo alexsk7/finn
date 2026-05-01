@@ -5,7 +5,7 @@
 | Table | Purpose |
 |---|---|
 | `accounts` | Account registry; `type` enum controls balance computation method and display. `opening_balance` anchors transaction-based balance computation. `interest_rate` + `minimum_payment` for credit/loan payoff projection. |
-| `holdings` | Positions by account; `cost_basis` is per-share. `UNIQUE(account_id, symbol)` enforced via unique index — add/import upserts on conflict. |
+| `holdings` | Positions by account; `cost_basis` is per-share; `is_manual` flag marks positions whose prices are not available on Yahoo Finance. `UNIQUE(account_id, symbol)` enforced via unique index — add/import upserts on conflict. |
 | `prices` | One row per symbol per refresh; `prev_close` stores prior day's close for daily change calc; queries use correlated subquery for `MAX(recorded_at)` |
 | `snapshots` | Periodic net-worth snapshots (NW chart source); stores `liquid_cash`, `invested_total`, `home_equity`, `debt_total`, `other_assets` per snapshot. **History only — not used for current balances.** |
 | `account_snapshots` | Per-account balances tied to a snapshot. Used for historical reference only. |

@@ -19,10 +19,10 @@
 
 Holdings | Accounts | Snapshot | Prices | Transactions | Real Estate | Allocation | Budget | Danger Zone
 
-- **Holdings** — add form + full table with two-row inline edit/delete; CSV import card (Fidelity/Schwab/Vanguard formats, account selector)
+- **Holdings** — add form (with "Manual" checkbox for non-public tickers, auto-prefixes `M:`) + full table with two-row inline edit/delete and "manual" badge; CSV import card (Fidelity/Schwab/Vanguard formats, account selector)
 - **Accounts** — add form (with opening balance + optional APR/min payment for credit/loan) + table with edit and delete
 - **Snapshot** — per-account balance entry form + preview card; plus "Import Historical Snapshots" CSV import card
-- **Prices** — last price per symbol, manual override inputs, refresh button
+- **Prices** — last price per symbol, manual override inputs, refresh button. Manual holdings (`M:` prefix) are skipped by the Yahoo Finance refresh — update their prices here.
 - **Transactions** — add form + recent 100 rows with two-row inline edit/delete; plus "Import Transactions CSV" card
 - **Real Estate** — add property form + per-property value/mortgage update, linked loan account selector, delete
 - **Allocation** — editable target % for all 8 asset classes, Save All
@@ -33,7 +33,7 @@ Holdings | Accounts | Snapshot | Prices | Transactions | Real Estate | Allocatio
 
 - **KPI tiles**: Net Worth → Invested → Home Equity → Liquid Cash → Total Debt → Other Assets (conditional). Each tile shows current value, MoM % change, YTD % change, and an inline SVG sparkline. All values computed live. The "Other Assets" tile only appears when at least one `other`-type account has a non-zero balance; the KPI row expands to 6 columns automatically.
 - **NW chart**: multi-line — Net Worth (blue, filled), Invested (green), Cash (yellow), Home Equity (purple), Other Assets (amber, conditional). Period filters: 30D, QTD, YTD, 1Y, 2Y, 5Y, MAX. "Proj" toggle adds a dashed 10-year projection line using CAGR from the visible history slice, anchored to current live NW. The Other Assets line and legend entry only appear when any snapshot has a non-zero `other_assets` value.
-- **Market ticker strip**: scrolling marquee at bottom — major indices + all holding symbols with price and daily % change.
+- **Market ticker strip**: scrolling marquee at bottom — major indices + all non-manual holding symbols with price and daily % change. Manual holdings (`is_manual=1`) are excluded from the strip.
 - **Holdings table**: deduplicated by ticker symbol (positions across multiple accounts summed client-side). Investments page keeps per-account detail. Asset class badges are color-coded to match the allocation donut.
 - **Alerts**: allocation drift ≥ 3%, TLH candidates (from `tax.tlh_candidates`), journal milestones.
 

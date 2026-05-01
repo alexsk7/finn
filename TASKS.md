@@ -20,6 +20,7 @@
 - [x] Debt tracking: credit/loan accounts compute balance from transactions; opening_balance anchor; payoff projection on account detail
 - [x] Real estate ↔ loan account link: `real_estate.account_id` → mortgage balance from linked loan; double-count prevention in `debt_total`
 - [x] Transaction payee field: `payee` column on transactions table; shown in account drill-down and Data → Transactions; inline edit/delete
+- [x] Manual holdings: `is_manual` flag + `M:` symbol prefix for non-public tickers (e.g. 401k custom funds); `refresh_prices()` skips `M:` symbols; ticker strip excludes manual holdings; prices updated via Data → Prices
 
 ## Tier 2 — Data import (complete)
 

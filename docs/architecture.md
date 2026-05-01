@@ -21,7 +21,7 @@ Local-first, single-process web app. No authentication, no external API dependen
 
 ## Background jobs
 
-APScheduler `BackgroundScheduler` starts at module load in `main.py`. One cron job: Mon–Fri 16:05 America/New_York, calls `refresh_prices()`. Skips silently if no holdings exist. Cleaned up via `atexit`. Dependency: `apscheduler>=3.10,<4`.
+APScheduler `BackgroundScheduler` starts at module load in `main.py`. One cron job: Mon–Fri 16:05 America/New_York, calls `refresh_prices()`. Skips silently if no holdings exist; skips any symbol with `is_manual=1` (i.e. `M:` prefix). Cleaned up via `atexit`. Dependency: `apscheduler>=3.10,<4`.
 
 ## SQLite connection settings
 
