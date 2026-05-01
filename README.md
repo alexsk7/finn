@@ -90,4 +90,4 @@ finctl has **no authentication**. `./run.sh` binds to `127.0.0.1` (loopback only
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Apache 2.0 — see [LICENSE](LICENSE).
