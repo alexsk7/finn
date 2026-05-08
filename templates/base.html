@@ -114,6 +114,10 @@
 </div>
 
 <script>
+window.CURRENCY = {{ (profile.currency_symbol or '$') | tojson }};
+window.USER_NAME = {{ (profile.user_name or '') | tojson }};
+</script>
+<script>
 const COLORS = {
   us_equity:        '#4080f0',
   intl_equity:      '#22d3a0',
@@ -143,10 +147,10 @@ Chart.defaults.font.size = 11;
 
 function fmt(n) {
   if (n == null) return '—';
-  const a = Math.abs(n), s = n < 0 ? '-' : '';
-  if (a >= 1e6) return s + '$' + (a/1e6).toFixed(2) + 'M';
-  if (a >= 1e3) return s + '$' + (a/1e3).toFixed(1) + 'k';
-  return s + '$' + a.toFixed(0);
+  const a = Math.abs(n), s = n < 0 ? '-' : '', c = window.CURRENCY || '$';
+  if (a >= 1e6) return s + c + (a/1e6).toFixed(2) + 'M';
+  if (a >= 1e3) return s + c + (a/1e3).toFixed(1) + 'k';
+  return s + c + a.toFixed(0);
 }
 function pct(n) {
   if (n == null) return '—';

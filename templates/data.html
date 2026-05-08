@@ -76,6 +76,7 @@
     <button class="tab-btn" data-tab="allocation" onclick="showTab('allocation')">Allocation</button>
     <button class="tab-btn" data-tab="realestate" onclick="showTab('realestate')">Real Estate</button>
     <button class="tab-btn" data-tab="portfolios" onclick="showTab('portfolios')">Portfolios</button>
+    <button class="tab-btn" data-tab="profile" onclick="showTab('profile')">Profile</button>
     <button class="tab-btn" data-tab="danger" onclick="showTab('danger')"
       style="margin-left:auto;color:var(--red);opacity:.6;">Danger Zone</button>
   </nav>
@@ -614,6 +615,31 @@ VXUS,Vanguard Total International,18,58.72"
           </thead>
           <tbody id="pf-body"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Profile ──────────────────────────────────────────────────────────── -->
+  <div id="tab-profile" class="tab-panel">
+    <div class="card" style="max-width:460px;">
+      <div class="section-title">Profile</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div>
+          <label style="display:block;font-size:10px;color:var(--text-dim);margin-bottom:4px;">Your Name</label>
+          <input id="prof-name" type="text" placeholder="e.g. Alex"
+            style="width:100%;box-sizing:border-box;"
+            value="{{ profile.user_name | e }}">
+        </div>
+        <div>
+          <label style="display:block;font-size:10px;color:var(--text-dim);margin-bottom:4px;">Currency Symbol</label>
+          <input id="prof-currency" type="text" placeholder="$" maxlength="4"
+            style="width:100%;box-sizing:border-box;"
+            value="{{ profile.currency_symbol | e }}">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="btn" onclick="saveProfile()">Save</button>
+        <span id="prof-status" style="font-size:11px;"></span>
       </div>
     </div>
   </div>
@@ -1715,6 +1741,26 @@ VXUS,Vanguard Total International,18,58.72"
         res.errors.map(e => `<div style="font-size:10px;color:var(--red);margin-top:3px;">${e}</div>`).join('');
     }
     if (ok) buildHoldingsTable();
+  }
+
+  // ── Profile ────────────────────────────────────────────────────────────────────
+  async function saveProfile() {
+    const name = document.getElementById('prof-name').value.trim();
+    const currency = document.getElementById('prof-currency').value.trim() || '$';
+    const st = document.getElementById('prof-status');
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({user_name: name, currency_symbol: currency}),
+      });
+      if (!res.ok) throw new Error();
+      st.textContent = '✓ Saved. Reload to apply everywhere.';
+      st.style.color = 'var(--green)';
+      window.CURRENCY = currency;
+    } catch(e) {
+      st.textContent = '✗ Save failed.';
+      st.style.color = 'var(--red)';
+    }
   }
 
   // ── Danger Zone ────────────────────────────────────────────────────────────────

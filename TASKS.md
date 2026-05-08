@@ -77,10 +77,12 @@
 - [x] Sidebar portfolio switcher (Alpine.js dropdown anchored at bottom) — shows active name, lists others, inline "New portfolio" form
 - [x] `init_db()` + optional `seed_demo()` called on new portfolio creation; `init_db()` called on switch to apply any pending migrations
 
-## Personalization
+## Personalization (complete)
 
-- [ ] User profile: name, currency symbol, display preferences — stored in `app_flags` or a `profile` table
-- [ ] Dashboard greeting ("Good morning, [Name]") driven by profile
+- [x] User profile: name, currency symbol — stored in `app_flags` table; `GET /api/profile` + `POST /api/profile`
+- [x] Dashboard greeting ("Good morning/afternoon/evening, [Name]") — client-side time-of-day, server-rendered name; only shown when name is set
+- [x] Currency symbol propagated via `window.CURRENCY` (server-side injected in `base.html`); `fmt()` uses it; no flash
+- [x] Profile tab on `/data` page — name + currency inputs, Save button; profile survives Danger Zone reset
 
 ## Business Intelligence (investigation)
 

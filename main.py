@@ -61,6 +61,8 @@ from app.writer import (
     add_budget_category,
     update_budget_category,
     delete_budget_category,
+    get_profile,
+    save_profile,
 )
 
 init_db()
@@ -101,8 +103,10 @@ app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
 templates = Jinja2Templates(directory=BASE / "templates")
 
 
-def page(request: Request, template: str, active: str) -> HTMLResponse:
-    return templates.TemplateResponse(request=request, name=template, context={"active": active})
+def page(request: Request, template: str, active: str, **extra) -> HTMLResponse:
+    profile = get_profile()
+    ctx = {"active": active, "profile": profile, **extra}
+    return templates.TemplateResponse(request=request, name=template, context=ctx)
 
 
 # ── Pages ─────────────────────────────────────────────────────────────────────
@@ -124,11 +128,7 @@ async def accounts_page(request: Request):
 
 @app.get("/accounts/{account_id}", response_class=HTMLResponse)
 async def account_detail_page(request: Request, account_id: int):
-    return templates.TemplateResponse(
-        request=request,
-        name="account_detail.html",
-        context={"active": "accounts", "account_id": account_id},
-    )
+    return page(request, "account_detail.html", "accounts", account_id=account_id)
 
 
 @app.get("/real-estate", response_class=HTMLResponse)
@@ -556,6 +556,22 @@ class HoldingsImportBody(BaseModel):
 @app.post("/api/holdings/import-csv")
 async def api_holdings_import_csv(body: HoldingsImportBody):
     return import_holdings_csv(body.csv_text, body.account_id)
+
+
+# ── Profile ───────────────────────────────────────────────────────────────────
+
+@app.get("/api/profile")
+async def api_profile_get():
+    return get_profile()
+
+class ProfileBody(BaseModel):
+    user_name: str = ""
+    currency_symbol: str = "$"
+
+@app.post("/api/profile")
+async def api_profile_save(body: ProfileBody):
+    save_profile(body.user_name, body.currency_symbol)
+    return {"ok": True}
 
 
 # ── Reset ──────────────────────────────────────────────────────────────────────

@@ -679,10 +679,34 @@ def import_holdings_csv(csv_text: str, account_id: int) -> dict:
     }
 
 
+# ── Profile ───────────────────────────────────────────────────────────────────
+
+def get_profile() -> dict:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT key, value FROM app_flags WHERE key IN ('user_name', 'currency_symbol')"
+        ).fetchall()
+    m = {r["key"]: r["value"] for r in rows}
+    return {"user_name": m.get("user_name", ""), "currency_symbol": m.get("currency_symbol", "$")}
+
+
+def save_profile(user_name: str, currency_symbol: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO app_flags(key,value) VALUES('user_name',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (user_name.strip(),)
+        )
+        sym = currency_symbol.strip() or "$"
+        conn.execute(
+            "INSERT INTO app_flags(key,value) VALUES('currency_symbol',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (sym,)
+        )
+
+
 # ── Reset ─────────────────────────────────────────────────────────────────────
 
 def reset_all_data() -> None:
-    """Wipe all user data and mark as never-seeded so seed_demo won't re-fire."""
+    """Wipe all financial data; preserve profile keys (user_name, currency_symbol)."""
     with get_conn() as conn:
         conn.executescript("""
             DELETE FROM account_snapshots;
@@ -695,7 +719,7 @@ def reset_all_data() -> None:
             DELETE FROM allocation_targets;
             DELETE FROM real_estate;
             DELETE FROM accounts;
-            DELETE FROM app_flags;
+            DELETE FROM app_flags WHERE key NOT IN ('user_name', 'currency_symbol');
         """)
 
 

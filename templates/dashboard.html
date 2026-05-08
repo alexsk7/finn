@@ -177,6 +177,18 @@
 {% block content %}
 <div id="dash">
 
+  {% if profile.user_name %}
+  <div id="dash-greeting" style="flex-shrink:0;padding:4px 0 2px;font-size:12px;color:var(--text-dim);"></div>
+  <script>
+  (function(){
+    const h = new Date().getHours();
+    const tod = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+    document.getElementById('dash-greeting').textContent =
+      'Good ' + tod + ', {{ profile.user_name | e }}.';
+  })();
+  </script>
+  {% endif %}
+
   <!-- Row 1: KPI tiles ─────────────────────────────────────────── -->
   <div class="grid-5" id="kpi-row">
     <div class="card">
