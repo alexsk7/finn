@@ -101,8 +101,9 @@
 
 - [x] Auto-open browser on `./run.sh` — background subshell opens `http://localhost:$PORT` after 1.5s delay
 - [ ] `ruff` linting setup
-- [ ] Backup script (`finance.db` → timestamped `backups/`)
-- [ ] `Makefile` with `run`, `refresh`, `snapshot` targets; `install`/`uninstall` targets for optional desktop launcher (`.desktop` on Linux, `.command` on Mac) — opt-in, not required for basic use
+- [ ] **Backup script** (`db/*.db` → timestamped `backups/`) — HIGH PRIORITY after 2026-05-08 data loss incident; run on `./run.sh` startup and expose as a Makefile target
+- [ ] `Makefile` with `run`, `refresh`, `snapshot`, `backup` targets; `install`/`uninstall` targets for optional desktop launcher — opt-in, not required for basic use
+- [ ] Safeguard: `reset_all_data()` should never be called from test/CLI code against the live DB — always copy to a temp DB for destructive testing
 
 ## Security (complete)
 
