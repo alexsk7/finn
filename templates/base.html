@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FINCTL — {% block title %}Dashboard{% endblock %}</title>
+  <title>finn — {% block title %}Dashboard{% endblock %}</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png">
-  <link rel="stylesheet" href="/static/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+  <link rel="stylesheet" href="/static/style.css">  
+  <script>
+    window.chartReady = new Promise(resolve => { window.__resolveChartReady = resolve; });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer onload="window.__resolveChartReady && window.__resolveChartReady()"></script>
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
   {% block head %}{% endblock %}
 </head>
@@ -47,7 +50,7 @@
         <circle cx="66" cy="20" r="3.5" fill="#22d3a0"/>
         <circle cx="66" cy="20" r="6" fill="none" stroke="#22d3a0" stroke-width="1" opacity="0.35"/>
       </svg>
-      <div class="topbar-brand"><span>FIN</span>CTL</div>
+      <div class="topbar-brand"><span>finn</span></div>
     </a>
     
     <div class="topbar-nw" id="topbar-nw">—</div>
@@ -81,7 +84,7 @@
     <div style="margin-top:24px;padding:4px 8px;border-top:1px solid var(--border);"
          x-data="portfolioWidget()" x-init="init()">
       <div class="sidebar-section" style="margin:0 0 6px;">Portfolio</div>
-      <select @change="switchTo($event.target.value)" style="
+      <select aria-label="Portfolio" @change="switchTo($event.target.value)" style="
         width:100%;padding:7px 10px;
         background:var(--bg2);border:1px solid var(--border);border-radius:5px;
         color:var(--text-head);font-family:var(--font);font-size:12px;cursor:pointer;
@@ -119,11 +122,11 @@ window.USER_NAME = {{ (profile.user_name or '') | tojson }};
 </script>
 <script>
 const COLORS = {
-  us_equity:        '#4080f0',
+  us_equity:        '#6aa5ff',
   intl_equity:      '#22d3a0',
   bond:             '#f0b040',
   real_estate_fund: '#f07040',
-  cash_equiv:       '#8060f0',
+  cash_equiv:       '#a78bfa',
   commodity:        '#e060a0',
   crypto:           '#60c0e0',
   other:            '#506070',
@@ -140,10 +143,12 @@ const CLASS_LABELS = {
   other:            'Other',
 };
 
-Chart.defaults.color = '#5a6a85';
-Chart.defaults.borderColor = '#232d3f';
-Chart.defaults.font.family = "'JetBrains Mono', monospace";
-Chart.defaults.font.size = 11;
+function applyChartDefaults() {
+  Chart.defaults.color = '#5a6a85';
+  Chart.defaults.borderColor = '#232d3f';
+  Chart.defaults.font.family = "'JetBrains Mono', monospace";
+  Chart.defaults.font.size = 11;
+}
 
 function fmt(n) {
   if (n == null) return '—';
@@ -166,7 +171,7 @@ function esc(s) {
 function buildCatOpts(cats, selectedVal) {
   const known = cats.some(c => c.name === selectedVal);
   const orphan = selectedVal && !known
-    ? `<option value="${selectedVal}" selected>${selectedVal}</option>` : '';
+    ? `<option value="${esc(selectedVal)}" selected>${esc(selectedVal)}</option>` : '';
   return `<option value="">— select category —</option>${orphan}` +
     cats.map(c =>
       `<option value="${esc(c.name)}"${c.name === selectedVal ? ' selected' : ''}>${esc(c.name)}</option>`
@@ -226,7 +231,8 @@ function portfolioWidget() {
   };
 }
 
-fetch('/api/dashboard').then(r => r.json()).then(d => {
+window.dashboardPromise = fetch('/api/dashboard').then(r => r.json());
+window.dashboardPromise.then(d => {
   document.getElementById('topbar-nw').textContent = fmt(d.net_worth);
   const ytd = d.ytd_change_pct;
   const el = document.getElementById('topbar-ytd');

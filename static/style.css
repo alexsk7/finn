@@ -1,3 +1,27 @@
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/static/fonts/jetbrains-mono/JetBrainsMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/static/fonts/jetbrains-mono/JetBrainsMono-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/static/fonts/jetbrains-mono/JetBrainsMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg:        #0d0f12;
   --bg2:       #131820;
@@ -9,8 +33,8 @@
   --green:     #22d3a0;
   --red:       #f05060;
   --yellow:    #f0b040;
-  --blue:      #4080f0;
-  --purple:    #8060f0;
+  --blue:      #6aa5ff;
+  --purple:    #a78bfa;
   --orange:    #f07040;
   --accent:    #4080f0;
 
@@ -434,6 +458,7 @@ a:hover { color: var(--text-head); }
 .layout-add-hold   { display:grid; grid-template-columns:repeat(6,1fr) auto; gap:8px; align-items:end; }
 .layout-add-acct   { display:grid; grid-template-columns:repeat(5,1fr) auto; gap:8px; align-items:end; }
 .layout-add-bc     { display:grid; grid-template-columns:repeat(3,1fr) auto; gap:8px; align-items:end; }
+.layout-profile    { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:end; }
 .layout-data-accts { display:grid; grid-template-columns:400px 1fr; gap:var(--gap); align-items:start; }
 .layout-snap       { display:grid; grid-template-columns:1fr 280px; gap:var(--gap); }
 .re-prop-kpis      { display:grid; grid-template-columns:repeat(5,1fr); gap:var(--gap); }
@@ -520,7 +545,7 @@ body.sidebar-open .sidebar-backdrop { display:block; }
   .layout-inv-charts,
   .layout-journal,
   .layout-j-header, .layout-j-footer,
-  .layout-add-hold, .layout-add-acct, .layout-add-bc,
+  .layout-add-hold, .layout-add-acct, .layout-add-bc, .layout-profile,
   .layout-data-accts, .layout-snap,
   .re-prop-kpis, .re-config-form, .re-amort-summary,
   .grid-2 { grid-template-columns:1fr; }
@@ -545,4 +570,3 @@ body.sidebar-open .sidebar-backdrop { display:block; }
   .grid-4, .grid-5, .grid-3 { grid-template-columns:1fr; }
   .card-value { font-size:20px; }
 }
-

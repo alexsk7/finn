@@ -13,8 +13,16 @@ wheels/
 *.db
 *.db-shm
 *.db-wal
+*.db.bak
+*.db.bak-shm
+*.db.bak-wal
 portfolios.json
+profile.json
+
+# Local database backups
+backups/
 
 # Internal AI session files — not for public repo
 CLAUDE.md
+AGENTS.md
 RESUME_HERE.md

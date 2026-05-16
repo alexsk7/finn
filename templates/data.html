@@ -621,26 +621,28 @@ VXUS,Vanguard Total International,18,58.72"
 
   <!-- ── Profile ──────────────────────────────────────────────────────────── -->
   <div id="tab-profile" class="tab-panel">
-    <div class="card" style="max-width:460px;">
+    <div class="card" style="max-width:520px;">
       <div class="section-title">Profile</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <p style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">
+        Your name and currency symbol apply across all portfolios on this installation.
+        They are stored locally and never shared with any portfolio database.
+      </p>
+      <div class="layout-profile">
         <div>
-          <label style="display:block;font-size:10px;color:var(--text-dim);margin-bottom:4px;">Your Name</label>
-          <input id="prof-name" type="text" placeholder="e.g. Alex"
-            style="width:100%;box-sizing:border-box;"
+          <label class="field-label">Your Name</label>
+          <input id="prof-name" type="text" class="field-input" placeholder="e.g. Alex"
             value="{{ profile.user_name | e }}">
         </div>
         <div>
-          <label style="display:block;font-size:10px;color:var(--text-dim);margin-bottom:4px;">Currency Symbol</label>
-          <input id="prof-currency" type="text" placeholder="$" maxlength="4"
-            style="width:100%;box-sizing:border-box;"
+          <label class="field-label">Currency Symbol</label>
+          <input id="prof-currency" type="text" class="field-input" placeholder="$" maxlength="4"
             value="{{ profile.currency_symbol | e }}">
         </div>
+        <div>
+          <button class="btn-primary" onclick="saveProfile()">Save</button>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <button class="btn" onclick="saveProfile()">Save</button>
-        <span id="prof-status" style="font-size:11px;"></span>
-      </div>
+      <span id="prof-status" style="font-size:11px;display:block;margin-top:10px;"></span>
     </div>
   </div>
 

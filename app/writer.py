@@ -228,7 +228,7 @@ def update_holding(holding_id: int, account_id: int, symbol: str, asset_class: s
             (account_id, symbol.upper(), name, asset_class, shares, cost_basis, today, int(is_manual), holding_id),
         )
         row = conn.execute("SELECT * FROM holdings WHERE id=?", (holding_id,)).fetchone()
-    return dict(row)
+    return dict(row) if row else {}
 
 
 def delete_holding(holding_id: int) -> None:
@@ -271,7 +271,7 @@ def update_account(account_id: int, interest_rate: float | None,
             (interest_rate, minimum_payment, opening_balance or 0, account_id),
         )
         row = conn.execute("SELECT * FROM accounts WHERE id=?", (account_id,)).fetchone()
-    return dict(row)
+    return dict(row) if row else {}
 
 
 def delete_account(account_id: int) -> dict:
@@ -281,6 +281,11 @@ def delete_account(account_id: int) -> dict:
         ).fetchone()[0]
         if holding_count > 0:
             return {"ok": False, "error": f"Account has {holding_count} holding(s). Delete or move them first."}
+        txn_count = conn.execute(
+            "SELECT COUNT(*) FROM transactions WHERE account_id=?", (account_id,)
+        ).fetchone()[0]
+        if txn_count > 0:
+            return {"ok": False, "error": f"Account has {txn_count} transaction(s). Delete them first."}
         conn.execute("DELETE FROM accounts WHERE id=?", (account_id,))
     return {"ok": True}
 
@@ -681,32 +686,10 @@ def import_holdings_csv(csv_text: str, account_id: int) -> dict:
 
 # ── Profile ───────────────────────────────────────────────────────────────────
 
-def get_profile() -> dict:
-    with get_conn() as conn:
-        rows = conn.execute(
-            "SELECT key, value FROM app_flags WHERE key IN ('user_name', 'currency_symbol')"
-        ).fetchall()
-    m = {r["key"]: r["value"] for r in rows}
-    return {"user_name": m.get("user_name", ""), "currency_symbol": m.get("currency_symbol", "$")}
-
-
-def save_profile(user_name: str, currency_symbol: str) -> None:
-    with get_conn() as conn:
-        conn.execute(
-            "INSERT INTO app_flags(key,value) VALUES('user_name',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-            (user_name.strip(),)
-        )
-        sym = currency_symbol.strip() or "$"
-        conn.execute(
-            "INSERT INTO app_flags(key,value) VALUES('currency_symbol',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-            (sym,)
-        )
-
-
 # ── Reset ─────────────────────────────────────────────────────────────────────
 
 def reset_all_data() -> None:
-    """Wipe all financial data; preserve profile keys (user_name, currency_symbol)."""
+    """Wipe all financial data from the active portfolio database."""
     with get_conn() as conn:
         conn.executescript("""
             DELETE FROM account_snapshots;
@@ -719,7 +702,7 @@ def reset_all_data() -> None:
             DELETE FROM allocation_targets;
             DELETE FROM real_estate;
             DELETE FROM accounts;
-            DELETE FROM app_flags WHERE key NOT IN ('user_name', 'currency_symbol');
+            DELETE FROM app_flags;
         """)
 
 
@@ -849,7 +832,7 @@ def update_transaction(txn_id: int, txn_date: str, amount: float, direction: str
             (txn_date, account_id, amount, direction, category, payee, description, txn_id),
         )
         row = conn.execute("SELECT * FROM transactions WHERE id=?", (txn_id,)).fetchone()
-    return dict(row)
+    return dict(row) if row else {}
 
 
 def delete_transaction(txn_id: int) -> None:
@@ -882,7 +865,7 @@ def link_real_estate_account(property_id: int, account_id: int | None) -> dict:
             (account_id, property_id),
         )
         row = conn.execute("SELECT * FROM real_estate WHERE id=?", (property_id,)).fetchone()
-    return dict(row)
+    return dict(row) if row else {}
 
 
 def delete_real_estate(property_id: int) -> dict:
@@ -905,4 +888,4 @@ def update_real_estate(property_id: int, estimated_value: float,
             (estimated_value, mortgage_balance, today, property_id),
         )
         row = conn.execute("SELECT * FROM real_estate WHERE id=?", (property_id,)).fetchone()
-    return dict(row)
+    return dict(row) if row else {}

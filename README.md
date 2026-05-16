@@ -1,4 +1,4 @@
-# finctl
+# finn
 
 A local-first personal finance dashboard. Tracks net worth, investments, accounts, real estate, taxes, and budget — all in a single SQLite database that never leaves your machine.
 
@@ -29,8 +29,8 @@ A local-first personal finance dashboard. Tracks net worth, investments, account
 ## Quick start
 
 ```bash
-git clone https://github.com/jacksonrc/finctl.git
-cd finctl
+git clone https://github.com/jacksonrc/finn.git
+cd finn
 ./run.sh
 ```
 
@@ -43,6 +43,15 @@ To use a different port:
 ```
 
 The server auto-reloads on file changes. On first run, `init_db()` creates the schema and `seed_demo()` inserts demo data — both are safe to run repeatedly.
+
+A `Makefile` is included as a convenience wrapper:
+
+| Command | What it does |
+|---|---|
+| `make run` | Start the server (equivalent to `./run.sh`) |
+| `make run PORT=9000` | Start on a custom port |
+| `make backup` | Take a manual backup of all portfolio databases right now |
+| `make refresh` | Trigger a price refresh on the running server |
 
 ---
 
@@ -84,7 +93,7 @@ Single-process, local-only web app. No authentication, no external API dependenc
 
 ## Security note
 
-finctl has **no authentication**. `./run.sh` binds to `127.0.0.1` (loopback only) so it is not reachable from other machines by default. Do not expose it on a public or shared network interface without adding an authentication layer first (e.g., an authenticating reverse proxy).
+finn has **no authentication**. `./run.sh` binds to `127.0.0.1` (loopback only) so it is not reachable from other machines by default. Do not expose it on a public or shared network interface without adding an authentication layer first (e.g., an authenticating reverse proxy).
 
 ---
 

@@ -1,10 +1,10 @@
 [project]
-name = "finctl"
+name = "finn"
 version = "0.1.0"
 description = "Local-first personal finance dashboard — net worth, investments, accounts, real estate, tax, and budget in a single SQLite database"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 keywords = ["finance", "personal-finance", "net-worth", "budget", "investing"]
 dependencies = [
     "apscheduler>=3.10,<4",

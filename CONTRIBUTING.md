@@ -1,10 +1,10 @@
-# Contributing to finctl
+# Contributing to finn
 
 ## Running locally
 
 ```bash
-git clone https://github.com/jacksonrc/finctl.git
-cd finctl
+git clone https://github.com/jacksonrc/finn.git
+cd finn
 ./run.sh
 ```
 
@@ -33,7 +33,7 @@ The [`docs/`](docs/) directory has detailed reference material — architecture,
 
 ## Making changes
 
-- **New page**: add a query in `queries.py`, a route in `main.py`, a nav link in `base.html`, and a template. See the "Adding a new page" section in CLAUDE.md.
+- **New page**: add a query in `queries.py`, a route in `main.py`, a nav link in `base.html`, and a template. See the "Adding a new page" section in [`docs/development.md`](docs/development.md).
 - **New API endpoint**: add the function in `queries.py` or `writer.py`, a Pydantic model + route in `main.py`, then call it from the relevant template.
 - **Schema changes**: add idempotent `ALTER TABLE` migrations in `db.py` (inside the try/except block after `executescript`).
 
@@ -41,7 +41,7 @@ The [`docs/`](docs/) directory has detailed reference material — architecture,
 
 1. Fork the repo and create a branch from `main`.
 2. Keep changes focused — one feature or fix per PR.
-3. If touching the balance computation or snapshot logic, re-read the Balance Architecture section in CLAUDE.md first.
+3. If touching the balance computation or snapshot logic, re-read the Balance Architecture section in [`docs/architecture.md`](docs/architecture.md) first.
 4. Open a PR with a short description of what changed and why.
 
 ## Roadmap

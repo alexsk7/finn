@@ -70,6 +70,8 @@ async function loadBudget() {
   document.getElementById('expense-body').innerHTML = expense.map(catRow).join('');
 
   // Bar chart of expenses
+  await window.chartReady;
+  applyChartDefaults();
   const expSorted = [...expense].sort((a,b)=>b.actual-a.actual);
   new Chart(document.getElementById('budget-chart'), {
     type: 'bar',

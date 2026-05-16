@@ -276,7 +276,7 @@ wheels = [
 ]
 
 [[package]]
-name = "finctl"
+name = "finn"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

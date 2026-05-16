@@ -16,7 +16,7 @@
   transition: color .15s, border-color .15s, background .15s;
 }
 .nw-filter:hover  { color: var(--text-head); border-color: var(--text-dim); }
-.nw-filter.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.nw-filter.active { background: #2563eb; border-color: #2563eb; color: #fff; }
 
 /* ── Multi-line chart legend ────────────────────────────────────── */
 .chart-legend {
@@ -375,12 +375,14 @@ let fullHistory = [];
 
 async function loadDashboard() {
   const [dash, alloc, tlh, journal, ticker] = await Promise.all([
-    fetch('/api/dashboard').then(r=>r.json()),
+    (window.dashboardPromise || fetch('/api/dashboard').then(r=>r.json())),
     fetch('/api/allocation').then(r=>r.json()),
     fetch('/api/tax').then(r=>r.json()),
     fetch('/api/journal').then(r=>r.json()),
     fetch('/api/ticker').then(r=>r.json()).catch(()=>[]),
   ]);
+  await window.chartReady;
+  applyChartDefaults();
 
   // KPIs
   document.getElementById('kpi-nw').textContent   = fmt(dash.net_worth);

@@ -1,4 +1,4 @@
-"""Generate static/favicon.ico from the FINCTL icon mark.
+"""Generate static/favicon.ico from the finn icon mark.
 
 Draws the rounded-square chart icon at 16, 32, and 48px sizes,
 then packs them into a single multi-resolution .ico file.

@@ -1,4 +1,4 @@
-"""Finance mission control — local-only FastAPI server."""
+"""finn — local-only FastAPI server."""
 
 import atexit
 import logging
@@ -61,9 +61,8 @@ from app.writer import (
     add_budget_category,
     update_budget_category,
     delete_budget_category,
-    get_profile,
-    save_profile,
 )
+from app.profile import get_profile, save_profile
 
 init_db()
 seed_demo()
@@ -96,11 +95,19 @@ _scheduler.add_job(
 _scheduler.start()
 atexit.register(lambda: _scheduler.shutdown(wait=False))
 
-app = FastAPI(title="Finance Mission Control", docs_url=None, redoc_url=None)
+app = FastAPI(title="finn", docs_url=None, redoc_url=None)
 
 BASE = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
 templates = Jinja2Templates(directory=BASE / "templates")
+
+
+@app.middleware("http")
+async def add_static_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static/fonts/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
 
 
 def page(request: Request, template: str, active: str, **extra) -> HTMLResponse:

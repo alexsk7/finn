@@ -83,6 +83,8 @@ async function loadInvestments() {
       <div class="card-value" style="color:${clr(totalGain)}">${fmt(totalGain)}</div></div>
     <div class="card"><div class="card-title">Return</div>
       <div class="card-value" style="color:${clr(totalGainPct)}">${pct(totalGainPct)}</div></div>`;
+  await window.chartReady;
+  applyChartDefaults();
 
   // Allocation bar chart
   const sorted = [...alloc.allocation].sort((a,b) => b.target_pct - a.target_pct);
