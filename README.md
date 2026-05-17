@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="static/logo-finn.svg" alt="finn" width="260">
+  <img src="static/logo-finn.svg" alt="finn" width="200">
 </p>
 
 <p align="center">

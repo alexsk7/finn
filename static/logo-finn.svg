@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 80" width="260" height="80">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
   <defs>
     <linearGradient id="chartGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%"   stop-color="#4080f0" stop-opacity="0.6"/>
@@ -48,31 +48,36 @@
   <circle cx="66" cy="20" r="6" fill="none" stroke="#22d3a0" stroke-width="1" opacity="0.35"/>
 
   <!-- Wordmark -->
-  <!-- fin in accent blue -->
   <text
-    x="96" y="52"
+    x="90" y="48"
     font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace"
-    font-size="36"
+    font-size="38"
     font-weight="700"
     letter-spacing="-1"
     fill="#4080f0"
-  >fin</text>
-  <!-- n in lighter -->
+    textLength="84"
+    lengthAdjust="spacing"
+  >finn</text>
+
+  <!-- Tagline: two lines, matched width, nudged right to align with "f" stem -->
   <text
-    x="184" y="52"
-    font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace"
-    font-size="36"
-    font-weight="700"
-    letter-spacing="-1"
-    fill="#c8d4e8"
-  >n</text>
-  <!-- Tagline -->
-  <text
-    x="97" y="66"
+    x="97" y="61"
     font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace"
     font-size="9"
     font-weight="400"
-    letter-spacing="0.18em"
+    letter-spacing="0.01em"
     fill="#5a6a85"
-  >PERSONAL FINANCE</text>
+    textLength="76"
+    lengthAdjust="spacing"
+  >PERSONAL</text>
+  <text
+    x="97" y="72"
+    font-family="'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace"
+    font-size="9"
+    font-weight="400"
+    letter-spacing="0.01em"
+    fill="#5a6a85"
+    textLength="76"
+    lengthAdjust="spacing"
+  >FINANCE</text>
 </svg>
