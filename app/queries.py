@@ -1,11 +1,37 @@
 """All read queries used by the API routes."""
 
+from datetime import date
+import re
+
 from .db import get_conn
 
 _INVESTMENT_TYPES = {'brokerage', 'retirement_401k', 'retirement_ira', 'hsa', 'crypto'}
 _DEBT_TYPES       = {'credit', 'loan'}
 _CASH_TYPES       = {'checking', 'savings'}
 _OTHER_TYPES      = {'other'}
+_MONTH_RE         = re.compile(r"^\d{4}-\d{2}$")
+
+
+def _month_info(month: str | None = None) -> dict:
+    m = (month or date.today().strftime("%Y-%m")).strip()
+    if not _MONTH_RE.match(m):
+        raise ValueError("Month must use YYYY-MM format")
+    year, month_num = (int(p) for p in m.split("-", 1))
+    if month_num < 1 or month_num > 12:
+        raise ValueError("Month must be between 01 and 12")
+
+    next_year = year + 1 if month_num == 12 else year
+    next_num = 1 if month_num == 12 else month_num + 1
+    prev_year = year - 1 if month_num == 1 else year
+    prev_num = 12 if month_num == 1 else month_num - 1
+
+    return {
+        "month": f"{year:04d}-{month_num:02d}",
+        "start": f"{year:04d}-{month_num:02d}-01",
+        "end": f"{next_year:04d}-{next_num:02d}-01",
+        "previous_month": f"{prev_year:04d}-{prev_num:02d}",
+        "next_month": f"{next_year:04d}-{next_num:02d}",
+    }
 
 
 def _compute_balances(conn) -> dict[int, float]:
@@ -607,6 +633,117 @@ def get_budget_categories_full() -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def get_budget_month(month: str | None = None) -> dict:
+    info = _month_info(month)
+    with get_conn() as conn:
+        month_row = conn.execute(
+            "SELECT * FROM budget_months WHERE month=?", (info["month"],)
+        ).fetchone()
+
+        rows = conn.execute("""
+            SELECT
+                b.id AS category_id,
+                b.name,
+                b.direction,
+                b.monthly_target AS default_target,
+                COALESCE(bmi.planned_amount, 0) AS planned_amount,
+                COALESCE(SUM(t.amount), 0) AS actual
+            FROM budget_categories b
+            LEFT JOIN budget_month_items bmi
+              ON bmi.category_id = b.id AND bmi.month = ?
+            LEFT JOIN transactions t
+              ON t.category = b.name
+             AND t.direction = b.direction
+             AND t.txn_date >= ?
+             AND t.txn_date < ?
+            GROUP BY b.id
+            ORDER BY b.direction, b.name
+        """, (info["month"], info["start"], info["end"])).fetchall()
+
+        uncategorized_rows = conn.execute("""
+            SELECT direction,
+                   COUNT(*) AS count,
+                   COALESCE(SUM(amount), 0) AS total
+            FROM transactions
+            WHERE txn_date >= ?
+              AND txn_date < ?
+              AND LOWER(TRIM(COALESCE(category, ''))) IN ('', 'uncategorized')
+            GROUP BY direction
+        """, (info["start"], info["end"])).fetchall()
+
+        unbudgeted_rows = conn.execute("""
+            SELECT t.direction,
+                   t.category,
+                   COUNT(*) AS count,
+                   COALESCE(SUM(t.amount), 0) AS total
+            FROM transactions t
+            WHERE t.txn_date >= ?
+              AND t.txn_date < ?
+              AND LOWER(TRIM(COALESCE(t.category, ''))) NOT IN ('', 'uncategorized')
+              AND NOT EXISTS (
+                  SELECT 1 FROM budget_categories b
+                  WHERE b.name = t.category AND b.direction = t.direction
+              )
+            GROUP BY t.direction, t.category
+            ORDER BY total DESC
+        """, (info["start"], info["end"])).fetchall()
+
+    categories = []
+    totals = {
+        "planned_income": 0.0,
+        "planned_expense": 0.0,
+        "actual_income": 0.0,
+        "actual_expense": 0.0,
+    }
+    for row in rows:
+        d = dict(row)
+        planned = float(d["planned_amount"] or 0)
+        actual = float(d["actual"] or 0)
+        d["planned_amount"] = planned
+        d["actual"] = actual
+        d["variance"] = round(actual - planned, 2)
+        if d["direction"] == "income":
+            totals["planned_income"] += planned
+            totals["actual_income"] += actual
+        else:
+            totals["planned_expense"] += planned
+            totals["actual_expense"] += actual
+        categories.append(d)
+
+    uncategorized = {
+        "income": {"count": 0, "total": 0.0},
+        "expense": {"count": 0, "total": 0.0},
+        "transfer": {"count": 0, "total": 0.0},
+    }
+    for row in uncategorized_rows:
+        uncategorized[row["direction"]] = {
+            "count": int(row["count"] or 0),
+            "total": float(row["total"] or 0),
+        }
+
+    planned_net = totals["planned_income"] - totals["planned_expense"]
+    actual_net = totals["actual_income"] - totals["actual_expense"]
+    savings_rate = (actual_net / totals["actual_income"] * 100) if totals["actual_income"] else 0
+
+    return {
+        "month": info["month"],
+        "previous_month": info["previous_month"],
+        "next_month": info["next_month"],
+        "exists": bool(month_row),
+        "notes": month_row["notes"] if month_row else None,
+        "categories": categories,
+        "uncategorized": uncategorized,
+        "unbudgeted": [dict(r) for r in unbudgeted_rows],
+        "totals": {
+            **{k: round(v, 2) for k, v in totals.items()},
+            "planned_net": round(planned_net, 2),
+            "actual_net": round(actual_net, 2),
+            "left_to_assign": round(planned_net, 2),
+            "savings_rate": round(savings_rate, 1),
+        },
+    }
+
+
 _INDEX_LABELS = {
     'SPY': 'S&P 500',
     'QQQ': 'NASDAQ 100',
@@ -700,13 +837,42 @@ def get_account_transactions(account_id: int, limit: int = 500) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def get_transactions(limit: int = 100) -> list[dict]:
+def get_transactions(limit: int = 100, category: str | None = None,
+                     direction: str | None = None, account_id: int | None = None,
+                     month: str | None = None) -> list[dict]:
+    limit = max(1, min(int(limit), 1000))
+    where: list[str] = []
+    params: list[object] = []
+
+    if category:
+        cat = category.strip()
+        if cat.lower() == "uncategorized":
+            where.append("LOWER(TRIM(COALESCE(t.category, ''))) IN ('', 'uncategorized')")
+        else:
+            where.append("t.category = ?")
+            params.append(cat)
+
+    if direction:
+        where.append("t.direction = ?")
+        params.append(direction)
+
+    if account_id is not None:
+        where.append("t.account_id = ?")
+        params.append(account_id)
+
+    if month:
+        info = _month_info(month)
+        where.extend(["t.txn_date >= ?", "t.txn_date < ?"])
+        params.extend([info["start"], info["end"]])
+
+    where_sql = f"WHERE {' AND '.join(where)}" if where else ""
     with get_conn() as conn:
-        rows = conn.execute("""
+        rows = conn.execute(f"""
             SELECT t.*, a.name as account_name
             FROM transactions t
             LEFT JOIN accounts a ON a.id = t.account_id
+            {where_sql}
             ORDER BY t.txn_date DESC, t.id DESC
             LIMIT ?
-        """, (limit,)).fetchall()
+        """, (*params, limit)).fetchall()
     return [dict(r) for r in rows]

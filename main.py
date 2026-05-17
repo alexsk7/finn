@@ -20,6 +20,7 @@ from app.queries import (
     get_rebalance,
     get_journal,
     get_cashflow_by_category,
+    get_budget_month,
     get_accounts_summary,
     get_real_estate,
     get_amortization,
@@ -39,6 +40,7 @@ from app.writer import (
     delete_journal_entry,
     add_transaction,
     update_transaction,
+    bulk_update_transaction_category,
     delete_transaction,
     update_real_estate,
     add_real_estate,
@@ -61,6 +63,8 @@ from app.writer import (
     add_budget_category,
     update_budget_category,
     delete_budget_category,
+    save_budget_month,
+    copy_budget_month,
 )
 from app.profile import get_profile, save_profile
 
@@ -234,8 +238,22 @@ async def api_budget_categories():
 
 
 @app.get("/api/transactions")
-async def api_transactions_list():
-    return get_transactions()
+async def api_transactions_list(limit: int = 100, category: Optional[str] = None,
+                                direction: Optional[str] = None,
+                                account_id: Optional[int] = None,
+                                month: Optional[str] = None):
+    try:
+        return get_transactions(limit, category, direction, account_id, month)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/budget")
+async def api_budget(month: Optional[str] = None):
+    try:
+        return get_budget_month(month)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/api/ticker")
@@ -290,7 +308,7 @@ class TransactionBody(BaseModel):
     txn_date: str
     amount: float
     direction: str
-    category: str
+    category: str = "uncategorized"
     payee: Optional[str] = None
     description: Optional[str] = None
     account_id: Optional[int] = None
@@ -474,6 +492,21 @@ class BudgetCategoryUpdate(BaseModel):
     name: str
     monthly_target: float
 
+
+class BudgetMonthItemBody(BaseModel):
+    category_id: int
+    planned_amount: float = 0
+
+
+class BudgetMonthBody(BaseModel):
+    items: list[BudgetMonthItemBody]
+    notes: Optional[str] = None
+
+
+class BudgetMonthCopyBody(BaseModel):
+    source_month: str
+    overwrite: bool = False
+
 @app.post("/api/budget-categories")
 async def api_budget_category_add(body: BudgetCategoryBody):
     return add_budget_category(body.name, body.monthly_target, body.direction)
@@ -486,6 +519,24 @@ async def api_budget_category_update(category_id: int, body: BudgetCategoryUpdat
 async def api_budget_category_delete(category_id: int):
     delete_budget_category(category_id)
     return {"ok": True}
+
+
+@app.put("/api/budget/months/{month}")
+async def api_budget_month_save(month: str, body: BudgetMonthBody):
+    try:
+        items = [i.model_dump() if hasattr(i, "model_dump") else i.dict() for i in body.items]
+        return save_budget_month(month, items, body.notes)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/budget/months/{month}/copy")
+async def api_budget_month_copy(month: str, body: BudgetMonthCopyBody):
+    try:
+        return copy_budget_month(month, body.source_month, body.overwrite)
+    except ValueError as e:
+        status_code = 409 if "already has a plan" in str(e) else 400
+        raise HTTPException(status_code=status_code, detail=str(e))
 
 
 # ── Journal CRUD ───────────────────────────────────────────────────────────────
@@ -515,7 +566,7 @@ class TransactionUpdateBody(BaseModel):
     txn_date: str
     amount: float
     direction: str
-    category: str
+    category: str = "uncategorized"
     payee: Optional[str] = None
     description: Optional[str] = None
     account_id: Optional[int] = None
@@ -526,6 +577,16 @@ async def api_transaction_update(txn_id: int, body: TransactionUpdateBody):
         txn_id, body.txn_date, body.amount, body.direction,
         body.category, body.payee, body.description, body.account_id,
     )
+
+
+class TransactionBulkCategoryBody(BaseModel):
+    ids: list[int]
+    category: str = "uncategorized"
+
+
+@app.post("/api/transactions/bulk-category")
+async def api_transaction_bulk_category(body: TransactionBulkCategoryBody):
+    return bulk_update_transaction_category(body.ids, body.category)
 
 @app.delete("/api/transactions/{txn_id}")
 async def api_transaction_delete(txn_id: int):

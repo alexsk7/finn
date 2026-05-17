@@ -1,9 +1,12 @@
 """Write operations: prices, snapshots, journal, transactions."""
 
 from datetime import date, datetime
+import re
+
 from .db import get_conn
 
 INDEX_SYMBOLS = ['SPY', 'QQQ', 'DIA', 'IWM', 'GLD', 'TLT', 'BTC-USD']
+_MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
 
 
 # ── Prices ────────────────────────────────────────────────────────────────────
@@ -178,10 +181,24 @@ def add_journal_entry(title: str, body: str | None = None,
 
 # ── Transactions ──────────────────────────────────────────────────────────────
 
+def _clean_category(category: str | None) -> str:
+    return (category or "").strip() or "uncategorized"
+
+
+def _normalize_month(month: str) -> str:
+    m = (month or "").strip()
+    if not _MONTH_RE.match(m):
+        raise ValueError("Month must use YYYY-MM format")
+    year, month_num = (int(p) for p in m.split("-", 1))
+    if month_num < 1 or month_num > 12:
+        raise ValueError("Month must be between 01 and 12")
+    return f"{year:04d}-{month_num:02d}"
+
 def add_transaction(txn_date: str, amount: float, direction: str,
                     category: str, payee: str | None = None,
                     description: str | None = None,
                     account_id: int | None = None, recurring: bool = False) -> dict:
+    category = _clean_category(category)
     with get_conn() as conn:
         cur = conn.execute(
             """INSERT INTO transactions
@@ -190,7 +207,7 @@ def add_transaction(txn_date: str, amount: float, direction: str,
             (txn_date, account_id, amount, direction, category, payee, description, int(recurring)),
         )
         row_id = cur.lastrowid
-    return {"id": row_id, "txn_date": txn_date, "amount": amount, "direction": direction}
+    return {"id": row_id, "txn_date": txn_date, "amount": amount, "direction": direction, "category": category}
 
 
 # ── Holdings ─────────────────────────────────────────────────────────────────
@@ -387,7 +404,8 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
       date / txn_date / transaction_date / posted_date
       amount (negative = expense if no direction column)
       direction / type / dr_cr / transaction_type
-      category / merchant / payee
+      category
+      merchant / payee / vendor / name
       description / memo / note / narrative
       account_id / account (overridden by account_id param if provided)
       recurring (0/1 or true/false, default 0)
@@ -402,7 +420,8 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
         'amount': 'amount', 'amt': 'amount', 'debit_amount': 'amount',
         'direction': 'direction', 'type': 'direction', 'dr_cr': 'direction',
         'transaction_type': 'direction', 'credit_debit': 'direction',
-        'category': 'category', 'merchant': 'category', 'payee': 'category',
+        'category': 'category',
+        'merchant': 'payee', 'payee': 'payee', 'vendor': 'payee', 'name': 'payee',
         'description': 'description', 'memo': 'description', 'note': 'description',
         'narrative': 'description', 'details': 'description',
         'account_id': 'account_id', 'account': 'account_id',
@@ -478,7 +497,8 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
                     skipped += 1
                     continue
 
-                category = norm.get('category', '').strip() or 'Other'
+                category = _clean_category(norm.get('category'))
+                payee = norm.get('payee', '').strip() or None
                 description = norm.get('description', '').strip() or None
 
                 row_acct = account_id
@@ -495,9 +515,9 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
 
                 conn.execute(
                     """INSERT INTO transactions
-                       (txn_date, account_id, amount, direction, category, description, recurring)
-                       VALUES (?,?,?,?,?,?,?)""",
-                    (txn_date, row_acct, amount, direction, category, description, recurring),
+                       (txn_date, account_id, amount, direction, category, payee, description, recurring)
+                       VALUES (?,?,?,?,?,?,?,?)""",
+                    (txn_date, row_acct, amount, direction, category, payee, description, recurring),
                 )
                 inserted += 1
 
@@ -698,6 +718,8 @@ def reset_all_data() -> None:
             DELETE FROM prices;
             DELETE FROM transactions;
             DELETE FROM journal_entries;
+            DELETE FROM budget_month_items;
+            DELETE FROM budget_months;
             DELETE FROM budget_categories;
             DELETE FROM allocation_targets;
             DELETE FROM real_estate;
@@ -765,12 +787,80 @@ def upsert_allocation_target(asset_class: str, target_pct: float) -> dict:
 
 # ── Budget Categories ─────────────────────────────────────────────────────────
 
+def _current_month() -> str:
+    return date.today().strftime("%Y-%m")
+
+
+def save_budget_month(month: str, items: list[dict], notes: str | None = None) -> dict:
+    month = _normalize_month(month)
+    updated = 0
+    with get_conn() as conn:
+        conn.execute(
+            """INSERT INTO budget_months(month, notes)
+               VALUES (?,?)
+               ON CONFLICT(month) DO UPDATE SET notes=COALESCE(excluded.notes, notes)""",
+            (month, notes),
+        )
+        for item in items:
+            category_id = int(item.get("category_id"))
+            planned_amount = float(item.get("planned_amount") or 0)
+            conn.execute("""
+                INSERT INTO budget_month_items(month, category_id, planned_amount)
+                VALUES (?,?,?)
+                ON CONFLICT(month, category_id) DO UPDATE SET
+                  planned_amount=excluded.planned_amount
+            """, (month, category_id, planned_amount))
+            updated += 1
+    return {"ok": True, "month": month, "updated": updated}
+
+
+def copy_budget_month(month: str, source_month: str, overwrite: bool = False) -> dict:
+    month = _normalize_month(month)
+    source_month = _normalize_month(source_month)
+
+    with get_conn() as conn:
+        source_items = conn.execute(
+            "SELECT category_id, planned_amount FROM budget_month_items WHERE month=?",
+            (source_month,),
+        ).fetchall()
+        if not source_items:
+            raise ValueError("Source month has no plan to copy")
+
+        dest_count = conn.execute(
+            "SELECT COUNT(*) FROM budget_month_items WHERE month=?",
+            (month,),
+        ).fetchone()[0]
+        if dest_count and not overwrite:
+            raise ValueError("Destination month already has a plan")
+
+        conn.execute("INSERT OR IGNORE INTO budget_months(month) VALUES (?)", (month,))
+        if overwrite:
+            conn.execute("DELETE FROM budget_month_items WHERE month=?", (month,))
+
+        copied = 0
+        for item in source_items:
+            conn.execute("""
+                INSERT INTO budget_month_items(month, category_id, planned_amount)
+                VALUES (?,?,?)
+                ON CONFLICT(month, category_id) DO UPDATE SET
+                  planned_amount=excluded.planned_amount
+            """, (month, item["category_id"], item["planned_amount"]))
+            copied += 1
+
+    return {"ok": True, "month": month, "source_month": source_month, "copied": copied}
+
+
 def add_budget_category(name: str, monthly_target: float, direction: str) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
             "INSERT INTO budget_categories (name, monthly_target, direction) VALUES (?,?,?)",
             (name, monthly_target, direction),
         )
+        conn.execute("INSERT OR IGNORE INTO budget_months(month) VALUES (?)", (_current_month(),))
+        conn.execute("""
+            INSERT OR IGNORE INTO budget_month_items(month, category_id, planned_amount)
+            VALUES (?,?,?)
+        """, (_current_month(), cur.lastrowid, monthly_target))
         row = conn.execute(
             "SELECT * FROM budget_categories WHERE id=?", (cur.lastrowid,)
         ).fetchone()
@@ -783,10 +873,17 @@ def update_budget_category(category_id: int, name: str, monthly_target: float) -
             "UPDATE budget_categories SET name=?, monthly_target=? WHERE id=?",
             (name, monthly_target, category_id),
         )
+        conn.execute("INSERT OR IGNORE INTO budget_months(month) VALUES (?)", (_current_month(),))
+        conn.execute("""
+            INSERT INTO budget_month_items(month, category_id, planned_amount)
+            VALUES (?,?,?)
+            ON CONFLICT(month, category_id) DO UPDATE SET
+              planned_amount=excluded.planned_amount
+        """, (_current_month(), category_id, monthly_target))
         row = conn.execute(
             "SELECT * FROM budget_categories WHERE id=?", (category_id,)
         ).fetchone()
-    return dict(row)
+    return dict(row) if row else {}
 
 
 def delete_budget_category(category_id: int) -> None:
@@ -823,6 +920,7 @@ def update_transaction(txn_id: int, txn_date: str, amount: float, direction: str
                        category: str, payee: str | None = None,
                        description: str | None = None,
                        account_id: int | None = None) -> dict:
+    category = _clean_category(category)
     with get_conn() as conn:
         conn.execute(
             """UPDATE transactions
@@ -833,6 +931,21 @@ def update_transaction(txn_id: int, txn_date: str, amount: float, direction: str
         )
         row = conn.execute("SELECT * FROM transactions WHERE id=?", (txn_id,)).fetchone()
     return dict(row) if row else {}
+
+
+def bulk_update_transaction_category(ids: list[int], category: str) -> dict:
+    cleaned_ids = sorted({int(i) for i in ids if int(i) > 0})
+    if not cleaned_ids:
+        return {"updated": 0, "category": _clean_category(category)}
+
+    category = _clean_category(category)
+    placeholders = ",".join("?" for _ in cleaned_ids)
+    with get_conn() as conn:
+        cur = conn.execute(
+            f"UPDATE transactions SET category=? WHERE id IN ({placeholders})",
+            (category, *cleaned_ids),
+        )
+    return {"updated": cur.rowcount, "category": category}
 
 
 def delete_transaction(txn_id: int) -> None:

@@ -199,6 +199,12 @@ def seed_demo() -> None:
                 ('Investments',   3500, 'expense'),
                 ('Entertainment',  150, 'expense');
 
+            INSERT OR IGNORE INTO budget_months(month) VALUES (strftime('%Y-%m','now'));
+
+            INSERT OR IGNORE INTO budget_month_items(month, category_id, planned_amount)
+            SELECT strftime('%Y-%m','now'), id, monthly_target
+            FROM budget_categories;
+
             INSERT INTO journal_entries (entry_date, title, body, tags, is_milestone, milestone_value) VALUES
                 ('2024-11-01', 'Hit $800k net worth',
                  'Crossed $800k for the first time. Markets have been strong, kept DCAing through the dip in August.',

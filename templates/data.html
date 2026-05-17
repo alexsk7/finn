@@ -384,7 +384,7 @@ VXUS,Vanguard Total International,18,58.72"
           <input type="number" id="txn-amount" class="field-input" placeholder="0.00" min="0" step="0.01" />
         </div>
         <div>
-          <label class="field-label">Category</label>
+          <label class="field-label">Category (optional)</label>
           <select id="txn-cat" class="field-input"></select>
         </div>
         <div>
@@ -412,7 +412,8 @@ VXUS,Vanguard Total International,18,58.72"
       <div class="section-title">Import Transactions CSV</div>
       <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">
         Import from a bank or brokerage CSV export. Recognized columns:
-        <code style="color:var(--accent);">date, amount, direction, category, description</code>.
+        <code style="color:var(--accent);">date, amount, direction, category, payee, merchant, description</code>.
+        Category is optional and uncategorized rows can be assigned in bulk after import.
         Direction is inferred from the amount sign if omitted (negative = expense).
         Assign all rows to one account, or include an <code style="color:var(--accent);">account_id</code> column.
       </p>
@@ -431,10 +432,10 @@ VXUS,Vanguard Total International,18,58.72"
         </div>
       </div>
 
-      <textarea id="txn-csv-paste" rows="6" class="field-input" placeholder="date,amount,direction,category,description
-2026-01-15,9800,income,Salary,Paycheck
-2026-01-16,-634,,Groceries,Whole Foods
-2026-01-20,-265,,Dining,Restaurants"
+      <textarea id="txn-csv-paste" rows="6" class="field-input" placeholder="date,amount,direction,payee,description
+2026-01-15,9800,income,Payroll,Paycheck
+2026-01-16,-634,,Whole Foods,Groceries
+2026-01-20,-265,,Local Cafe,Dinner"
         style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);"
         oninput="previewTxnCSV()"></textarea>
 
@@ -455,10 +456,20 @@ VXUS,Vanguard Total International,18,58.72"
         Recent Transactions
         <span id="txn-count" style="color:var(--text-dim);font-size:10px;"></span>
       </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="btn-secondary" id="txn-filter-all" onclick="setTxnFilter('all')">All</button>
+        <button class="btn-secondary" id="txn-filter-uncategorized" onclick="setTxnFilter('uncategorized')">Uncategorized</button>
+        <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+          <select id="txn-bulk-cat" class="field-input" style="width:190px;"></select>
+          <button class="btn-secondary" onclick="bulkCategorizeTxns()">Categorize selected</button>
+          <span id="txn-bulk-status" style="font-size:11px;"></span>
+        </div>
+      </div>
       <div class="table-scroll">
         <table class="data-table">
           <thead>
             <tr>
+              <th style="width:28px;"><input type="checkbox" id="txn-select-all" onchange="toggleAllTxnChecks(this)" /></th>
               <th>Date</th>
               <th>Direction</th>
               <th>Category</th>
@@ -688,9 +699,16 @@ VXUS,Vanguard Total International,18,58.72"
 
   let allAccounts = [];
   let allBudgetCats = [];
+  let currentTxnFilter = 'all';
+  let currentTxns = [];
 
   // ── Tab switching ──────────────────────────────────────────────────────────────
   function showTab(id) {
+    const [tabId, subview] = String(id || '').split(':');
+    if (tabId === 'transactions' && subview === 'uncategorized') {
+      currentTxnFilter = 'uncategorized';
+    }
+    id = tabId;
     const panel = document.getElementById('tab-' + id);
     if (!panel) return;
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -698,7 +716,11 @@ VXUS,Vanguard Total International,18,58.72"
     panel.classList.add('active');
     const btn = document.querySelector(`.tab-btn[data-tab="${id}"]`);
     if (btn) btn.classList.add('active');
-    history.replaceState(null, '', '#' + id);
+    history.replaceState(null, '', '#' + (id === 'transactions' && currentTxnFilter === 'uncategorized' ? 'transactions:uncategorized' : id));
+    if (id === 'transactions') {
+      updateTxnFilterButtons();
+      loadTransactions();
+    }
   }
 
   // ── Boot ───────────────────────────────────────────────────────────────────────
@@ -709,7 +731,7 @@ VXUS,Vanguard Total International,18,58.72"
       fetch('/api/real-estate').then(r => r.json()),
       fetch('/api/allocation-targets').then(r => r.json()),
       fetch('/api/budget-categories').then(r => r.json()),
-      fetch('/api/transactions').then(r => r.json()),
+      fetch('/api/transactions?limit=500').then(r => r.json()),
       fetch('/api/portfolios').then(r => r.json()),
     ]);
 
@@ -1255,13 +1277,54 @@ VXUS,Vanguard Total International,18,58.72"
   }
 
   // ── Transactions ───────────────────────────────────────────────────────────────
+  function txnApiUrl() {
+    const url = new URL('/api/transactions', window.location.origin);
+    url.searchParams.set('limit', '500');
+    if (currentTxnFilter === 'uncategorized') url.searchParams.set('category', 'uncategorized');
+    return url.pathname + url.search;
+  }
+
+  function updateTxnFilterButtons() {
+    ['all', 'uncategorized'].forEach(filter => {
+      const btn = document.getElementById(`txn-filter-${filter}`);
+      if (!btn) return;
+      const active = currentTxnFilter === filter;
+      btn.style.color = active ? 'var(--accent)' : '';
+      btn.style.borderColor = active ? 'var(--accent)' : '';
+    });
+  }
+
+  async function loadTransactions() {
+    const txns = await fetch(txnApiUrl()).then(r => r.json());
+    buildTxnTable(txns);
+  }
+
+  async function setTxnFilter(filter) {
+    currentTxnFilter = filter;
+    updateTxnFilterButtons();
+    history.replaceState(null, '', filter === 'uncategorized' ? '#transactions:uncategorized' : '#transactions');
+    await loadTransactions();
+  }
+
   function buildTxnTable(txns) {
+    currentTxns = txns;
+    updateTxnFilterButtons();
     const countEl = document.getElementById('txn-count');
-    if (countEl) countEl.textContent = `${txns.length} shown`;
+    if (countEl) {
+      if (currentTxnFilter === 'uncategorized') {
+        const income = txns.filter(t => t.direction === 'income').reduce((s, t) => s + Number(t.amount || 0), 0);
+        const expense = txns.filter(t => t.direction === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0);
+        countEl.textContent = `${txns.length} uncategorized · income ${fmt(income)} · expense ${fmt(expense)}`;
+      } else {
+        countEl.textContent = `${txns.length} shown`;
+      }
+    }
     const tbody = document.getElementById('txn-tbody');
     if (!tbody) return;
+    const selectAll = document.getElementById('txn-select-all');
+    if (selectAll) selectAll.checked = false;
     if (!txns.length) {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px;">No transactions yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:20px;">No transactions yet.</td></tr>`;
       return;
     }
     const DIR_COLOR = { income: 'var(--green)', expense: 'var(--red)', transfer: 'var(--text-dim)' };
@@ -1269,11 +1332,16 @@ VXUS,Vanguard Total International,18,58.72"
 
     tbody.innerHTML = txns.map(t => {
       const dc = DIR_COLOR[t.direction] || '';
+      const category = t.category || 'uncategorized';
+      const categoryHtml = category === 'uncategorized'
+        ? `<span style="color:var(--yellow);font-size:10px;">uncategorized</span>`
+        : esc(category);
       return `
     <tr id="trow-${t.id}">
+      <td><input type="checkbox" class="txn-check" value="${t.id}" /></td>
       <td>${t.txn_date}</td>
       <td><span style="color:${dc};font-size:10px;">${t.direction}</span></td>
-      <td>${esc(t.category)}</td>
+      <td>${categoryHtml}</td>
       <td class="num" style="color:${dc}">${fmt(t.amount)}</td>
       <td style="color:var(--text-head);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.payee || '')}</td>
       <td style="color:var(--text-dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.description || '')}</td>
@@ -1286,6 +1354,7 @@ VXUS,Vanguard Total International,18,58.72"
       </td>
     </tr>
     <tr id="trow-edit-${t.id}" class="hrow-edit">
+      <td></td>
       <td><input type="date" class="field-input" id="te-date-${t.id}" value="${t.txn_date}" style="width:130px;" /></td>
       <td>
         <select class="field-input" id="te-dir-${t.id}" style="width:100px;">
@@ -1314,6 +1383,40 @@ VXUS,Vanguard Total International,18,58.72"
     }).join('');
   }
 
+  function toggleAllTxnChecks(cb) {
+    document.querySelectorAll('.txn-check').forEach(box => { box.checked = cb.checked; });
+  }
+
+  function selectedTxnIds() {
+    return [...document.querySelectorAll('.txn-check:checked')].map(box => parseInt(box.value));
+  }
+
+  async function bulkCategorizeTxns() {
+    const ids = selectedTxnIds();
+    const category = document.getElementById('txn-bulk-cat').value.trim();
+    const statusEl = document.getElementById('txn-bulk-status');
+    if (!ids.length) {
+      statusEl.textContent = 'Select transactions first.';
+      statusEl.style.color = 'var(--red)';
+      return;
+    }
+    if (!category) {
+      statusEl.textContent = 'Choose a category.';
+      statusEl.style.color = 'var(--red)';
+      return;
+    }
+    statusEl.textContent = 'Saving…';
+    statusEl.style.color = 'var(--text-dim)';
+    const res = await fetch('/api/transactions/bulk-category', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, category }),
+    }).then(r => r.json());
+    statusEl.textContent = `✓ ${res.updated} updated`;
+    statusEl.style.color = 'var(--green)';
+    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    await loadTransactions();
+  }
+
   function startTxnEdit(id) {
     document.getElementById(`trow-${id}`).style.display = 'none';
     document.getElementById(`trow-edit-${id}`).style.display = 'table-row';
@@ -1336,15 +1439,13 @@ VXUS,Vanguard Total International,18,58.72"
     await fetch(`/api/transactions/${id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
-    const txns = await fetch('/api/transactions').then(r => r.json());
-    buildTxnTable(txns);
+    await loadTransactions();
   }
 
   async function deleteTxn(id) {
     if (!confirm('Delete this transaction?')) return;
     await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
-    const txns = await fetch('/api/transactions').then(r => r.json());
-    buildTxnTable(txns);
+    await loadTransactions();
   }
 
   async function addTransaction() {
@@ -1354,8 +1455,8 @@ VXUS,Vanguard Total International,18,58.72"
     const cat = document.getElementById('txn-cat').value.trim();
     const statusEl = document.getElementById('txn-status');
 
-    if (!txnDate || !amount || !cat) {
-      statusEl.textContent = 'Date, amount, and category required.';
+    if (!txnDate || !amount) {
+      statusEl.textContent = 'Date and amount required.';
       statusEl.style.color = 'var(--red)'; return;
     }
     const res = await fetch('/api/transactions', {
@@ -1373,8 +1474,7 @@ VXUS,Vanguard Total International,18,58.72"
       document.getElementById('txn-payee').value = '';
       document.getElementById('txn-desc').value = '';
       setTimeout(() => { statusEl.textContent = ''; }, 3000);
-      const txns = await fetch('/api/transactions').then(r => r.json());
-      buildTxnTable(txns);
+      await loadTransactions();
     }
   }
 
@@ -1418,6 +1518,8 @@ VXUS,Vanguard Total International,18,58.72"
     allBudgetCats = cats;
     const txnCat = document.getElementById('txn-cat');
     if (txnCat) txnCat.innerHTML = buildCatOpts(allBudgetCats, txnCat.value);
+    const txnBulkCat = document.getElementById('txn-bulk-cat');
+    if (txnBulkCat) txnBulkCat.innerHTML = buildCatOpts(allBudgetCats, txnBulkCat.value);
 
     const tbody = document.getElementById('bc-tbody');
     tbody.innerHTML = cats.length
@@ -1652,8 +1754,9 @@ VXUS,Vanguard Total International,18,58.72"
         res.errors.map(e => `<div style="font-size:10px;color:var(--red);margin-top:3px;">${e}</div>`).join('');
     }
     if (ok) {
-      const txns = await fetch('/api/transactions').then(r => r.json());
-      buildTxnTable(txns);
+      currentTxnFilter = 'uncategorized';
+      updateTxnFilterButtons();
+      await loadTransactions();
     }
   }
 

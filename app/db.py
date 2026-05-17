@@ -107,6 +107,20 @@ def init_db(db_path=None) -> None:
                 direction       TEXT NOT NULL CHECK(direction IN ('income','expense'))
             );
 
+            CREATE TABLE IF NOT EXISTS budget_months (
+                month       TEXT PRIMARY KEY,
+                notes       TEXT,
+                created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS budget_month_items (
+                id              INTEGER PRIMARY KEY,
+                month           TEXT NOT NULL REFERENCES budget_months(month) ON DELETE CASCADE,
+                category_id     INTEGER NOT NULL REFERENCES budget_categories(id) ON DELETE CASCADE,
+                planned_amount  REAL NOT NULL DEFAULT 0,
+                UNIQUE(month, category_id)
+            );
+
             CREATE TABLE IF NOT EXISTS journal_entries (
                 id          INTEGER PRIMARY KEY,
                 entry_date  TEXT NOT NULL DEFAULT (date('now')),
@@ -194,6 +208,14 @@ def init_db(db_path=None) -> None:
             ON transactions(txn_date)
         """)
         conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_transactions_category_direction_date
+            ON transactions(category, direction, txn_date)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_budget_month_items_month
+            ON budget_month_items(month)
+        """)
+        conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_prices_symbol_recorded
             ON prices(symbol, recorded_at)
         """)
@@ -216,3 +238,12 @@ def init_db(db_path=None) -> None:
             """)
         except Exception:
             pass
+
+        # Backfill the current month's planning rows from the legacy category
+        # target field. New categories keep this in sync from writer.py.
+        conn.execute("INSERT OR IGNORE INTO budget_months(month) VALUES (strftime('%Y-%m','now'))")
+        conn.execute("""
+            INSERT OR IGNORE INTO budget_month_items(month, category_id, planned_amount)
+            SELECT strftime('%Y-%m','now'), id, monthly_target
+            FROM budget_categories
+        """)

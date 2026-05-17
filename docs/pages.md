@@ -10,7 +10,7 @@
 | `/accounts/{id}` | `account_detail.html` | Transaction history for one account, month separators, inline edit/delete; payoff projection for credit/loan accounts |
 | `/real-estate` | `real_estate.html` | Properties, equity/LTV, amortization schedule, appreciation projection, capex log |
 | `/tax` | `tax.html` | KPI tiles (unrealized total, YTD income, harvestable losses), YTD investment income by category, TLH candidates, full taxable gain/loss table |
-| `/budget` | `budget.html` | MTD income/expense vs target, savings rate |
+| `/budget` | `budget.html` | Zero-based monthly budget planner with month navigation, planned vs actual income/expenses, variance, copy-month workflow, and uncategorized transaction callout |
 | `/journal` | `journal.html` | Entry log with tags, milestones, inline edit/delete |
 | `/rebalance` | `rebalance.html` | Tax-aware rebalance calculator; drift table, sell candidates, buy targets; optional new-cash input |
 | `/data` | `data.html` | All data management — see tabs below |
@@ -23,7 +23,7 @@ Holdings | Accounts | Snapshot | Prices | Transactions | Real Estate | Allocatio
 - **Accounts** — add form (with opening balance + optional APR/min payment for credit/loan) + table with edit and delete
 - **Snapshot** — per-account balance entry form + preview card; plus "Import Historical Snapshots" CSV import card
 - **Prices** — last price per symbol, manual override inputs, refresh button. Manual holdings (`M:` prefix) are skipped by the Yahoo Finance refresh — update their prices here.
-- **Transactions** — add form + recent 100 rows with two-row inline edit/delete; plus "Import Transactions CSV" card
+- **Transactions** — add form + recent transactions with two-row inline edit/delete, All/Uncategorized filters, row selection, bulk categorization, and "Import Transactions CSV" card. Category is optional; blank imports and manual entries become `uncategorized`.
 - **Real Estate** — add property form + per-property value/mortgage update, linked loan account selector, delete
 - **Allocation** — editable target % for all 8 asset classes, Save All
 - **Budget** — add category form + two-row inline edit/delete table
@@ -43,7 +43,7 @@ Holdings | Accounts | Snapshot | Prices | Transactions | Real Estate | Allocatio
 |---|---|---|
 | `txn_date` | TEXT | ISO date |
 | `direction` | TEXT | `income`, `expense`, `transfer` |
-| `category` | TEXT | Must match a `budget_categories` name (orphaned values preserved in dropdowns) |
+| `category` | TEXT | Optional. Defaults to `uncategorized`; named values usually match a `budget_categories` name. Orphaned values are preserved in dropdowns. |
 | `amount` | REAL | Always positive; sign implied by direction |
 | `payee` | TEXT | Optional — counterparty name (merchant, recipient) |
 | `description` | TEXT | Optional — free-text memo |
@@ -54,4 +54,9 @@ Holdings | Accounts | Snapshot | Prices | Transactions | Real Estate | Allocatio
 - `GET /api/tax` returns an **object**: `{tlh_candidates, unrealized_total, tlh_total, ytd_income_total, ytd_income_breakdown}` — not a plain array. Dashboard accesses `tlh.tlh_candidates` for alerts.
 - `GET /api/accounts/{id}` returns the account row + `balance` computed live by `_compute_balances`.
 - `GET /api/real-estate` returns properties with `mortgage_balance` substituted from the linked loan account when `account_id` is set, plus `linked_account_name`.
+- `GET /api/budget?month=YYYY-MM` returns one month of budget planning data: categories with `planned_amount`, actuals, variance, totals, previous/next month, and uncategorized summaries.
+- `PUT /api/budget/months/{month}` saves planned category amounts for that month.
+- `POST /api/budget/months/{month}/copy` copies a source month into the destination month; pass `{"source_month":"YYYY-MM","overwrite":true}` to replace an existing plan.
+- `GET /api/transactions` accepts optional `limit`, `category`, `direction`, `account_id`, and `month=YYYY-MM` filters. `category=uncategorized` matches blank/uncategorized rows.
+- `POST /api/transactions/bulk-category` accepts `{"ids":[...],"category":"Groceries"}` for bulk assignment.
 - `POST /api/reset` requires JSON body `{"confirm": "RESET"}` — returns 400 otherwise.

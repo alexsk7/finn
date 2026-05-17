@@ -55,13 +55,15 @@ The `/data` page fetches all APIs in a single `Promise.all`. If any fetch fails,
 
 CSV import functionality lives inside its corresponding tab as a second card below the main form — never as a standalone tab. See the Snapshot tab in `data.html` as the reference implementation.
 
-## Category dropdowns
+## Category dropdowns and transaction inbox
 
 All transaction category fields use `<select>` populated by `buildCatOpts(cats, selectedVal)` (defined in `base.html`). This preserves orphaned category values — ones present on a transaction but no longer in `budget_categories` — to prevent silent data loss on edit.
 
+Transaction categories are optional. Blank values are normalized to `uncategorized` by the API, and Data → Transactions exposes an `Uncategorized` filter plus row selection for bulk category assignment.
+
 ## Hash-based tab nav on `/data`
 
-`showTab(id)` updates `history.replaceState` with `#id`. On load: `loadData().then(() => { if (hash) showTab(hash); })` activates the correct tab. Direct links like `/data#transactions` work correctly.
+`showTab(id)` updates `history.replaceState` with `#id`. On load: `loadData().then(() => { if (hash) showTab(hash); })` activates the correct tab. Direct links like `/data#transactions` work correctly. Transactions also supports the `#transactions:uncategorized` subview, used by the Budget page callout.
 
 ## Drift color semantics
 

@@ -22,6 +22,17 @@ Follow the snapshot tab pattern: add a second card below the main form in the re
 - **Backend**: add a parser function in `writer.py` using `csv.DictReader`. Detect the header by checking first-row column names, normalize aliases, upsert.
 - **Frontend**: file picker + textarea + live preview (first 6 rows) + Import button + result summary.
 - Do not create a standalone "Import CSV" tab — imports always live inside their corresponding tab.
+- Transaction imports should keep `payee` / `merchant` separate from `category`. Missing transaction categories should become `uncategorized`, then be handled through the Transactions inbox.
+
+## Budget changes
+
+Zero-based budget planning spans three layers:
+
+- `budget_categories` defines category names, direction, and default target.
+- `budget_months` creates a specific `YYYY-MM` planning period.
+- `budget_month_items` stores planned amounts per category for that month.
+
+When changing budget behavior, update `get_budget_month()` in `queries.py`, the month write helpers in `writer.py`, and the `/api/budget*` routes in `main.py`. Keep `/api/cashflow` working until callers have fully moved to `/api/budget`.
 
 ## Schema migrations
 
@@ -70,5 +81,7 @@ uv run python -c "from app.db import get_conn; ..."
 ## Tests
 
 ```bash
-uv run python tests/test_tax.py
+uv run python -m compileall main.py app
 ```
+
+There is not currently a committed `tests/` directory. Add focused tests alongside any future test harness and document the exact command here.

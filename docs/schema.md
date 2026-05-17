@@ -12,8 +12,10 @@
 | `real_estate` | Properties with `estimated_value` and `mortgage_balance`; `account_id` optionally links to a loan account (overrides `mortgage_balance` with computed balance) |
 | `mortgage_config` | One row per property: loan amount, rate, term, payment, start date, appreciation rate. Amortization computed in Python by `get_amortization()` — not stored row-by-row. |
 | `property_costs` | Per-month capex/maintenance entries; `UNIQUE(property_id, cost_year, cost_month)` |
-| `transactions` | Cashflow entries; `direction` is `income`/`expense`/`transfer`; `payee` is the counterparty (merchant/recipient); `description` is a free-text memo |
-| `budget_categories` | Monthly targets joined against transactions for actuals; `direction` is `income`/`expense` |
+| `transactions` | Cashflow entries; `direction` is `income`/`expense`/`transfer`; `category` defaults to `uncategorized`; `payee` is the counterparty (merchant/recipient); `description` is a free-text memo |
+| `budget_categories` | Budget category definitions and default monthly targets; `direction` is `income`/`expense` |
+| `budget_months` | One row per planned month (`YYYY-MM`), with optional notes |
+| `budget_month_items` | Planned amount per `(month, category_id)` for zero-based monthly budgeting; cascades when a month or category is deleted |
 | `journal_entries` | Notes and milestones; `is_milestone=1` entries surface in dashboard alerts |
 | `allocation_targets` | Target `%` per `asset_class`; drift = actual − target |
 | `app_flags` | Key/value flags; `demo_seeded` prevents re-seeding after first run |
@@ -40,6 +42,8 @@ All indexes are created idempotently via `CREATE INDEX IF NOT EXISTS` in `init_d
 |---|---|---|---|
 | `idx_transactions_account_id` | `transactions` | `account_id` | `_compute_balances()`, account drill-down |
 | `idx_transactions_txn_date` | `transactions` | `txn_date` | MTD cashflow, budget, YTD tax queries |
+| `idx_transactions_category_direction_date` | `transactions` | `category, direction, txn_date` | budget actuals, transaction filters, uncategorized inbox |
+| `idx_budget_month_items_month` | `budget_month_items` | `month` | monthly budget planner |
 | `idx_prices_symbol_recorded` | `prices` | `symbol, recorded_at` | latest-price correlated subquery (runs in allocation, tax, rebalance, ticker) |
 | `idx_snapshots_date` | `snapshots` | `snapshot_date` | NW chart, MoM/YTD lookups |
 | `idx_holdings_account_symbol` | `holdings` | `account_id, symbol` | UNIQUE enforcement; upsert conflict target |

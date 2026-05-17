@@ -1,94 +1,332 @@
 {% extends "base.html" %}
 {% block title %}Budget{% endblock %}
+{% block head %}
+<style>
+  .budget-toolbar {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
+  }
+  .budget-month-nav {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+  }
+  .budget-month-label {
+    color: var(--text-head);
+    font-size: 16px;
+    font-weight: 700;
+    min-width: 130px;
+    text-align: center;
+  }
+  .budget-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .plan-input {
+    font-variant-numeric: tabular-nums;
+    max-width: 110px;
+    text-align: right;
+  }
+  .budget-alert {
+    border-color: rgba(240, 176, 64, .35);
+  }
+  @media (max-width: 780px) {
+    .budget-toolbar,
+    .budget-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .budget-month-nav {
+      justify-content: space-between;
+    }
+  }
+</style>
+{% endblock %}
 {% block content %}
 <div style="display:flex;flex-direction:column;gap:var(--gap);">
+  <div class="card">
+    <div class="budget-toolbar">
+      <div class="budget-month-nav">
+        <button class="btn-secondary" onclick="shiftBudgetMonth(-1)">Prev</button>
+        <div class="budget-month-label" id="budget-month-label">—</div>
+        <button class="btn-secondary" onclick="shiftBudgetMonth(1)">Next</button>
+        <button class="btn-secondary" onclick="loadBudget(currentCalendarMonth())">Current</button>
+      </div>
+      <div class="budget-actions">
+        <button class="btn-secondary" onclick="copyBudgetFromPrevious()">Copy Previous</button>
+        <button class="btn-secondary" onclick="copyBudgetFromCurrent()">Copy Current Month</button>
+        <button class="btn-primary" onclick="saveBudgetMonth()">Save Plan</button>
+        <span id="budget-status" style="font-size:11px;"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="budget-alerts"></div>
 
   <div class="grid-4" id="budget-kpis"></div>
 
   <div class="grid-2">
     <div class="card">
       <div class="section-title">Income</div>
-      <table class="data-table" id="income-table">
-        <thead><tr><th>Category</th><th class="num">Target</th><th class="num">Actual MTD</th><th class="num">Progress</th></tr></thead>
-        <tbody id="income-body"></tbody>
-      </table>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="num">Planned</th>
+              <th class="num">Actual</th>
+              <th class="num">Variance</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody id="income-body"></tbody>
+        </table>
+      </div>
     </div>
     <div class="card">
       <div class="section-title">Expenses</div>
-      <table class="data-table">
-        <thead><tr><th>Category</th><th class="num">Target</th><th class="num">Actual MTD</th><th class="num">Progress</th></tr></thead>
-        <tbody id="expense-body"></tbody>
-      </table>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="num">Planned</th>
+              <th class="num">Actual</th>
+              <th class="num">Remaining</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody id="expense-body"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <div class="card">
-    <div class="section-title">Spending Breakdown</div>
-    <div class="chart-wrap" style="height:220px;"><canvas id="budget-chart"></canvas></div>
+    <div class="section-title">Expense Plan vs Actual</div>
+    <div class="chart-wrap" style="height:240px;"><canvas id="budget-chart"></canvas></div>
   </div>
-
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
-async function loadBudget() {
-  const cats = await fetch('/api/cashflow').then(r=>r.json());
+let currentBudget = null;
+let budgetChart = null;
 
-  const income  = cats.filter(c=>c.direction==='income');
-  const expense = cats.filter(c=>c.direction==='expense');
+function currentCalendarMonth() {
+  return new Date().toISOString().slice(0, 7);
+}
 
-  const totalIncTarget = income.reduce((s,c)=>s+c.monthly_target,0);
-  const totalExpTarget = expense.reduce((s,c)=>s+c.monthly_target,0);
-  const totalIncActual = income.reduce((s,c)=>s+c.actual,0);
-  const totalExpActual = expense.reduce((s,c)=>s+c.actual,0);
-  const savingsRate = totalIncActual > 0 ? ((totalIncActual-totalExpActual)/totalIncActual*100) : 0;
-
-  document.getElementById('budget-kpis').innerHTML = `
-    <div class="card"><div class="card-title">Income MTD</div><div class="card-value" style="color:var(--green)">${fmt(totalIncActual)}</div><div class="card-sub">target ${fmt(totalIncTarget)}</div></div>
-    <div class="card"><div class="card-title">Expenses MTD</div><div class="card-value" style="color:var(--red)">${fmt(totalExpActual)}</div><div class="card-sub">target ${fmt(totalExpTarget)}</div></div>
-    <div class="card"><div class="card-title">Net Cash Flow</div><div class="card-value" style="color:${clr(totalIncActual-totalExpActual)}">${fmt(totalIncActual-totalExpActual)}</div></div>
-    <div class="card"><div class="card-title">Savings Rate</div><div class="card-value" style="color:${clr(savingsRate)}">${savingsRate.toFixed(0)}%</div></div>`;
-
-  function catRow(c) {
-    const pctUsed = c.monthly_target > 0 ? Math.min(c.actual / c.monthly_target * 100, 100) : 0;
-    const over = c.actual > c.monthly_target && c.direction === 'expense';
-    const barColor = over ? 'var(--red)' : c.direction === 'income' ? 'var(--green)' : 'var(--blue)';
-    return `<tr>
-      <td>${esc(c.name)}</td>
-      <td class="num" style="color:var(--text-dim);">${fmt(c.monthly_target)}</td>
-      <td class="num" style="color:${over?'var(--red)':'var(--text-head)'}">${fmt(c.actual)}</td>
-      <td>
-        <div class="bar-track" style="width:100px;">
-          <div class="bar-fill" style="width:${pctUsed.toFixed(0)}%;background:${barColor};"></div>
-        </div>
-        <span style="font-size:10px;color:${over?'var(--red)':'var(--text-dim)'};">${pctUsed.toFixed(0)}%${over?' ⚠':''}</span>
-      </td>
-    </tr>`;
-  }
-
-  document.getElementById('income-body').innerHTML  = income.map(catRow).join('');
-  document.getElementById('expense-body').innerHTML = expense.map(catRow).join('');
-
-  // Bar chart of expenses
-  await window.chartReady;
-  applyChartDefaults();
-  const expSorted = [...expense].sort((a,b)=>b.actual-a.actual);
-  new Chart(document.getElementById('budget-chart'), {
-    type: 'bar',
-    data: {
-      labels: expSorted.map(c=>c.name),
-      datasets: [
-        { label: 'Actual',  data: expSorted.map(c=>c.actual),          backgroundColor: '#4080f0', borderRadius: 3 },
-        { label: 'Target',  data: expSorted.map(c=>c.monthly_target),  backgroundColor: 'rgba(255,255,255,0.05)', borderColor:'rgba(255,255,255,0.2)', borderWidth:1, borderRadius: 3 },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { tooltip: { callbacks: { label: ctx=>ctx.dataset.label+': '+fmt(ctx.raw) } } },
-      scales: { y: { ticks: { callback: v=>fmt(v) } } }
-    }
+function monthLabel(month) {
+  const [year, monthNum] = month.split('-').map(Number);
+  return new Date(year, monthNum - 1, 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
   });
 }
+
+function assignColor(n) {
+  if (Math.abs(n) < 0.01) return 'var(--green)';
+  return n < 0 ? 'var(--red)' : 'var(--yellow)';
+}
+
+async function loadBudget(month) {
+  const target = month || new URLSearchParams(window.location.search).get('month') || currentCalendarMonth();
+  currentBudget = await fetch(`/api/budget?month=${encodeURIComponent(target)}`).then(r => r.json());
+  history.replaceState(null, '', currentBudget.month === currentCalendarMonth() ? '/budget' : `/budget?month=${currentBudget.month}`);
+  renderBudget();
+}
+
+function renderBudget() {
+  document.getElementById('budget-month-label').textContent = monthLabel(currentBudget.month);
+  renderAlerts();
+  renderCategoryTables();
+  recalcBudgetTotals();
+  renderBudgetChart();
+}
+
+function renderAlerts() {
+  const uncat = currentBudget.uncategorized || {};
+  const income = uncat.income || {count: 0, total: 0};
+  const expense = uncat.expense || {count: 0, total: 0};
+  const totalCount = income.count + expense.count;
+  const alerts = [];
+
+  if (totalCount) {
+    alerts.push(`
+      <div class="card budget-alert" style="margin-bottom:var(--gap);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div>
+            <div class="section-title" style="margin-bottom:4px;color:var(--yellow);">Uncategorized Inbox</div>
+            <div style="font-size:12px;color:var(--text-dim);line-height:1.6;">
+              ${totalCount} transaction${totalCount === 1 ? '' : 's'} this month · income ${fmt(income.total)} · expenses ${fmt(expense.total)}
+            </div>
+          </div>
+          <a class="btn-secondary" href="/data#transactions:uncategorized" style="text-decoration:none;">Open Transactions</a>
+        </div>
+      </div>`);
+  }
+
+  document.getElementById('budget-alerts').innerHTML = alerts.join('');
+}
+
+function renderCategoryTables() {
+  const income = currentBudget.categories.filter(c => c.direction === 'income');
+  const expenses = currentBudget.categories.filter(c => c.direction === 'expense');
+  document.getElementById('income-body').innerHTML = income.length
+    ? income.map(catRow).join('')
+    : `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:18px;">No income categories yet.</td></tr>`;
+  document.getElementById('expense-body').innerHTML = expenses.length
+    ? expenses.map(catRow).join('')
+    : `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:18px;">No expense categories yet.</td></tr>`;
+}
+
+function catRow(c) {
+  const planned = Number(c.planned_amount || 0);
+  const actual = Number(c.actual || 0);
+  const pctUsed = planned > 0 ? Math.min(actual / planned * 100, 100) : actual > 0 ? 100 : 0;
+  const expense = c.direction === 'expense';
+  const variance = expense ? planned - actual : actual - planned;
+  const over = expense ? actual > planned && planned > 0 : actual < planned;
+  const barColor = over ? 'var(--red)' : expense ? 'var(--blue)' : 'var(--green)';
+
+  return `<tr>
+    <td>${esc(c.name)}</td>
+    <td class="num">
+      <input type="number" class="field-input plan-input" id="plan-${c.category_id}"
+        value="${planned}" min="0" step="10" data-direction="${c.direction}"
+        data-actual="${actual}" oninput="recalcBudgetTotals()" />
+    </td>
+    <td class="num" style="color:${over ? 'var(--red)' : 'var(--text-head)'}">${fmt(actual)}</td>
+    <td class="num" style="color:${clr(variance)}">${fmt(variance)}</td>
+    <td>
+      <div class="bar-track" style="width:100px;">
+        <div class="bar-fill" style="width:${pctUsed.toFixed(0)}%;background:${barColor};"></div>
+      </div>
+      <span style="font-size:10px;color:${over ? 'var(--red)' : 'var(--text-dim)'};">${pctUsed.toFixed(0)}%</span>
+    </td>
+  </tr>`;
+}
+
+function readPlannedTotals() {
+  let plannedIncome = 0;
+  let plannedExpense = 0;
+  currentBudget.categories.forEach(c => {
+    const el = document.getElementById(`plan-${c.category_id}`);
+    const val = parseFloat(el?.value) || 0;
+    if (c.direction === 'income') plannedIncome += val;
+    else plannedExpense += val;
+  });
+  return { plannedIncome, plannedExpense };
+}
+
+function recalcBudgetTotals() {
+  const { plannedIncome, plannedExpense } = readPlannedTotals();
+  const totals = currentBudget.totals;
+  const leftToAssign = plannedIncome - plannedExpense;
+  const actualNet = totals.actual_income - totals.actual_expense;
+
+  document.getElementById('budget-kpis').innerHTML = `
+    <div class="card"><div class="card-title">Planned Income</div><div class="card-value" style="color:var(--green)">${fmt(plannedIncome)}</div><div class="card-sub">actual ${fmt(totals.actual_income)}</div></div>
+    <div class="card"><div class="card-title">Planned Expenses</div><div class="card-value" style="color:var(--red)">${fmt(plannedExpense)}</div><div class="card-sub">actual ${fmt(totals.actual_expense)}</div></div>
+    <div class="card"><div class="card-title">Left to Assign</div><div class="card-value" style="color:${assignColor(leftToAssign)}">${fmt(leftToAssign)}</div><div class="card-sub">income minus plan</div></div>
+    <div class="card"><div class="card-title">Actual Net</div><div class="card-value" style="color:${clr(actualNet)}">${fmt(actualNet)}</div><div class="card-sub">savings rate ${totals.savings_rate.toFixed(0)}%</div></div>`;
+}
+
+async function saveBudgetMonth() {
+  const statusEl = document.getElementById('budget-status');
+  const items = currentBudget.categories.map(c => ({
+    category_id: c.category_id,
+    planned_amount: parseFloat(document.getElementById(`plan-${c.category_id}`)?.value) || 0,
+  }));
+  statusEl.textContent = 'Saving...';
+  statusEl.style.color = 'var(--text-dim)';
+  const res = await fetch(`/api/budget/months/${currentBudget.month}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  if (!res.ok) {
+    statusEl.textContent = 'Save failed.';
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+  statusEl.textContent = 'Saved';
+  statusEl.style.color = 'var(--green)';
+  setTimeout(() => { statusEl.textContent = ''; }, 2500);
+  await loadBudget(currentBudget.month);
+}
+
+async function copyBudget(sourceMonth, overwrite = false) {
+  const statusEl = document.getElementById('budget-status');
+  statusEl.textContent = 'Copying...';
+  statusEl.style.color = 'var(--text-dim)';
+  const res = await fetch(`/api/budget/months/${currentBudget.month}/copy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source_month: sourceMonth, overwrite }),
+  });
+  if (res.status === 409 && !overwrite) {
+    const ok = confirm(`${monthLabel(currentBudget.month)} already has a plan. Replace it with ${monthLabel(sourceMonth)}?`);
+    if (ok) return copyBudget(sourceMonth, true);
+    statusEl.textContent = '';
+    return;
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    statusEl.textContent = err.detail || 'Copy failed.';
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+  statusEl.textContent = 'Copied';
+  statusEl.style.color = 'var(--green)';
+  setTimeout(() => { statusEl.textContent = ''; }, 2500);
+  await loadBudget(currentBudget.month);
+}
+
+function copyBudgetFromPrevious() {
+  copyBudget(currentBudget.previous_month);
+}
+
+function copyBudgetFromCurrent() {
+  copyBudget(currentCalendarMonth());
+}
+
+function shiftBudgetMonth(delta) {
+  loadBudget(delta < 0 ? currentBudget.previous_month : currentBudget.next_month);
+}
+
+async function renderBudgetChart() {
+  await window.chartReady;
+  applyChartDefaults();
+  const expenses = currentBudget.categories
+    .filter(c => c.direction === 'expense')
+    .sort((a, b) => Math.max(b.actual, b.planned_amount) - Math.max(a.actual, a.planned_amount));
+
+  if (budgetChart) budgetChart.destroy();
+  budgetChart = new Chart(document.getElementById('budget-chart'), {
+    type: 'bar',
+    data: {
+      labels: expenses.map(c => c.name),
+      datasets: [
+        { label: 'Actual', data: expenses.map(c => c.actual), backgroundColor: '#4080f0', borderRadius: 3 },
+        { label: 'Planned', data: expenses.map(c => c.planned_amount), backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1, borderRadius: 3 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.raw)}` } } },
+      scales: { y: { ticks: { callback: v => fmt(v) } } },
+    },
+  });
+}
+
 loadBudget();
 </script>
 {% endblock %}

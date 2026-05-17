@@ -25,7 +25,7 @@
 - **Real Estate** — equity, LTV, mortgage amortization schedule, appreciation projection, capex log; link a loan account for live mortgage balance
 - **Tax** — unrealized gains/losses, YTD investment income breakdown, TLH candidates (brokerage only)
 - **Rebalance** — tax-aware rebalance calculator; new cash input reduces or eliminates required sells
-- **Budget** — MTD income and expense vs. targets, savings rate
+- **Budget** — zero-based monthly planning with editable income/expense plans, actuals, variance, month navigation, copy-month workflow, and an uncategorized transaction inbox
 - **Journal** — notes and milestones log; milestones surface as dashboard alerts
 - **Multi-portfolio** — switch between named portfolios from the sidebar; each is a separate SQLite file
 - **Data management** — full CRUD for all entities; CSV import for holdings (Fidelity/Schwab/Vanguard), transactions (bank exports), and historical snapshots
@@ -72,6 +72,7 @@ A `Makefile` is included for convenience:
 2. Restart the server — the schema is recreated on startup.
 3. Add your accounts under **Data → Accounts**.
 4. Import holdings, transactions, and historical snapshots via the CSV import cards in each tab, or enter them manually.
+5. Use **Budget** to plan any month ahead. Imported transactions without a category land in **Data → Transactions → Uncategorized**, where they can be assigned in bulk.
 
 ---
 
@@ -103,8 +104,10 @@ Single-process, local-only web app. No build step, no external services required
 | Import | Location | Format |
 |---|---|---|
 | Holdings | Data → Holdings | Fidelity, Schwab, or Vanguard export |
-| Transactions | Data → Transactions | Standard bank CSV (date, description, amount) |
+| Transactions | Data → Transactions | Standard bank CSV (`date`, `amount`, optional `direction`, optional `category`, `payee`/`merchant`, `description`) |
 | Snapshots | Data → Snapshot | `date, net_worth, liquid_cash, invested_total, home_equity, debt_total` |
+
+Transaction categories are optional on import. Rows without a category are saved as `uncategorized` so you can import quickly, then categorize them later in bulk.
 
 ---
 
