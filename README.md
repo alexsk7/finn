@@ -1,15 +1,19 @@
 <p align="center">
   <img src="static/logo-finn.svg" alt="finn" width="200">
+  <br>
+  <strong>finn is your personal finance hub that stays <em>personal</em>.</strong>
+</p>
+<p>  
+  Track your net worth, budget, investments, real estate, tax-loss harvesting, and more — all in a local app and SQLite file so that your financial data never has to leave your computer.
+</p>
+<p>
+  <strong>Open source & local-first. No subscriptions required. No accounts. No ads. No cloud. No AUM fees. No data harvesting.
+</p>
+<p>
+  Just import your transactions, add your accounts, and let finn do the hard work for you.</strong>
 </p>
 
-<p align="center">
-  A local-first personal finance dashboard.<br>
-  Net worth, investments, accounts, real estate, taxes, and budget — in a single SQLite file that never leaves your machine.
-</p>
-
-<p align="center">
-  <strong>No accounts. No cloud. No subscriptions.</strong>
-</p>
+<p><em>Under active development. Expect rough edges, fast iteration, and occasional breaking changes.</em></p>
 
 ---
 
