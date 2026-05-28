@@ -82,6 +82,20 @@ finn automatically backs up all portfolio databases to `backups/` on every start
 
 ---
 
+## Roadmap
+
+finn already covers the core local-first personal finance workflow: net worth, account balances, budgeting, investments, tax-loss harvesting, rebalancing, real estate, journal notes, CSV imports, multi-portfolio switching, and local backups.
+
+Planned next steps:
+
+- **Stats / Value page** — app opens, daily streak, money tracked, savings and investing totals, tax losses harvested, and estimated advisory fees avoided
+- **Testing and linting** — add a committed test suite and project linting before broader contributor activity
+- **Business intelligence** — investigate a future business/bookkeeping area once the existing bookkeeper utility and schema are confirmed
+
+See [TASKS.md](TASKS.md) for the detailed working checklist.
+
+---
+
 ## Architecture
 
 Single-process, local-only web app. No build step, no external services required.

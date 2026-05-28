@@ -15,4 +15,4 @@ uv run python scripts/backup.py
 # Open browser after a short delay to let Uvicorn bind
 (sleep 1.5 && python3 -m webbrowser "http://localhost:$PORT") &
 
-uv run uvicorn main:app --host 127.0.0.1 --port "$PORT" --reload
+uv run python -m uvicorn main:app --host 127.0.0.1 --port "$PORT" --reload

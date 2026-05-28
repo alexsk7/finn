@@ -9,7 +9,7 @@
 - [x] Account drill-down: `/accounts/{id}` — transaction history, month separators, inline edit/delete
 - [x] Real Estate: equity, LTV, appreciation, amortization, capex log
 - [x] Tax & TLH: loss candidates, full taxable gain/loss table, YTD investment income
-- [x] Budget: MTD income/expense vs target, savings rate
+- [x] Budget: zero-based monthly planning, income/expense plans, actuals, variance, savings rate, month navigation, copy-month workflow
 - [x] Journal: log with tags and milestones, inline edit/delete
 - [x] Price refresh: `yfinance` integration, manual "Refresh Prices" button
 - [x] Daily price auto-refresh: APScheduler background job, Mon–Fri 4:05pm ET
@@ -26,6 +26,7 @@
 
 - [x] CSV snapshot import — inside Snapshot tab on /data; date + NW + cash + invested + equity columns; upsert on date; backfill up to 10 years of history
 - [x] CSV transaction import — bank export → transactions table; inside Transactions tab on /data
+- [x] CSV transaction import friction reduction — categories optional; blanks save as `uncategorized`; bulk categorize later from Transactions inbox
 - [x] CSV holdings import — Fidelity/Schwab/Vanguard format → holdings table; inside Holdings tab on /data; account selector; INSERT OR REPLACE keyed on (account_id, symbol)
 
 ## Tier 3 — Analysis depth
@@ -62,6 +63,7 @@
 - [x] Accounts: add/delete/edit (Accounts tab on /data); opening balance + APR + min payment for credit/loan
 - [x] Allocation targets: edit target % per asset class (Allocation tab on /data)
 - [x] Budget categories: add/edit/delete (Budget tab on /data)
+- [x] Monthly budget plans: edit/save per-month planned amounts; copy previous/current month into future months
 - [x] Real estate: add/update/delete properties (Real Estate tab on /data); linked loan account selector
 - [x] Real estate: mortgage config + amortization per-property
 - [x] Journal entries: add/edit/delete (inline on /journal)
@@ -84,6 +86,12 @@
 - [x] Currency symbol propagated via `window.CURRENCY` (server-side injected in `base.html`); `fmt()` uses it; no flash
 - [x] Profile tab on `/data` page — name + currency inputs, Save button; profile survives Danger Zone reset
 
+## Product analytics / value tracking
+
+- [ ] Stats / Value page: show app opens, daily streak, total money tracked, saved, invested, tax losses harvested, and time-since-started metrics
+- [ ] Compare assets tracked against an estimated 0.5% annual AUM management fee and display the running dollar amount the user may be avoiding by self-managing with finn
+- [ ] Decide placement: standalone `/stats` page vs a Stats tab inside `/data`; likely standalone if it becomes motivational/product-facing rather than raw data management
+
 ## Business Intelligence (investigation)
 
 - [ ] Investigate integrating existing bookkeeper utility as a Business tab
@@ -96,6 +104,7 @@
 
 - [ ] Write data-agnostic tests for tax/TLH logic that work against any seed data (structure checks, not hardcoded dollar values)
 - [ ] Consider a test fixture with a minimal known dataset so assertions can be precise without depending on `seed_demo()`
+- [ ] Add a committed test suite; current smoke check is `uv run python -m compileall main.py app`
 
 ## Infrastructure
 

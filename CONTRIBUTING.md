@@ -10,11 +10,13 @@ cd finn
 
 Requires [uv](https://docs.astral.sh/uv/getting-started/installation/) and Python 3.12+. The server starts at `http://localhost:8080` with auto-reload. A demo dataset is inserted on first run.
 
-## Running tests
+## Running checks
 
 ```bash
-uv run python tests/test_tax.py
+uv run python -m compileall main.py app
 ```
+
+There is not currently a committed test suite. If you add tests, document the exact command here and in [`docs/development.md`](docs/development.md).
 
 ## Project structure
 
@@ -46,4 +48,4 @@ The [`docs/`](docs/) directory has detailed reference material — architecture,
 
 ## Roadmap
 
-Open tasks and ideas live in [TASKS.md](TASKS.md).
+Open tasks and ideas live in [TASKS.md](TASKS.md). The README has a shorter public roadmap summary.
