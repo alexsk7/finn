@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>finn — local-first personal finance</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="landing-body">
+  <header class="landing-topbar">
+    <a class="landing-brand" href="/landing" aria-label="finn landing page">
+      <img src="/static/logo-finn.svg" alt="" width="86" height="34">
+    </a>
+    <nav class="landing-nav" aria-label="Landing page navigation">
+      <a href="#features">Features</a>
+      <a href="#local-first">Local-first</a>
+      <a href="#support">Support</a>
+      <a href="#start">Start</a>
+    </nav>
+    <a class="btn-secondary landing-open" href="/">Open app</a>
+  </header>
+
+  <main class="landing-page">
+    <section class="landing-hero">
+      <div class="landing-hero-copy">
+        <div class="landing-kicker">Local-first finance, under your control</div>
+        <h1>finn</h1>
+        <p class="landing-lede">
+          A private personal finance hub for net worth, budgeting, investments, tax planning,
+          real estate, and the everyday work of understanding your money.
+        </p>
+        <div class="landing-actions">
+          <a class="btn-primary" href="/">Open app</a>
+          <a class="btn-secondary" href="https://github.com/jacksonrc/finn">View on GitHub</a>
+          <a class="landing-doc-link" href="/data">Manage local data →</a>
+        </div>
+      </div>
+
+      <div class="landing-product" aria-label="Product preview">
+        <div class="landing-window-bar">
+          <span></span><span></span><span></span>
+          <strong>finn.local</strong>
+        </div>
+        <div class="landing-product-grid">
+          <div class="landing-preview-card landing-preview-wide">
+            <div class="card-title">Net Worth</div>
+            <div class="landing-preview-value">$842.7k</div>
+            <div class="landing-chart" aria-hidden="true">
+              <svg viewBox="0 0 420 150" role="img">
+                <path d="M8 118 C66 104 78 89 128 94 S207 84 252 59 S334 66 412 24" fill="none" stroke="#6aa5ff" stroke-width="4" stroke-linecap="round"/>
+                <path d="M8 118 C66 104 78 89 128 94 S207 84 252 59 S334 66 412 24 L412 146 L8 146 Z" fill="#4080f0" opacity=".13"/>
+                <path d="M8 132 C78 126 126 118 172 102 S255 86 412 72" fill="none" stroke="#22d3a0" stroke-width="2" stroke-linecap="round" opacity=".85"/>
+              </svg>
+            </div>
+          </div>
+          <div class="landing-preview-card">
+            <div class="card-title">Allocation</div>
+            <div class="landing-rings" aria-hidden="true">
+              <span style="--c:var(--blue);--p:68%;"></span>
+              <span style="--c:var(--green);--p:42%;"></span>
+              <span style="--c:var(--yellow);--p:28%;"></span>
+            </div>
+          </div>
+          <div class="landing-preview-card">
+            <div class="card-title">Budget</div>
+            <div class="landing-bars" aria-hidden="true">
+              <span style="--w:84%;--c:var(--green);"></span>
+              <span style="--w:57%;--c:var(--blue);"></span>
+              <span style="--w:39%;--c:var(--yellow);"></span>
+            </div>
+          </div>
+          <div class="landing-preview-card landing-preview-wide">
+            <div class="card-title">Ownership Model</div>
+            <div class="landing-local-row"><span>SQLite file</span><strong>local</strong></div>
+            <div class="landing-local-row"><span>Account required</span><strong>no</strong></div>
+            <div class="landing-local-row"><span>Cloud sync</span><strong>off</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-ethos" aria-label="Trust and ethos">
+      <span>Local SQLite file</span>
+      <span>No account required</span>
+      <span>No ads</span>
+      <span>No cloud</span>
+      <span>Open source</span>
+      <span>No AUM fees</span>
+    </section>
+
+    <section class="landing-section landing-split" id="features">
+      <div>
+        <div class="landing-kicker">What it covers</div>
+        <h2>One quiet place for the financial system you already have.</h2>
+        <p>
+          finn is built for people who want a practical operating view of their money
+          without handing the whole picture to another cloud service.
+        </p>
+      </div>
+      <div class="landing-feature-grid">
+        <article><strong>Dashboard</strong><span>Net worth, trends, allocation, cashflow, alerts, and market context.</span></article>
+        <article><strong>Accounts</strong><span>Live balances from transactions and holdings, grouped by type.</span></article>
+        <article><strong>Budgeting</strong><span>Zero-based monthly planning, actuals, variance, and uncategorized cleanup.</span></article>
+        <article><strong>Investments</strong><span>Holdings, asset classes, allocation targets, and portfolio drift.</span></article>
+        <article><strong>Tax & TLH</strong><span>Unrealized gains, YTD income, and harvestable loss candidates.</span></article>
+        <article><strong>Rebalancing</strong><span>Tax-aware sell priorities and new-cash scenarios.</span></article>
+        <article><strong>Real estate</strong><span>Equity, LTV, appreciation, amortization, and capex tracking.</span></article>
+        <article><strong>CSV imports</strong><span>Bring in bank transactions, holdings, and historical snapshots.</span></article>
+        <article><strong>Portfolios</strong><span>Separate SQLite files for households, scenarios, or long-running records.</span></article>
+        <article><strong>Backups</strong><span>Startup and on-demand local backups using SQLite's safe backup API.</span></article>
+      </div>
+    </section>
+
+    <section class="landing-section landing-split landing-local" id="local-first">
+      <div>
+        <div class="landing-kicker">Why local-first?</div>
+        <h2>Your financial record should be durable, inspectable, and yours.</h2>
+      </div>
+      <div class="landing-copy-stack">
+        <p>
+          Local-first means finn runs on your machine and keeps its working data in
+          SQLite files you can back up, move, inspect, and keep for the long term.
+        </p>
+        <p>
+          There is no account to create, no ad network to feed, no hosted profile to
+          monetize, and no subscription gate between you and your own history.
+        </p>
+        <p>
+          Price refreshes can use Yahoo Finance when available, but the core app keeps
+          working offline. Your financial system remains useful even when the network is not.
+        </p>
+      </div>
+    </section>
+
+    <section class="landing-section landing-compare" aria-label="Philosophy comparison">
+      <div class="landing-compare-card">
+        <div class="card-title">Cloud finance apps</div>
+        <p>Often optimized around accounts, sync, retention, referrals, ads, and recurring revenue.</p>
+      </div>
+      <div class="landing-compare-card is-finn">
+        <div class="card-title">finn</div>
+        <p>Optimized around ownership, clarity, local files, explicit imports, and practical planning.</p>
+      </div>
+      <div class="landing-compare-card">
+        <div class="card-title">AUM models</div>
+        <p>Can be valuable for advice, but even small asset-based fees compound over time.</p>
+      </div>
+    </section>
+
+    <section class="landing-section landing-split" id="support">
+      <div>
+        <div class="landing-kicker">Why support finn?</div>
+        <h2>Free and open source should still be cared for.</h2>
+      </div>
+      <div class="landing-copy-stack">
+        <p>
+          finn has no subscription, no managed account, and no assets-under-management fee.
+          Supporting the project helps sustain development, documentation, import polish,
+          and the careful maintenance that finance software deserves.
+        </p>
+        <p>
+          The point is not to replace every advisor or every spreadsheet. It is to give
+          capable people a calm, transparent system they can own.
+        </p>
+      </div>
+    </section>
+
+    <section class="landing-section landing-roadmap">
+      <div>
+        <div class="landing-kicker">Roadmap</div>
+        <h2>What is next</h2>
+      </div>
+      <div class="landing-roadmap-list">
+        <span>Stats / Value page</span>
+        <span>Better tests and linting</span>
+        <span>Business intelligence and bookkeeping exploration</span>
+        <span>Continued CSV and import polish</span>
+      </div>
+    </section>
+
+    <section class="landing-section landing-start" id="start">
+      <div>
+        <div class="landing-kicker">Getting started</div>
+        <h2>Clone it, run it, keep your data local.</h2>
+        <p>Requires uv and Python 3.12+. Demo data loads on first run so the app is not empty.</p>
+      </div>
+      <pre><code>git clone https://github.com/jacksonrc/finn.git
+cd finn
+./run.sh</code></pre>
+    </section>
+
+    <footer class="landing-footer">
+      <span>© 2026 Jackson Carr. Licensed under Apache 2.0.</span>
+      <span>finn is personal finance software for your own records and planning; it is not financial, investment, legal, or tax advice.</span>
+    </footer>
+  </main>
+</body>
+</html>

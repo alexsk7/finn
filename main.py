@@ -127,6 +127,11 @@ async def dashboard(request: Request):
     return page(request, "dashboard.html", "dashboard")
 
 
+@app.get("/landing", response_class=HTMLResponse)
+async def landing_page(request: Request):
+    return page(request, "landing.html", "landing")
+
+
 @app.get("/investments", response_class=HTMLResponse)
 async def investments_page(request: Request):
     return page(request, "investments.html", "investments")

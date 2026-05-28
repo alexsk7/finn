@@ -5,6 +5,7 @@
 | Route | Template | Description |
 |---|---|---|
 | `/` | `dashboard.html` | KPI tiles + sparklines, multi-line NW chart with period filters + projection overlay, allocation donut, cashflow, holdings (deduplicated by ticker), alerts, journal preview, market ticker strip |
+| `/landing` | `landing.html` | Public-style product overview for finn's local-first ethos, feature set, support rationale, roadmap, and getting-started flow |
 | `/investments` | `investments.html` | Full holdings table by account, allocation vs target, asset class performance |
 | `/accounts` | `accounts.html` | Grouped account list; account names link to drill-down; liabilities shown as negative |
 | `/accounts/{id}` | `account_detail.html` | Transaction history for one account, month separators, inline edit/delete; payoff projection for credit/loan accounts |

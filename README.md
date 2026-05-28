@@ -49,6 +49,8 @@ cd finn
 
 Your browser opens automatically once the server is ready. A demo dataset loads on first run so the dashboard isn't empty. You'll be prompted for your name the first time — this is used for the dashboard greeting and is stored locally.
 
+Visit `http://localhost:8080/landing` for a public-style product overview page. The app dashboard remains at `/`.
+
 To start on a different port:
 
 ```bash
