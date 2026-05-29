@@ -34,8 +34,15 @@
 
 ## Prerequisites
 
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) — manages the Python environment and all dependencies
-- Python 3.12+
+- [mise](https://mise.jdx.dev/) — installs the repo's pinned Python version from [mise.toml](mise.toml)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) — manages the virtual environment and dependencies
+
+If you're using zsh, enable mise in your shell startup so repo-local tools resolve automatically:
+
+```bash
+echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
+exec zsh
+```
 
 ---
 
@@ -44,7 +51,8 @@
 ```bash
 git clone https://github.com/jacksonrc/finn.git
 cd finn
-./run.sh
+make setup
+make run
 ```
 
 Your browser opens automatically once the server is ready. A demo dataset loads on first run so the dashboard isn't empty. You'll be prompted for your name the first time — this is used for the dashboard greeting and is stored locally.
@@ -61,6 +69,7 @@ A `Makefile` is included for convenience:
 
 | Command | What it does |
 |---|---|
+| `make setup` | Trust the repo config, install the pinned Python via mise, and sync dependencies with uv |
 | `make run` | Start the server |
 | `make run PORT=9000` | Start on a custom port |
 | `make backup` | Back up all portfolio databases right now |
