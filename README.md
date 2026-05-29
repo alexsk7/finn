@@ -34,8 +34,8 @@
 
 ## Prerequisites
 
-- [mise](https://mise.jdx.dev/) — installs the repo's pinned Python version from [mise.toml](mise.toml)
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) — manages the virtual environment and dependencies
+- [mise](https://mise.jdx.dev/) — installs the repo's pinned Python and `uv` versions from [mise.toml](mise.toml)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) — manages the virtual environment and dependencies once provisioned by mise
 
 If you're using zsh, enable mise in your shell startup so repo-local tools resolve automatically:
 
@@ -69,7 +69,7 @@ A `Makefile` is included for convenience:
 
 | Command | What it does |
 |---|---|
-| `make setup` | Trust the repo config, install the pinned Python via mise, and sync dependencies with uv |
+| `make setup` | Trust the repo config, install the pinned Python and `uv` via mise, and sync dependencies |
 | `make run` | Start the server |
 | `make run PORT=9000` | Start on a custom port |
 | `make backup` | Back up all portfolio databases right now |
