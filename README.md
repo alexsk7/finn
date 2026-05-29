@@ -34,7 +34,7 @@
 
 ## Prerequisites
 
-- [mise](https://mise.jdx.dev/) — installs the repo's pinned Python, `uv`, and `ruff` versions from [mise.toml](mise.toml)
+- [mise](https://mise.jdx.dev/) — installs the repo's pinned Python, `uv`, `ruff`, and `ty` versions from [mise.toml](mise.toml)
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) — manages the virtual environment and dependencies once provisioned by mise
 
 If you're using zsh, enable mise in your shell startup so repo-local tools resolve automatically:
@@ -69,8 +69,10 @@ A `Makefile` is included for convenience:
 
 | Command | What it does |
 |---|---|
-| `make setup` | Trust the repo config, install the pinned Python, `uv`, and `ruff` via mise, and sync dependencies |
+| `make setup` | Trust the repo config, install the pinned Python, `uv`, `ruff`, and `ty` via mise, and sync dependencies |
 | `make lint` | Run Ruff across the repository |
+| `make typecheck` | Run ty across the repository |
+| `make check` | Run both linting and type checking |
 | `make run` | Start the server |
 | `make run PORT=9000` | Start on a custom port |
 | `make backup` | Back up all portfolio databases right now |
@@ -101,7 +103,7 @@ finn already covers the core local-first personal finance workflow: net worth, a
 Planned next steps:
 
 - **Stats / Value page** — app opens, daily streak, money tracked, savings and investing totals, tax losses harvested, and estimated advisory fees avoided
-- **Testing and linting** — expand the lint ruleset and add a committed test suite before broader contributor activity
+- **Testing, linting, and type checking** — expand the static analysis ruleset and add a committed test suite before broader contributor activity
 - **Business intelligence** — investigate a future business/bookkeeping area once the existing bookkeeper utility and schema are confirmed
 
 See [TASKS.md](TASKS.md) for the detailed working checklist.

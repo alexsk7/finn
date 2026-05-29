@@ -51,9 +51,7 @@ For a new `UNIQUE` constraint on an existing table, deduplicate first, then crea
 
 ```python
 try:
-    conn.execute(
-        "DELETE FROM t WHERE id NOT IN (SELECT MAX(id) FROM t GROUP BY col_a, col_b)"
-    )
+    conn.execute("DELETE FROM t WHERE id NOT IN (SELECT MAX(id) FROM t GROUP BY col_a, col_b)")
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_t_cols ON t(col_a, col_b)")
 except Exception:
     pass
@@ -91,6 +89,26 @@ For an ad hoc run without Make:
 ```bash
 mise exec -- ruff check .
 ```
+
+## Type checking
+
+```bash
+make typecheck
+```
+
+For an ad hoc run without Make:
+
+```bash
+mise exec -- ty check .
+```
+
+## Combined checks
+
+```bash
+make check
+```
+
+This runs both Ruff and ty using the existing project configuration.
 
 ## Tests
 
