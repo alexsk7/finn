@@ -6,15 +6,16 @@ import sqlite3
 def get_conn(db_path=None) -> sqlite3.Connection:
     if db_path is None:
         from .portfolio import get_active_path
+
         db_path = get_active_path()
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
-    conn.execute("PRAGMA synchronous=NORMAL")   # safe with WAL; faster writes
-    conn.execute("PRAGMA temp_store=MEMORY")    # temp tables in RAM
-    conn.execute("PRAGMA trusted_schema=OFF")   # harden against malicious schema objects
-    conn.execute("PRAGMA secure_delete=ON")     # overwrite freed pages on delete
+    conn.execute("PRAGMA synchronous=NORMAL")  # safe with WAL; faster writes
+    conn.execute("PRAGMA temp_store=MEMORY")  # temp tables in RAM
+    conn.execute("PRAGMA trusted_schema=OFF")  # harden against malicious schema objects
+    conn.execute("PRAGMA secure_delete=ON")  # overwrite freed pages on delete
     return conn
 
 

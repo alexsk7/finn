@@ -110,6 +110,16 @@ make check
 
 This runs both Ruff and ty using the existing project configuration.
 
+## Git hooks
+
+```bash
+make hooks
+```
+
+The repo stores its Git hooks in `.githooks/`.
+`make setup` installs them automatically by setting `core.hooksPath`.
+The pre-commit hook runs `make lint`, and the pre-push hook runs `make check`.
+
 ## Tests
 
 ```bash

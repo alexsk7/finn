@@ -53,10 +53,7 @@ def get_active_path() -> Path:
 def list_portfolios() -> list[dict]:
     cfg = _load()
     active = cfg["active"]
-    return [
-        {**p, "is_active": p["name"] == active}
-        for p in cfg["portfolios"]
-    ]
+    return [{**p, "is_active": p["name"] == active} for p in cfg["portfolios"]]
 
 
 def set_active(name: str) -> None:

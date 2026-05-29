@@ -5,9 +5,7 @@ from .db import get_conn
 
 def seed_demo() -> None:
     with get_conn() as conn:
-        flag = conn.execute(
-            "SELECT value FROM app_flags WHERE key='demo_seeded'"
-        ).fetchone()
+        flag = conn.execute("SELECT value FROM app_flags WHERE key='demo_seeded'").fetchone()
         if flag:
             return  # seeded before, or user explicitly reset
 

@@ -7,8 +7,8 @@ Usage: uv run python scripts/gen_favicon.py
 """
 
 from pathlib import Path
-from PIL import Image, ImageDraw
 
+from PIL import Image, ImageDraw
 
 # ── Palette (matches style.css CSS variables) ─────────────────────────────────
 BG = (19, 24, 32)  # --bg2
@@ -32,9 +32,7 @@ def draw_icon(size: int) -> Image.Image:
 
     # Rounded background square (full canvas)
     r = max(2, int(size * 0.175))
-    d.rounded_rectangle(
-        [0, 0, size - 1, size - 1], radius=r, fill=BG + (255,), outline=BORDER + (180,)
-    )
+    d.rounded_rectangle([0, 0, size - 1, size - 1], radius=r, fill=BG + (255,), outline=BORDER + (180,))
 
     # Chart data points — normalised to [0,1] within the icon content area
     # (x, y) where y=0 is top, y=1 is bottom

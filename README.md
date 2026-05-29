@@ -69,7 +69,8 @@ A `Makefile` is included for convenience:
 
 | Command | What it does |
 |---|---|
-| `make setup` | Trust the repo config, install the pinned Python, `uv`, `ruff`, and `ty` via mise, and sync dependencies |
+| `make setup` | Trust the repo config, install the pinned Python, `uv`, `ruff`, and `ty` via mise, install the repo Git hooks, and sync dependencies |
+| `make hooks` | Point Git at the repo's committed hooks in `.githooks/` |
 | `make lint` | Run Ruff across the repository |
 | `make typecheck` | Run ty across the repository |
 | `make check` | Run both linting and type checking |
@@ -77,6 +78,9 @@ A `Makefile` is included for convenience:
 | `make run PORT=9000` | Start on a custom port |
 | `make backup` | Back up all portfolio databases right now |
 | `make refresh` | Trigger a price refresh on the running server |
+
+Git hooks are versioned in `.githooks/` and installed by `make setup`.
+The pre-commit hook runs `make lint`; the pre-push hook runs `make check`.
 
 ---
 

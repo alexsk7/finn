@@ -1,14 +1,18 @@
-.PHONY: setup lint format typecheck check run backup refresh snapshot
+.PHONY: setup hooks lint format typecheck check run backup refresh snapshot
 
 PORT ?= 8080
 
 setup:
 	mise trust
 	mise install
+	$(MAKE) hooks
 	mise exec -- uv sync
 
+hooks:
+	git config core.hooksPath .githooks
+
 lint:
-	mise exec -- ruff check .
+	mise exec -- ruff check --fix .
 
 format:
 	mise exec -- ruff format .

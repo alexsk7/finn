@@ -1,7 +1,7 @@
 """Write operations: prices, snapshots, journal, transactions."""
 
-from datetime import date, datetime
 import re
+from datetime import date, datetime
 
 from .db import get_conn
 
@@ -17,10 +17,7 @@ def refresh_prices(db_path=None) -> dict:
     import yfinance as yf
 
     with get_conn(db_path) as conn:
-        holding_symbols = [
-            r[0]
-            for r in conn.execute("SELECT DISTINCT symbol FROM holdings").fetchall()
-        ]
+        holding_symbols = [r[0] for r in conn.execute("SELECT DISTINCT symbol FROM holdings").fetchall()]
 
     seen: set[str] = set()
     symbols: list[str] = []
@@ -109,15 +106,8 @@ def save_snapshot(
     snap_date = snapshot_date or date.today().isoformat()
 
     with get_conn() as conn:
-        accounts = {
-            r["id"]: r
-            for r in conn.execute(
-                "SELECT id, type FROM accounts WHERE is_active=1"
-            ).fetchall()
-        }
-        re = conn.execute(
-            "SELECT SUM(estimated_value - mortgage_balance) as equity FROM real_estate"
-        ).fetchone()
+        accounts = {r["id"]: r for r in conn.execute("SELECT id, type FROM accounts WHERE is_active=1").fetchall()}
+        re = conn.execute("SELECT SUM(estimated_value - mortgage_balance) as equity FROM real_estate").fetchone()
         home_equity = re["equity"] or 0.0
 
     bal_map = {int(b["account_id"]): float(b["balance"]) for b in account_balances}
@@ -156,19 +146,13 @@ def save_snapshot(
         )
         snap_id = (
             cur.lastrowid
-            or conn.execute(
-                "SELECT id FROM snapshots WHERE snapshot_date=?", (snap_date,)
-            ).fetchone()["id"]
+            or conn.execute("SELECT id FROM snapshots WHERE snapshot_date=?", (snap_date,)).fetchone()["id"]
         )
 
         conn.execute("DELETE FROM account_snapshots WHERE snapshot_id=?", (snap_id,))
         conn.executemany(
             "INSERT INTO account_snapshots (snapshot_id, account_id, balance) VALUES (?,?,?)",
-            [
-                (snap_id, b["account_id"], b["balance"])
-                for b in account_balances
-                if int(b["account_id"]) in accounts
-            ],
+            [(snap_id, b["account_id"], b["balance"]) for b in account_balances if int(b["account_id"]) in accounts],
         )
 
     return {
@@ -292,9 +276,7 @@ def add_holding(
                 int(is_manual),
             ),
         )
-        row = conn.execute(
-            "SELECT * FROM holdings WHERE account_id=? AND symbol=?", (account_id, sym)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM holdings WHERE account_id=? AND symbol=?", (account_id, sym)).fetchone()
     return dict(row)
 
 
@@ -326,9 +308,7 @@ def update_holding(
                 holding_id,
             ),
         )
-        row = conn.execute(
-            "SELECT * FROM holdings WHERE id=?", (holding_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM holdings WHERE id=?", (holding_id,)).fetchone()
     return dict(row) if row else {}
 
 
@@ -372,9 +352,7 @@ def add_account(
                 opening_balance or 0,
             ),
         )
-        row = conn.execute(
-            "SELECT * FROM accounts WHERE id=?", (cur.lastrowid,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM accounts WHERE id=?", (cur.lastrowid,)).fetchone()
     return dict(row)
 
 
@@ -389,25 +367,19 @@ def update_account(
             "UPDATE accounts SET interest_rate=?, minimum_payment=?, opening_balance=? WHERE id=?",
             (interest_rate, minimum_payment, opening_balance or 0, account_id),
         )
-        row = conn.execute(
-            "SELECT * FROM accounts WHERE id=?", (account_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM accounts WHERE id=?", (account_id,)).fetchone()
     return dict(row) if row else {}
 
 
 def delete_account(account_id: int) -> dict:
     with get_conn() as conn:
-        holding_count = conn.execute(
-            "SELECT COUNT(*) FROM holdings WHERE account_id=?", (account_id,)
-        ).fetchone()[0]
+        holding_count = conn.execute("SELECT COUNT(*) FROM holdings WHERE account_id=?", (account_id,)).fetchone()[0]
         if holding_count > 0:
             return {
                 "ok": False,
                 "error": f"Account has {holding_count} holding(s). Delete or move them first.",
             }
-        txn_count = conn.execute(
-            "SELECT COUNT(*) FROM transactions WHERE account_id=?", (account_id,)
-        ).fetchone()[0]
+        txn_count = conn.execute("SELECT COUNT(*) FROM transactions WHERE account_id=?", (account_id,)).fetchone()[0]
         if txn_count > 0:
             return {
                 "ok": False,
@@ -440,11 +412,7 @@ def import_snapshot_csv(csv_text: str) -> dict:
         "equity": "home_equity",
     }
 
-    lines = [
-        line
-        for line in csv_text.strip().splitlines()
-        if line.strip() and not line.strip().startswith("#")
-    ]
+    lines = [line for line in csv_text.strip().splitlines() if line.strip() and not line.strip().startswith("#")]
     if not lines:
         return {
             "inserted": 0,
@@ -476,9 +444,7 @@ def import_snapshot_csv(csv_text: str) -> dict:
         for i, row in enumerate(reader, 1):
             try:
                 norm = {
-                    COL_ALIASES.get(k.lower().strip(), k.lower().strip()): (
-                        v or ""
-                    ).strip()
+                    COL_ALIASES.get(k.lower().strip(), k.lower().strip()): (v or "").strip()
                     for k, v in row.items()
                     if k
                 }
@@ -496,9 +462,7 @@ def import_snapshot_csv(csv_text: str) -> dict:
                 invested_total = float(norm.get("invested_total", "") or 0)
                 home_equity = float(norm.get("home_equity", "") or 0)
 
-                existing = conn.execute(
-                    "SELECT id FROM snapshots WHERE snapshot_date=?", (snap_date,)
-                ).fetchone()
+                existing = conn.execute("SELECT id FROM snapshots WHERE snapshot_date=?", (snap_date,)).fetchone()
 
                 conn.execute(
                     """
@@ -607,11 +571,7 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
                 continue
         raise ValueError(f"unrecognized date format: {s!r}")
 
-    lines = [
-        line
-        for line in csv_text.strip().splitlines()
-        if line.strip() and not line.strip().startswith("#")
-    ]
+    lines = [line for line in csv_text.strip().splitlines() if line.strip() and not line.strip().startswith("#")]
     if not lines:
         return {"inserted": 0, "skipped": 0, "errors": ["Empty input"], "total": 0}
 
@@ -631,11 +591,7 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
         for i, row in enumerate(reader, 1):
             try:
                 norm = {
-                    COL_ALIASES.get(k.lower().strip().strip('"'), k.lower().strip()): (
-                        v or ""
-                    )
-                    .strip()
-                    .strip('"')
+                    COL_ALIASES.get(k.lower().strip().strip('"'), k.lower().strip()): (v or "").strip().strip('"')
                     for k, v in row.items()
                     if k
                 }
@@ -813,15 +769,7 @@ def import_holdings_csv(csv_text: str, account_id: int) -> dict:
     }
 
     def clean_float(s: str) -> float:
-        return float(
-            s
-            .strip()
-            .replace("$", "")
-            .replace(",", "")
-            .replace("%", "")
-            .replace("+", "")
-            or 0
-        )
+        return float(s.strip().replace("$", "").replace(",", "").replace("%", "").replace("+", "") or 0)
 
     lines = [line for line in csv_text.strip().splitlines() if line.strip()]
     if not lines:
@@ -846,9 +794,7 @@ def import_holdings_csv(csv_text: str, account_id: int) -> dict:
             "inserted": 0,
             "updated": 0,
             "skipped": 0,
-            "errors": [
-                "Could not detect header row — CSV must contain a 'Symbol' column"
-            ],
+            "errors": ["Could not detect header row — CSV must contain a 'Symbol' column"],
             "total": 0,
         }
 
@@ -862,21 +808,13 @@ def import_holdings_csv(csv_text: str, account_id: int) -> dict:
         for i, row in enumerate(reader, 1):
             try:
                 norm = {
-                    COL_ALIASES.get(k.strip().strip('"').lower(), k.strip().lower()): (
-                        v or ""
-                    )
-                    .strip()
-                    .strip('"')
+                    COL_ALIASES.get(k.strip().strip('"').lower(), k.strip().lower()): (v or "").strip().strip('"')
                     for k, v in row.items()
                     if k
                 }
 
                 symbol = norm.get("symbol", "").strip().upper()
-                if (
-                    not symbol
-                    or symbol.startswith("--")
-                    or symbol.lower() in SKIP_SYMBOLS
-                ):
+                if not symbol or symbol.startswith("--") or symbol.lower() in SKIP_SYMBOLS:
                     skipped += 1
                     continue
 
@@ -897,9 +835,7 @@ def import_holdings_csv(csv_text: str, account_id: int) -> dict:
                     cost_total_raw = norm.get("cost_total", "").strip()
                     if cost_total_raw:
                         cost_total = clean_float(cost_total_raw)
-                        cost_per_share = (
-                            round(cost_total / shares, 6) if shares else 0.0
-                        )
+                        cost_per_share = round(cost_total / shares, 6) if shares else 0.0
                     else:
                         cost_per_share = 0.0
 
@@ -1026,15 +962,11 @@ def save_mortgage_config(
                 appreciation_rate,
             ),
         )
-        row = conn.execute(
-            "SELECT * FROM mortgage_config WHERE property_id=?", (property_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM mortgage_config WHERE property_id=?", (property_id,)).fetchone()
     return dict(row)
 
 
-def upsert_property_cost(
-    property_id: int, cost_year: int, cost_month: int, amount: float, memo: str | None
-) -> dict:
+def upsert_property_cost(property_id: int, cost_year: int, cost_month: int, amount: float, memo: str | None) -> dict:
     with get_conn() as conn:
         conn.execute(
             """
@@ -1068,9 +1000,7 @@ def upsert_allocation_target(asset_class: str, target_pct: float) -> dict:
         """,
             (asset_class, target_pct),
         )
-        row = conn.execute(
-            "SELECT * FROM allocation_targets WHERE asset_class=?", (asset_class,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM allocation_targets WHERE asset_class=?", (asset_class,)).fetchone()
     return dict(row)
 
 
@@ -1152,9 +1082,7 @@ def add_budget_category(name: str, monthly_target: float, direction: str) -> dic
             "INSERT INTO budget_categories (name, monthly_target, direction) VALUES (?,?,?)",
             (name, monthly_target, direction),
         )
-        conn.execute(
-            "INSERT OR IGNORE INTO budget_months(month) VALUES (?)", (_current_month(),)
-        )
+        conn.execute("INSERT OR IGNORE INTO budget_months(month) VALUES (?)", (_current_month(),))
         conn.execute(
             """
             INSERT OR IGNORE INTO budget_month_items(month, category_id, planned_amount)
@@ -1162,9 +1090,7 @@ def add_budget_category(name: str, monthly_target: float, direction: str) -> dic
         """,
             (_current_month(), cur.lastrowid, monthly_target),
         )
-        row = conn.execute(
-            "SELECT * FROM budget_categories WHERE id=?", (cur.lastrowid,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM budget_categories WHERE id=?", (cur.lastrowid,)).fetchone()
     return dict(row)
 
 
@@ -1174,9 +1100,7 @@ def update_budget_category(category_id: int, name: str, monthly_target: float) -
             "UPDATE budget_categories SET name=?, monthly_target=? WHERE id=?",
             (name, monthly_target, category_id),
         )
-        conn.execute(
-            "INSERT OR IGNORE INTO budget_months(month) VALUES (?)", (_current_month(),)
-        )
+        conn.execute("INSERT OR IGNORE INTO budget_months(month) VALUES (?)", (_current_month(),))
         conn.execute(
             """
             INSERT INTO budget_month_items(month, category_id, planned_amount)
@@ -1186,9 +1110,7 @@ def update_budget_category(category_id: int, name: str, monthly_target: float) -
         """,
             (_current_month(), category_id, monthly_target),
         )
-        row = conn.execute(
-            "SELECT * FROM budget_categories WHERE id=?", (category_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM budget_categories WHERE id=?", (category_id,)).fetchone()
     return dict(row) if row else {}
 
 
@@ -1226,9 +1148,7 @@ def update_journal_entry(
                 entry_id,
             ),
         )
-        row = conn.execute(
-            "SELECT * FROM journal_entries WHERE id=?", (entry_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM journal_entries WHERE id=?", (entry_id,)).fetchone()
     return dict(row) if row else {}
 
 
@@ -1268,9 +1188,7 @@ def update_transaction(
                 txn_id,
             ),
         )
-        row = conn.execute(
-            "SELECT * FROM transactions WHERE id=?", (txn_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM transactions WHERE id=?", (txn_id,)).fetchone()
     return dict(row) if row else {}
 
 
@@ -1323,9 +1241,7 @@ def add_real_estate(
                 account_id,
             ),
         )
-        row = conn.execute(
-            "SELECT * FROM real_estate WHERE id=?", (cur.lastrowid,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM real_estate WHERE id=?", (cur.lastrowid,)).fetchone()
     return dict(row)
 
 
@@ -1335,26 +1251,20 @@ def link_real_estate_account(property_id: int, account_id: int | None) -> dict:
             "UPDATE real_estate SET account_id=? WHERE id=?",
             (account_id, property_id),
         )
-        row = conn.execute(
-            "SELECT * FROM real_estate WHERE id=?", (property_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM real_estate WHERE id=?", (property_id,)).fetchone()
     return dict(row) if row else {}
 
 
 def delete_real_estate(property_id: int) -> dict:
     with get_conn() as conn:
-        row = conn.execute(
-            "SELECT name FROM real_estate WHERE id=?", (property_id,)
-        ).fetchone()
+        row = conn.execute("SELECT name FROM real_estate WHERE id=?", (property_id,)).fetchone()
         if not row:
             return {"ok": False, "error": "Property not found"}
         conn.execute("DELETE FROM real_estate WHERE id=?", (property_id,))
     return {"ok": True}
 
 
-def update_real_estate(
-    property_id: int, estimated_value: float, mortgage_balance: float
-) -> dict:
+def update_real_estate(property_id: int, estimated_value: float, mortgage_balance: float) -> dict:
     today = date.today().isoformat()
     with get_conn() as conn:
         conn.execute(
@@ -1363,7 +1273,5 @@ def update_real_estate(
                WHERE id=?""",
             (estimated_value, mortgage_balance, today, property_id),
         )
-        row = conn.execute(
-            "SELECT * FROM real_estate WHERE id=?", (property_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM real_estate WHERE id=?", (property_id,)).fetchone()
     return dict(row) if row else {}

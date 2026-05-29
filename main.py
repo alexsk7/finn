@@ -2,79 +2,82 @@
 
 import atexit
 import logging
+from pathlib import Path
+from typing import Optional
+
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from pathlib import Path
-from typing import Optional
-from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.db import init_db
-from app.seed import seed_demo
+from app.profile import get_profile, save_profile
 from app.queries import (
-    get_dashboard_summary,
-    get_allocation,
-    get_tax_summary,
-    get_rebalance,
-    get_journal,
-    get_cashflow_by_category,
-    get_budget_month,
-    get_accounts_summary,
-    get_real_estate,
-    get_amortization,
-    get_allocation_targets,
-    get_budget_categories_full,
-    get_transactions,
-    get_ticker_data,
     get_account_by_id,
     get_account_transactions,
+    get_accounts_summary,
+    get_allocation,
+    get_allocation_targets,
+    get_amortization,
+    get_budget_categories_full,
+    get_budget_month,
+    get_cashflow_by_category,
+    get_dashboard_summary,
+    get_journal,
+    get_real_estate,
+    get_rebalance,
+    get_tax_summary,
+    get_ticker_data,
+    get_transactions,
 )
+from app.seed import seed_demo
 from app.writer import (
-    refresh_prices,
-    update_price,
-    save_snapshot,
-    add_journal_entry,
-    update_journal_entry,
-    delete_journal_entry,
-    add_transaction,
-    update_transaction,
-    bulk_update_transaction_category,
-    delete_transaction,
-    update_real_estate,
-    add_real_estate,
-    delete_real_estate,
-    link_real_estate_account,
-    add_holding,
-    update_holding,
-    delete_holding,
-    get_all_holdings_raw,
     add_account,
-    update_account,
+    add_budget_category,
+    add_holding,
+    add_journal_entry,
+    add_real_estate,
+    add_transaction,
+    bulk_update_transaction_category,
+    copy_budget_month,
     delete_account,
+    delete_budget_category,
+    delete_holding,
+    delete_journal_entry,
+    delete_real_estate,
+    delete_transaction,
+    get_all_holdings_raw,
+    import_holdings_csv,
     import_snapshot_csv,
     import_transaction_csv,
-    import_holdings_csv,
+    link_real_estate_account,
+    refresh_prices,
     reset_all_data,
-    save_mortgage_config,
-    upsert_property_cost,
-    upsert_allocation_target,
-    add_budget_category,
-    update_budget_category,
-    delete_budget_category,
     save_budget_month,
-    copy_budget_month,
+    save_mortgage_config,
+    save_snapshot,
+    update_account,
+    update_budget_category,
+    update_holding,
+    update_journal_entry,
+    update_price,
+    update_real_estate,
+    update_transaction,
+    upsert_allocation_target,
+    upsert_property_cost,
 )
-from app.profile import get_profile, save_profile
 
 init_db()
 seed_demo()
 
 logger = logging.getLogger(__name__)
 
+
 def _auto_refresh_prices():
     from app.portfolio import list_portfolios
+
     for p in list_portfolios():
         path = Path(p["path"])
         if not path.is_absolute():
@@ -87,14 +90,15 @@ def _auto_refresh_prices():
         except Exception as exc:
             logger.error("Auto price refresh failed for %s: %s", p["name"], exc)
 
+
 _scheduler = BackgroundScheduler(daemon=True)
 _scheduler.add_job(
     _auto_refresh_prices,
-    'cron',
-    day_of_week='mon-fri',
+    "cron",
+    day_of_week="mon-fri",
     hour=16,
     minute=5,
-    timezone='America/New_York',
+    timezone="America/New_York",
 )
 _scheduler.start()
 atexit.register(lambda: _scheduler.shutdown(wait=False))
@@ -121,6 +125,7 @@ def page(request: Request, template: str, active: str, **extra) -> HTMLResponse:
 
 
 # ── Pages ─────────────────────────────────────────────────────────────────────
+
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
@@ -178,6 +183,7 @@ async def data_page(request: Request):
 
 
 # ── Read API ──────────────────────────────────────────────────────────────────
+
 
 @app.get("/api/dashboard")
 async def api_dashboard():
@@ -243,10 +249,13 @@ async def api_budget_categories():
 
 
 @app.get("/api/transactions")
-async def api_transactions_list(limit: int = 100, category: Optional[str] = None,
-                                direction: Optional[str] = None,
-                                account_id: Optional[int] = None,
-                                month: Optional[str] = None):
+async def api_transactions_list(
+    limit: int = 100,
+    category: Optional[str] = None,
+    direction: Optional[str] = None,
+    account_id: Optional[int] = None,
+    month: Optional[str] = None,
+):
     try:
         return get_transactions(limit, category, direction, account_id, month)
     except ValueError as e:
@@ -268,6 +277,7 @@ async def api_ticker():
 
 # ── Write API ─────────────────────────────────────────────────────────────────
 
+
 @app.post("/api/prices/refresh")
 async def api_prices_refresh():
     return refresh_prices()
@@ -276,6 +286,7 @@ async def api_prices_refresh():
 class PriceUpdate(BaseModel):
     symbol: str
     price: float
+
 
 @app.post("/api/prices/manual")
 async def api_price_manual(body: PriceUpdate):
@@ -287,6 +298,7 @@ class SnapshotBody(BaseModel):
     account_balances: list[dict]
     snapshot_date: Optional[str] = None
     notes: Optional[str] = None
+
 
 @app.post("/api/snapshot")
 async def api_snapshot(body: SnapshotBody):
@@ -301,11 +313,16 @@ class JournalBody(BaseModel):
     is_milestone: bool = False
     milestone_value: Optional[float] = None
 
+
 @app.post("/api/journal")
 async def api_journal_post(entry: JournalBody):
     return add_journal_entry(
-        entry.title, entry.body, entry.entry_date,
-        entry.tags, entry.is_milestone, entry.milestone_value,
+        entry.title,
+        entry.body,
+        entry.entry_date,
+        entry.tags,
+        entry.is_milestone,
+        entry.milestone_value,
     )
 
 
@@ -319,11 +336,18 @@ class TransactionBody(BaseModel):
     account_id: Optional[int] = None
     recurring: bool = False
 
+
 @app.post("/api/transactions")
 async def api_transaction_post(txn: TransactionBody):
     return add_transaction(
-        txn.txn_date, txn.amount, txn.direction,
-        txn.category, txn.payee, txn.description, txn.account_id, txn.recurring,
+        txn.txn_date,
+        txn.amount,
+        txn.direction,
+        txn.category,
+        txn.payee,
+        txn.description,
+        txn.account_id,
+        txn.recurring,
     )
 
 
@@ -331,6 +355,7 @@ class RealEstateUpdate(BaseModel):
     property_id: int
     estimated_value: float
     mortgage_balance: float
+
 
 @app.post("/api/real-estate/update")
 async def api_real_estate_update(body: RealEstateUpdate):
@@ -346,17 +371,28 @@ class RealEstateAdd(BaseModel):
     purchase_date: Optional[str] = None
     account_id: Optional[int] = None
 
+
 @app.post("/api/real-estate")
 async def api_real_estate_add(body: RealEstateAdd):
-    return add_real_estate(body.name, body.estimated_value, body.mortgage_balance,
-                           body.address, body.purchase_price, body.purchase_date, body.account_id)
+    return add_real_estate(
+        body.name,
+        body.estimated_value,
+        body.mortgage_balance,
+        body.address,
+        body.purchase_price,
+        body.purchase_date,
+        body.account_id,
+    )
+
 
 class RealEstateLinkBody(BaseModel):
     account_id: Optional[int] = None
 
+
 @app.post("/api/real-estate/{property_id}/link-account")
 async def api_real_estate_link(property_id: int, body: RealEstateLinkBody):
     return link_real_estate_account(property_id, body.account_id)
+
 
 @app.delete("/api/real-estate/{property_id}")
 async def api_real_estate_delete(property_id: int):
@@ -380,11 +416,16 @@ class MortgageConfigBody(BaseModel):
     start_date: str
     appreciation_rate: float = 2.5
 
+
 @app.post("/api/real-estate/mortgage-config")
 async def api_mortgage_config(body: MortgageConfigBody):
     return save_mortgage_config(
-        body.property_id, body.loan_amount, body.annual_rate_pct,
-        body.term_months, body.monthly_payment, body.start_date,
+        body.property_id,
+        body.loan_amount,
+        body.annual_rate_pct,
+        body.term_months,
+        body.monthly_payment,
+        body.start_date,
         body.appreciation_rate,
     )
 
@@ -396,14 +437,14 @@ class PropertyCostBody(BaseModel):
     amount: float
     memo: Optional[str] = None
 
+
 @app.post("/api/real-estate/cost")
 async def api_property_cost(body: PropertyCostBody):
-    return upsert_property_cost(
-        body.property_id, body.cost_year, body.cost_month, body.amount, body.memo
-    )
+    return upsert_property_cost(body.property_id, body.cost_year, body.cost_month, body.amount, body.memo)
 
 
 # ── Holdings CRUD ──────────────────────────────────────────────────────────────
+
 
 @app.get("/api/holdings")
 async def api_holdings_all():
@@ -419,6 +460,7 @@ class HoldingBody(BaseModel):
     name: Optional[str] = None
     is_manual: bool = False
 
+
 @app.post("/api/holdings")
 async def api_holding_add(body: HoldingBody):
     sym = body.symbol.strip().upper()
@@ -426,8 +468,8 @@ async def api_holding_add(body: HoldingBody):
         raise HTTPException(status_code=400, detail="Manual holding symbols must start with 'M:'")
     if not body.is_manual and sym.startswith("M:"):
         raise HTTPException(status_code=400, detail="Non-manual symbols cannot start with 'M:'")
-    return add_holding(body.account_id, sym, body.asset_class,
-                       body.shares, body.cost_basis, body.name, body.is_manual)
+    return add_holding(body.account_id, sym, body.asset_class, body.shares, body.cost_basis, body.name, body.is_manual)
+
 
 @app.put("/api/holdings/{holding_id}")
 async def api_holding_update(holding_id: int, body: HoldingBody):
@@ -436,8 +478,10 @@ async def api_holding_update(holding_id: int, body: HoldingBody):
         raise HTTPException(status_code=400, detail="Manual holding symbols must start with 'M:'")
     if not body.is_manual and sym.startswith("M:"):
         raise HTTPException(status_code=400, detail="Non-manual symbols cannot start with 'M:'")
-    return update_holding(holding_id, body.account_id, sym, body.asset_class,
-                          body.shares, body.cost_basis, body.name, body.is_manual)
+    return update_holding(
+        holding_id, body.account_id, sym, body.asset_class, body.shares, body.cost_basis, body.name, body.is_manual
+    )
+
 
 @app.delete("/api/holdings/{holding_id}")
 async def api_holding_delete(holding_id: int):
@@ -446,6 +490,7 @@ async def api_holding_delete(holding_id: int):
 
 
 # ── Account CRUD ───────────────────────────────────────────────────────────────
+
 
 class AccountBody(BaseModel):
     name: str
@@ -456,19 +501,30 @@ class AccountBody(BaseModel):
     minimum_payment: Optional[float] = None
     opening_balance: Optional[float] = None
 
+
 @app.post("/api/accounts")
 async def api_account_add(body: AccountBody):
-    return add_account(body.name, body.institution, body.type, body.notes,
-                       body.interest_rate, body.minimum_payment, body.opening_balance)
+    return add_account(
+        body.name,
+        body.institution,
+        body.type,
+        body.notes,
+        body.interest_rate,
+        body.minimum_payment,
+        body.opening_balance,
+    )
+
 
 class AccountUpdateBody(BaseModel):
     interest_rate: Optional[float] = None
     minimum_payment: Optional[float] = None
     opening_balance: Optional[float] = None
 
+
 @app.put("/api/accounts/{account_id}")
 async def api_account_update(account_id: int, body: AccountUpdateBody):
     return update_account(account_id, body.interest_rate, body.minimum_payment, body.opening_balance)
+
 
 @app.delete("/api/accounts/{account_id}")
 async def api_account_delete(account_id: int):
@@ -477,9 +533,11 @@ async def api_account_delete(account_id: int):
 
 # ── Allocation Targets ─────────────────────────────────────────────────────────
 
+
 class AllocationTargetBody(BaseModel):
     asset_class: str
     target_pct: float
+
 
 @app.post("/api/allocation-targets")
 async def api_allocation_target_upsert(body: AllocationTargetBody):
@@ -488,10 +546,12 @@ async def api_allocation_target_upsert(body: AllocationTargetBody):
 
 # ── Budget Categories ──────────────────────────────────────────────────────────
 
+
 class BudgetCategoryBody(BaseModel):
     name: str
     monthly_target: float
     direction: str = "expense"
+
 
 class BudgetCategoryUpdate(BaseModel):
     name: str
@@ -512,13 +572,16 @@ class BudgetMonthCopyBody(BaseModel):
     source_month: str
     overwrite: bool = False
 
+
 @app.post("/api/budget-categories")
 async def api_budget_category_add(body: BudgetCategoryBody):
     return add_budget_category(body.name, body.monthly_target, body.direction)
 
+
 @app.put("/api/budget-categories/{category_id}")
 async def api_budget_category_update(category_id: int, body: BudgetCategoryUpdate):
     return update_budget_category(category_id, body.name, body.monthly_target)
+
 
 @app.delete("/api/budget-categories/{category_id}")
 async def api_budget_category_delete(category_id: int):
@@ -546,6 +609,7 @@ async def api_budget_month_copy(month: str, body: BudgetMonthCopyBody):
 
 # ── Journal CRUD ───────────────────────────────────────────────────────────────
 
+
 class JournalUpdateBody(BaseModel):
     title: str
     body: Optional[str] = None
@@ -554,10 +618,13 @@ class JournalUpdateBody(BaseModel):
     is_milestone: bool = False
     milestone_value: Optional[float] = None
 
+
 @app.put("/api/journal/{entry_id}")
 async def api_journal_update(entry_id: int, body: JournalUpdateBody):
-    return update_journal_entry(entry_id, body.title, body.body, body.entry_date,
-                                body.tags, body.is_milestone, body.milestone_value)
+    return update_journal_entry(
+        entry_id, body.title, body.body, body.entry_date, body.tags, body.is_milestone, body.milestone_value
+    )
+
 
 @app.delete("/api/journal/{entry_id}")
 async def api_journal_delete(entry_id: int):
@@ -566,6 +633,7 @@ async def api_journal_delete(entry_id: int):
 
 
 # ── Transaction CRUD ───────────────────────────────────────────────────────────
+
 
 class TransactionUpdateBody(BaseModel):
     txn_date: str
@@ -576,11 +644,18 @@ class TransactionUpdateBody(BaseModel):
     description: Optional[str] = None
     account_id: Optional[int] = None
 
+
 @app.put("/api/transactions/{txn_id}")
 async def api_transaction_update(txn_id: int, body: TransactionUpdateBody):
     return update_transaction(
-        txn_id, body.txn_date, body.amount, body.direction,
-        body.category, body.payee, body.description, body.account_id,
+        txn_id,
+        body.txn_date,
+        body.amount,
+        body.direction,
+        body.category,
+        body.payee,
+        body.description,
+        body.account_id,
     )
 
 
@@ -593,6 +668,7 @@ class TransactionBulkCategoryBody(BaseModel):
 async def api_transaction_bulk_category(body: TransactionBulkCategoryBody):
     return bulk_update_transaction_category(body.ids, body.category)
 
+
 @app.delete("/api/transactions/{txn_id}")
 async def api_transaction_delete(txn_id: int):
     delete_transaction(txn_id)
@@ -601,8 +677,10 @@ async def api_transaction_delete(txn_id: int):
 
 # ── CSV Snapshot Import ────────────────────────────────────────────────────────
 
+
 class SnapshotImportBody(BaseModel):
     csv_text: str
+
 
 @app.post("/api/snapshots/import-csv")
 async def api_snapshot_import_csv(body: SnapshotImportBody):
@@ -611,9 +689,11 @@ async def api_snapshot_import_csv(body: SnapshotImportBody):
 
 # ── CSV Transaction Import ─────────────────────────────────────────────────────
 
+
 class TransactionImportBody(BaseModel):
     csv_text: str
     account_id: Optional[int] = None
+
 
 @app.post("/api/transactions/import-csv")
 async def api_transaction_import_csv(body: TransactionImportBody):
@@ -622,9 +702,11 @@ async def api_transaction_import_csv(body: TransactionImportBody):
 
 # ── CSV Holdings Import ────────────────────────────────────────────────────────
 
+
 class HoldingsImportBody(BaseModel):
     csv_text: str
     account_id: int
+
 
 @app.post("/api/holdings/import-csv")
 async def api_holdings_import_csv(body: HoldingsImportBody):
@@ -633,13 +715,16 @@ async def api_holdings_import_csv(body: HoldingsImportBody):
 
 # ── Profile ───────────────────────────────────────────────────────────────────
 
+
 @app.get("/api/profile")
 async def api_profile_get():
     return get_profile()
 
+
 class ProfileBody(BaseModel):
     user_name: str = ""
     currency_symbol: str = "$"
+
 
 @app.post("/api/profile")
 async def api_profile_save(body: ProfileBody):
@@ -649,8 +734,10 @@ async def api_profile_save(body: ProfileBody):
 
 # ── Reset ──────────────────────────────────────────────────────────────────────
 
+
 class ResetBody(BaseModel):
     confirm: str
+
 
 @app.post("/api/reset")
 async def api_reset(body: ResetBody):
@@ -662,9 +749,11 @@ async def api_reset(body: ResetBody):
 
 # ── Portfolio Management ───────────────────────────────────────────────────────
 
+
 @app.get("/api/portfolios")
 async def api_portfolios():
     from app.portfolio import _load, list_portfolios
+
     cfg = _load()
     return {"active": cfg["active"], "portfolios": list_portfolios()}
 
@@ -676,6 +765,7 @@ class PortfolioSwitchBody(BaseModel):
 @app.post("/api/portfolio/switch")
 async def api_portfolio_switch(body: PortfolioSwitchBody):
     from app.portfolio import set_active
+
     try:
         set_active(body.name)
         init_db()  # apply any pending migrations to the newly active DB
@@ -691,9 +781,10 @@ class PortfolioNewBody(BaseModel):
 @app.post("/api/portfolio/new")
 async def api_portfolio_new(body: PortfolioNewBody):
     from app.portfolio import create_portfolio
+
     try:
         entry = create_portfolio(body.name)
-        init_db()    # init schema on the new (now active) DB
+        init_db()  # init schema on the new (now active) DB
         seed_demo()  # seed demo data
         return {"ok": True, **entry}
     except ValueError as e:
@@ -707,6 +798,7 @@ class PortfolioRenameBody(BaseModel):
 @app.put("/api/portfolio/{portfolio_name:path}")
 async def api_portfolio_rename(portfolio_name: str, body: PortfolioRenameBody):
     from app.portfolio import rename_portfolio
+
     try:
         entry = rename_portfolio(portfolio_name, body.name)
         return {"ok": True, **entry}
@@ -717,6 +809,7 @@ async def api_portfolio_rename(portfolio_name: str, body: PortfolioRenameBody):
 @app.delete("/api/portfolio/{portfolio_name:path}")
 async def api_portfolio_delete(portfolio_name: str):
     from app.portfolio import delete_portfolio
+
     try:
         delete_portfolio(portfolio_name)
         return {"ok": True}
