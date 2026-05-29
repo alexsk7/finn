@@ -109,7 +109,7 @@
 ## Infrastructure
 
 - [x] Auto-open browser on `./run.sh` — background subshell opens `http://localhost:$PORT` after 1.5s delay
-- [ ] `ruff` linting setup
+- [x] `ruff` linting setup
 - [x] **Backup script** (`db/*.db` → timestamped `backups/`) — WAL-safe via `sqlite3.backup()`; runs on `./run.sh` startup; backs up all portfolios; keeps last 30 per portfolio
 - [x] `Makefile` with `run`, `refresh`, `snapshot`, `backup` targets
 - [ ] Safeguard: `reset_all_data()` should never be called from test/CLI code against the live DB — always copy to a temp DB for destructive testing
