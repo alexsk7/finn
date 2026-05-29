@@ -51,7 +51,9 @@ For a new `UNIQUE` constraint on an existing table, deduplicate first, then crea
 
 ```python
 try:
-    conn.execute("DELETE FROM t WHERE id NOT IN (SELECT MAX(id) FROM t GROUP BY col_a, col_b)")
+    conn.execute(
+        "DELETE FROM t WHERE id NOT IN (SELECT MAX(id) FROM t GROUP BY col_a, col_b)"
+    )
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_t_cols ON t(col_a, col_b)")
 except Exception:
     pass
@@ -75,13 +77,25 @@ All user-entered strings rendered via `innerHTML` must be passed through `esc(s)
 ## Running one-off Python
 
 ```bash
-uv run python -c "from app.db import get_conn; ..."
+mise exec -- uv run python -c "from app.db import get_conn; ..."
+```
+
+## Linting
+
+```bash
+make lint
+```
+
+For an ad hoc run without Make:
+
+```bash
+mise exec -- ruff check .
 ```
 
 ## Tests
 
 ```bash
-uv run python -m compileall main.py app
+mise exec -- uv run python -m compileall main.py app
 ```
 
 There is not currently a committed `tests/` directory. Add focused tests alongside any future test harness and document the exact command here.

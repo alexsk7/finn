@@ -1,4 +1,4 @@
-.PHONY: setup run backup refresh snapshot
+.PHONY: setup lint run backup refresh snapshot
 
 PORT ?= 8080
 
@@ -6,6 +6,9 @@ setup:
 	mise trust
 	mise install
 	mise exec -- uv sync
+
+lint:
+	mise exec -- ruff check .
 
 run:
 	./run.sh $(PORT)
