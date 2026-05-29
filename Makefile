@@ -11,7 +11,7 @@ run:
 	./run.sh $(PORT)
 
 backup:
-	uv run python scripts/backup.py
+	mise exec -- uv run python scripts/backup.py
 
 refresh:
 	curl -s -X POST http://localhost:$(PORT)/api/prices/refresh | python3 -m json.tool
