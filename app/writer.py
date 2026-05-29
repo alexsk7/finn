@@ -1,7 +1,7 @@
 """Write operations: prices, snapshots, journal, transactions."""
 
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from .db import get_conn
 
@@ -31,7 +31,7 @@ def refresh_prices(db_path=None) -> dict:
         return s.replace(".", "-")
 
     updated, failed = [], []
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
     with get_conn(db_path) as conn:
         for symbol in symbols:
@@ -65,7 +65,7 @@ def refresh_prices(db_path=None) -> dict:
 
 def update_price(symbol: str, price: float) -> None:
     """Manually record a price for a symbol."""
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     with get_conn() as conn:
         conn.execute(
             "INSERT OR REPLACE INTO prices (symbol, price, recorded_at) VALUES (?,?,?)",
@@ -1022,7 +1022,10 @@ def save_budget_month(month: str, items: list[dict], notes: str | None = None) -
             (month, notes),
         )
         for item in items:
-            category_id = int(item.get("category_id"))
+            raw_category_id = item.get("category_id")
+            if not isinstance(raw_category_id, (int, str)):
+                raise ValueError("category_id is required")
+            category_id = int(raw_category_id)
             planned_amount = float(item.get("planned_amount") or 0)
             conn.execute(
                 """
