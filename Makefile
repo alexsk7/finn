@@ -1,4 +1,4 @@
-.PHONY: setup lint run backup refresh snapshot
+.PHONY: setup lint format run backup refresh snapshot
 
 PORT ?= 8080
 
@@ -9,6 +9,9 @@ setup:
 
 lint:
 	mise exec -- ruff check .
+
+format:
+	mise exec -- ruff format .
 
 run:
 	./run.sh $(PORT)
