@@ -82,8 +82,8 @@ A `Makefile` is included for convenience:
 | `make refresh` | Trigger a price refresh on the running server |
 
 Git hooks are versioned in `.githooks/` and installed by `make setup`.
-The pre-commit hook runs `make lint`.
-The pre-push hook runs `make coverage`, opens the local coverage dashboard, and
+The pre-commit hook runs `make check`.
+The pre-push hook runs `make coverage`, optionally opens the local coverage dashboard, and
 blocks push only if added executable Python lines are below 80% coverage.
 
 ## Testing

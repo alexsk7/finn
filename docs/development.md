@@ -118,8 +118,8 @@ make hooks
 
 The repo stores its Git hooks in `.githooks/`.
 `make setup` installs them automatically by setting `core.hooksPath`.
-The pre-commit hook runs `make lint`.
-The pre-push hook runs `make coverage`, opens the coverage dashboard, and blocks
+The pre-commit hook runs `make check`.
+The pre-push hook runs `make coverage`, optionally opens the coverage dashboard, and blocks
 push only when added executable Python lines are below 80% coverage.
 
 ## Tests
