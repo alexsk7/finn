@@ -1,4 +1,4 @@
-.PHONY: setup hooks lint format typecheck check run backup refresh snapshot
+.PHONY: setup hooks lint format typecheck check test run backup refresh snapshot
 
 PORT ?= 8080
 
@@ -21,6 +21,9 @@ typecheck:
 	mise exec -- ty check .
 
 check: lint typecheck
+
+test:
+	mise exec -- uv run pytest
 
 run:
 	./run.sh $(PORT)
