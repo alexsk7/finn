@@ -107,7 +107,7 @@ finn already covers the core local-first personal finance workflow: net worth, a
 Planned next steps:
 
 - **Stats / Value page** — app opens, daily streak, money tracked, savings and investing totals, tax losses harvested, and estimated advisory fees avoided
-- **Testing, linting, and type checking** — expand the static analysis ruleset and add a committed test suite before broader contributor activity
+- **Testing** — add a committed test suite before broader contributor activity
 - **Business intelligence** — investigate a future business/bookkeeping area once the existing bookkeeper utility and schema are confirmed
 
 See [TASKS.md](TASKS.md) for the detailed working checklist.
