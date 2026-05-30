@@ -76,13 +76,15 @@ A `Makefile` is included for convenience:
 | `make check` | Run both linting and type checking |
 | `make run` | Start the server |
 | `make run PORT=9000` | Start on a custom port |
-| `make coverage` | Run tests with a concise local coverage summary + `coverage.xml` output |
+| `make coverage` | Run tests with a concise local coverage summary + pretty `coverage.json` output |
 | `make coverage-html` | Run tests with coverage, generate `htmlcov/`, and open a dashboard with bar-chart summary |
 | `make backup` | Back up all portfolio databases right now |
 | `make refresh` | Trigger a price refresh on the running server |
 
 Git hooks are versioned in `.githooks/` and installed by `make setup`.
-The pre-commit hook runs `make lint`; the pre-push hook runs `make check`.
+The pre-commit hook runs `make lint`.
+The pre-push hook runs `make coverage`, opens the local coverage dashboard, and
+blocks push only if added executable Python lines are below 80% coverage.
 
 ## Testing
 
@@ -92,7 +94,7 @@ Run the test suite:
 make test
 ```
 
-`make test` also generates a CI-friendly coverage report at `coverage.xml`.
+`make test` also generates a CI-friendly pretty-printed coverage report at `coverage.json`.
 Use `make coverage` for a cleaner local summary that hides fully covered files.
 Use `make coverage-html` for a browsable dashboard that opens automatically and links to file-level detail.
 

@@ -118,7 +118,9 @@ make hooks
 
 The repo stores its Git hooks in `.githooks/`.
 `make setup` installs them automatically by setting `core.hooksPath`.
-The pre-commit hook runs `make lint`, and the pre-push hook runs `make check`.
+The pre-commit hook runs `make lint`.
+The pre-push hook runs `make coverage`, opens the coverage dashboard, and blocks
+push only when added executable Python lines are below 80% coverage.
 
 ## Tests
 
@@ -144,7 +146,7 @@ Testing conventions:
 
 ### CI coverage artifact example (GitHub Actions)
 
-`make test` generates `coverage.xml`.
+`make test` generates `coverage.json`.
 
 GitHub-hosted runners do not provide native Rocky Linux or Alpine labels.
 Use a pinned Ubuntu host runner with a Linux container, or use self-hosted runners.
@@ -183,11 +185,11 @@ jobs:
             - name: Run tests with coverage
                 run: make test
 
-            - name: Upload coverage.xml
+            - name: Upload coverage.json
                 uses: actions/upload-artifact@v4
                 with:
-                    name: coverage-xml
-                    path: coverage.xml
+                    name: coverage-json
+                    path: coverage.json
 ```
 
             If you want true native execution on Rocky Linux or Alpine, use a self-hosted runner (for example `runs-on: [self-hosted, linux, rockylinux]`).

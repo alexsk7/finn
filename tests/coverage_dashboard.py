@@ -1,4 +1,4 @@
-"""Generate a lightweight coverage dashboard from coverage.xml.
+"""Generate a lightweight coverage dashboard from coverage.json.
 
 The output is a standalone HTML page with a compact bar chart by file,
 plus a link to the standard htmlcov/index.html detail report.
@@ -6,7 +6,7 @@ plus a link to the standard htmlcov/index.html detail report.
 
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
+import json
 from dataclasses import dataclass
 from html import escape
 from pathlib import Path
@@ -18,15 +18,16 @@ class FileCoverage:
     percent: float
 
 
-def _parse_coverage_xml(xml_path: Path) -> tuple[float, list[FileCoverage]]:
-    root = ET.fromstring(xml_path.read_text(encoding="utf-8"))
+def _parse_coverage_json(json_path: Path) -> tuple[float, list[FileCoverage]]:
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
 
-    overall = float(root.attrib.get("line-rate", "0")) * 100.0
+    totals = payload.get("totals", {})
+    overall = float(totals.get("percent_covered", 0.0))
     rows: list[FileCoverage] = []
 
-    for cls in root.findall("./packages/package/classes/class"):
-        filename = cls.attrib.get("filename", "unknown")
-        pct = float(cls.attrib.get("line-rate", "0")) * 100.0
+    for filename, file_data in payload.get("files", {}).items():
+        summary = file_data.get("summary", {})
+        pct = float(summary.get("percent_covered", 0.0))
         rows.append(FileCoverage(filename=filename, percent=pct))
 
     rows.sort(key=lambda r: (r.percent, r.filename))
@@ -64,8 +65,8 @@ def _row_html(row: FileCoverage) -> str:
     )
 
 
-def build_dashboard(xml_path: Path, out_path: Path) -> None:
-    overall, rows = _parse_coverage_xml(xml_path)
+def build_dashboard(json_path: Path, out_path: Path) -> None:
+    overall, rows = _parse_coverage_json(json_path)
     rows_html = "\n".join(_row_html(r) for r in rows)
 
     template_path = Path(__file__).parent / "coverage_dashboard_template.html"
@@ -77,13 +78,13 @@ def build_dashboard(xml_path: Path, out_path: Path) -> None:
 
 
 def main() -> None:
-    xml_path = Path("coverage.xml")
+    json_path = Path("coverage.json")
     out_path = Path("htmlcov") / "dashboard.html"
 
-    if not xml_path.exists():
-        raise SystemExit("coverage.xml not found. Run tests with coverage first.")
+    if not json_path.exists():
+        raise SystemExit("coverage.json not found. Run tests with coverage first.")
 
-    build_dashboard(xml_path, out_path)
+    build_dashboard(json_path, out_path)
 
 
 if __name__ == "__main__":
