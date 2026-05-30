@@ -32,7 +32,7 @@ coverage:
 
 coverage-new:
 	$(MAKE) coverage
-	mise exec -- uv run python scripts/check_new_code_coverage.py --auto-base --head HEAD
+	mise exec -- uv run python scripts/check_new_code_coverage.py --auto-base --head HEAD --print-range
 
 coverage-html:
 	$(MAKE) coverage

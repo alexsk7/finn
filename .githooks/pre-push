@@ -28,20 +28,8 @@ while read -r local_ref local_sha remote_ref remote_sha; do
 		continue
 	fi
 
-	if [[ "$remote_sha" == "$zero_sha" ]]; then
-		# New remote branch/tag. Compare against origin/main if available.
-		if git rev-parse --verify origin/main >/dev/null 2>&1; then
-			base_sha="$(git merge-base "$local_sha" origin/main)"
-		else
-			base_sha="$(git rev-list --max-parents=0 "$local_sha" | tail -1)"
-		fi
-	else
-		# Existing ref update: only commits not yet on remote ref.
-		base_sha="$remote_sha"
-	fi
-
-	echo "  Range: $base_sha..$local_sha ($local_ref -> $remote_ref)"
-	mise exec -- uv run python scripts/check_new_code_coverage.py --base "$base_sha" --head "$local_sha" --threshold 80
+	echo "  Evaluating pushed commits for $local_ref -> $remote_ref"
+	mise exec -- uv run python scripts/check_new_code_coverage.py --auto-base --remote-sha "$remote_sha" --head "$local_sha" --threshold 80
 	checked_any=1
 done
 
