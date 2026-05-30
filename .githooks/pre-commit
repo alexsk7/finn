@@ -5,4 +5,4 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
 echo "Running pre-commit checks..."
-make lint
+make check
