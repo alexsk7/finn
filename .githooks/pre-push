@@ -13,9 +13,22 @@ echo "Generating coverage web report..."
 mise exec -- uv run coverage html -d htmlcov >/dev/null
 mise exec -- uv run python tests/coverage_dashboard.py
 
-# Best-effort browser open; do not fail push if this cannot open.
-if ! mise exec -- uv run python -c "from pathlib import Path; import webbrowser; webbrowser.open(Path('htmlcov/dashboard.html').resolve().as_uri())" >/dev/null 2>&1; then
-	echo "Note: could not auto-open coverage dashboard."
+# Ask before opening browser so pushes do not force a tab open unexpectedly.
+if [[ -r /dev/tty ]]; then
+	open_reply=""
+	read -r -p "Open coverage dashboard in browser? [y/N] " open_reply < /dev/tty || true
+	case "$open_reply" in
+		y|Y|yes|YES)
+			if ! mise exec -- uv run python -c "from pathlib import Path; import webbrowser; webbrowser.open(Path('htmlcov/dashboard.html').resolve().as_uri())" >/dev/null 2>&1; then
+				echo "Note: could not open coverage dashboard."
+			fi
+			;;
+		*)
+			echo "Skipping dashboard open."
+			;;
+	esac
+else
+	echo "No interactive terminal available; skipping dashboard open."
 fi
 
 echo "Checking new-code coverage threshold (>= 80%)..."
