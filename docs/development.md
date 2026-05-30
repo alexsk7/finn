@@ -123,7 +123,21 @@ The pre-commit hook runs `make lint`, and the pre-push hook runs `make check`.
 ## Tests
 
 ```bash
-mise exec -- uv run python -m compileall main.py app
+make test
 ```
 
-There is not currently a committed `tests/` directory. Add focused tests alongside any future test harness and document the exact command here.
+For targeted runs:
+
+```bash
+mise exec -- uv run pytest tests/test_writer_prices.py
+mise exec -- uv run pytest tests/test_api_smoke.py
+```
+
+Testing conventions:
+
+- Reuse fixtures from `tests/conftest.py`.
+- Default to the per-test DB lifecycle fixture (`test_db_lifecycle`) for explicit setup/teardown and DB artifact cleanup.
+- Use `minimal_seed_data` for deterministic assertions instead of full `seed_demo()` data.
+- Mock Yahoo Finance calls via `mock_yfinance_ticker`; tests must not depend on network access.
+- Freeze time-sensitive behavior with `frozen_now` when asserting timestamps or date-driven logic.
+- Prefer data-agnostic assertions for tax/TLH logic (structure and behavior checks, not hardcoded dollar values).

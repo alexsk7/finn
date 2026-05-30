@@ -82,6 +82,27 @@ A `Makefile` is included for convenience:
 Git hooks are versioned in `.githooks/` and installed by `make setup`.
 The pre-commit hook runs `make lint`; the pre-push hook runs `make check`.
 
+## Testing
+
+Run the test suite:
+
+```bash
+make test
+```
+
+The suite uses `pytest` with fixtures in `tests/conftest.py`:
+
+- Each test gets an isolated temporary SQLite database with explicit setup and teardown.
+- Writer/query tests use a minimal deterministic seed fixture instead of full demo data.
+- Market data is mocked through the yfinance fixture; tests should not call external services.
+
+Useful targeted runs:
+
+```bash
+mise exec -- uv run pytest tests/test_writer_prices.py -k "fallback or failed"
+mise exec -- uv run pytest tests/test_scheduler.py
+```
+
 ---
 
 ## Using your own data
@@ -107,7 +128,7 @@ finn already covers the core local-first personal finance workflow: net worth, a
 Planned next steps:
 
 - **Stats / Value page** — app opens, daily streak, money tracked, savings and investing totals, tax losses harvested, and estimated advisory fees avoided
-- **Testing** — add a committed test suite before broader contributor activity
+- **Testing** — add more data-agnostic tests for tax/TLH logic, including edge-case scenarios
 - **Business intelligence** — investigate a future business/bookkeeping area once the existing bookkeeper utility and schema are confirmed
 
 See [TASKS.md](TASKS.md) for the detailed working checklist.

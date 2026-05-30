@@ -103,8 +103,8 @@
 ## Testing
 
 - [ ] Write data-agnostic tests for tax/TLH logic that work against any seed data (structure checks, not hardcoded dollar values)
-- [ ] Consider a test fixture with a minimal known dataset so assertions can be precise without depending on `seed_demo()`
-- [ ] Add a committed test suite; current smoke check is `uv run python -m compileall main.py app`
+- [x] Add a test fixture with a minimal known dataset so assertions can be precise without depending on `seed_demo()`
+- [x] Add a committed pytest suite (fixtures + writer/query/API/scheduler coverage)
 
 ## Infrastructure
 
