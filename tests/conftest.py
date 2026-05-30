@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from freezegun import freeze_time
 
 from app.db import get_conn, init_db
 
@@ -106,3 +107,112 @@ def import_main_safely(monkeypatch: pytest.MonkeyPatch):
         del sys.modules["main"]
 
     return importlib.import_module("main")
+
+
+@pytest.fixture
+def frozen_now():
+    """Return a helper that freezes application time for deterministic tests."""
+
+    def _freeze(when: str = "2026-05-30 12:34:56"):
+        return freeze_time(when, tz_offset=0)
+
+    return _freeze
+
+
+@pytest.fixture
+def mock_yfinance_ticker(monkeypatch: pytest.MonkeyPatch):
+    """Patch yfinance.Ticker with configurable per-symbol responses."""
+
+    class _FakeSeries:
+        def __init__(self, values: list[float]):
+            self._values = values
+
+        @property
+        def iloc(self):
+            return self
+
+        def __getitem__(self, idx: int) -> float:
+            return self._values[idx]
+
+    class _FakeHistory:
+        def __init__(self, closes: list[float]):
+            self._closes = closes
+
+        @property
+        def empty(self) -> bool:
+            return len(self._closes) == 0
+
+        def __len__(self) -> int:
+            return len(self._closes)
+
+        def __getitem__(self, key: str) -> _FakeSeries:
+            if key != "Close":
+                raise KeyError(key)
+            return _FakeSeries(self._closes)
+
+    class _FastInfo:
+        def __init__(self, last_price: float, previous_close: float | None = None):
+            self.last_price = last_price
+            self.previous_close = previous_close
+
+    class _FakeTicker:
+        def __init__(self, symbol: str, cfg: dict[str, Any]):
+            self.symbol = symbol
+            self._cfg = cfg
+
+        @property
+        def fast_info(self):
+            if "fast_error" in self._cfg:
+                raise self._cfg["fast_error"]
+            last = self._cfg.get("last_price", 100.0)
+            prev = self._cfg.get("previous_close", 99.0)
+            return _FastInfo(last, prev)
+
+        def history(self, period: str = "2d") -> _FakeHistory:
+            if "history_error" in self._cfg:
+                raise self._cfg["history_error"]
+            closes = self._cfg.get("history_closes", [98.0, 100.0])
+            return _FakeHistory(closes)
+
+    class _Controller:
+        def __init__(self):
+            self._per_symbol: dict[str, dict[str, Any]] = {}
+            self.called_symbols: list[str] = []
+
+        def set_fast(self, symbol: str, *, last_price: float, previous_close: float | None = None) -> None:
+            cfg = self._per_symbol.setdefault(symbol, {})
+            cfg["last_price"] = last_price
+            cfg["previous_close"] = previous_close
+            cfg.pop("fast_error", None)
+
+        def set_fast_exception(self, symbol: str, exc: Exception | None = None) -> None:
+            cfg = self._per_symbol.setdefault(symbol, {})
+            cfg["fast_error"] = exc or RuntimeError("fast_info unavailable")
+
+        def set_history(self, symbol: str, closes: list[float]) -> None:
+            cfg = self._per_symbol.setdefault(symbol, {})
+            cfg["history_closes"] = closes
+            cfg.pop("history_error", None)
+
+        def set_history_exception(self, symbol: str, exc: Exception | None = None) -> None:
+            cfg = self._per_symbol.setdefault(symbol, {})
+            cfg["history_error"] = exc or RuntimeError("history unavailable")
+
+        def set_constructor_exception(self, symbol: str, exc: Exception | None = None) -> None:
+            cfg = self._per_symbol.setdefault(symbol, {})
+            cfg["ctor_error"] = exc or RuntimeError("ticker construction failed")
+
+        def _ticker(self, symbol: str) -> _FakeTicker:
+            self.called_symbols.append(symbol)
+            cfg = self._per_symbol.get(symbol, {})
+            if "ctor_error" in cfg:
+                raise cfg["ctor_error"]
+            return _FakeTicker(symbol, cfg)
+
+    controller = _Controller()
+
+    class _FakeYFModule:
+        Ticker = staticmethod(controller._ticker)
+
+    monkeypatch.setitem(sys.modules, "yfinance", _FakeYFModule())
+    return controller
