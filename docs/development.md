@@ -141,3 +141,53 @@ Testing conventions:
 - Mock Yahoo Finance calls via `mock_yfinance_ticker`; tests must not depend on network access.
 - Freeze time-sensitive behavior with `frozen_now` when asserting timestamps or date-driven logic.
 - Prefer data-agnostic assertions for tax/TLH logic (structure and behavior checks, not hardcoded dollar values).
+
+### CI coverage artifact example (GitHub Actions)
+
+`make test` generates `coverage.xml`.
+
+GitHub-hosted runners do not provide native Rocky Linux or Alpine labels.
+Use a pinned Ubuntu host runner with a Linux container, or use self-hosted runners.
+
+Example: Rocky Linux container on a pinned host runner:
+
+```yaml
+name: ci
+
+on:
+    pull_request:
+    push:
+        branches: [main]
+
+jobs:
+    test:
+        runs-on: ubuntu-24.04
+        container:
+            image: rockylinux:9
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install container deps
+                run: dnf -y install bash curl git tar gzip unzip xz
+
+            - name: Install mise
+                run: curl https://mise.run | sh
+
+            - name: Add mise to PATH
+                run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+            - name: Sync dependencies
+                run: mise exec -- uv sync
+
+            - name: Run tests with coverage
+                run: make test
+
+            - name: Upload coverage.xml
+                uses: actions/upload-artifact@v4
+                with:
+                    name: coverage-xml
+                    path: coverage.xml
+```
+
+            If you want true native execution on Rocky Linux or Alpine, use a self-hosted runner (for example `runs-on: [self-hosted, linux, rockylinux]`).

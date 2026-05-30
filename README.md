@@ -76,6 +76,8 @@ A `Makefile` is included for convenience:
 | `make check` | Run both linting and type checking |
 | `make run` | Start the server |
 | `make run PORT=9000` | Start on a custom port |
+| `make coverage` | Run tests with a concise local coverage summary + `coverage.xml` output |
+| `make coverage-html` | Run tests with coverage, generate `htmlcov/`, and open the report in your browser |
 | `make backup` | Back up all portfolio databases right now |
 | `make refresh` | Trigger a price refresh on the running server |
 
@@ -89,6 +91,10 @@ Run the test suite:
 ```bash
 make test
 ```
+
+`make test` also generates a CI-friendly coverage report at `coverage.xml`.
+Use `make coverage` for a cleaner local summary that hides fully covered files.
+Use `make coverage-html` for a browsable report that opens automatically.
 
 The suite uses `pytest` with fixtures in `tests/conftest.py`:
 

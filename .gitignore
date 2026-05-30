@@ -6,6 +6,9 @@ dist/
 wheels/
 *.egg-info
 .DS_Store
+.coverage
+coverage.xml
+htmlcov/
 
 # Virtual environments
 .venv

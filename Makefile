@@ -1,4 +1,4 @@
-.PHONY: setup hooks lint format typecheck check test run backup refresh snapshot
+.PHONY: setup hooks lint format typecheck check test coverage coverage-html run backup refresh snapshot
 
 PORT ?= 8080
 
@@ -24,6 +24,13 @@ check: lint typecheck
 
 test:
 	mise exec -- uv run pytest
+
+coverage:
+	mise exec -- uv run pytest --override-ini="addopts=-q --strict-markers --cov=app --cov=main --cov-report=term-missing:skip-covered --cov-report=xml:coverage.xml"
+
+coverage-html:
+	mise exec -- uv run pytest --override-ini="addopts=-q --strict-markers --cov=app --cov=main --cov-report=term-missing:skip-covered --cov-report=xml:coverage.xml --cov-report=html:htmlcov"
+	mise exec -- uv run python -c "from pathlib import Path; import webbrowser; webbrowser.open(Path('htmlcov/index.html').resolve().as_uri())"
 
 run:
 	./run.sh $(PORT)
