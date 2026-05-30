@@ -18,23 +18,38 @@ def tmp_db_path(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def init_schema(tmp_db_path: Path) -> Path:
-    """Initialize schema only (no demo seed) for the temp DB."""
+def test_db_lifecycle(tmp_db_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Initialize a fresh DB and explicitly tear it down after each test."""
     init_db(db_path=str(tmp_db_path))
-    return tmp_db_path
+    monkeypatch.setattr("app.portfolio.get_active_path", lambda: tmp_db_path)
+
+    try:
+        yield tmp_db_path
+    finally:
+        with get_conn(db_path=str(tmp_db_path)) as conn:
+            conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        for suffix in ("", "-wal", "-shm"):
+            db_file = tmp_db_path.parent / f"{tmp_db_path.name}{suffix}"
+            db_file.unlink(missing_ok=True)
+            assert not db_file.exists(), f"Expected test DB artifact to be removed: {db_file}"
 
 
 @pytest.fixture
-def monkeypatch_active_db(monkeypatch: pytest.MonkeyPatch, init_schema: Path) -> Path:
-    """Route default get_conn() calls to the temp DB via portfolio active path."""
-    monkeypatch.setattr("app.portfolio.get_active_path", lambda: init_schema)
-    return init_schema
+def init_schema(test_db_lifecycle: Path) -> Path:
+    """Backward-compatible alias for schema-initialized isolated DB."""
+    return test_db_lifecycle
 
 
 @pytest.fixture
-def db_conn(monkeypatch_active_db: Path):
+def monkeypatch_active_db(test_db_lifecycle: Path) -> Path:
+    """Backward-compatible alias for active DB monkeypatch fixture."""
+    return test_db_lifecycle
+
+
+@pytest.fixture
+def db_conn(test_db_lifecycle: Path):
     """Yield a live connection to the isolated DB configured as active."""
-    with get_conn() as conn:
+    with get_conn(db_path=str(test_db_lifecycle)) as conn:
         yield conn
 
 
