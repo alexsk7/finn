@@ -30,7 +30,8 @@ coverage:
 
 coverage-html:
 	mise exec -- uv run pytest --override-ini="addopts=-q --strict-markers --cov=app --cov=main --cov-report=term-missing:skip-covered --cov-report=xml:coverage.xml --cov-report=html:htmlcov"
-	mise exec -- uv run python -c "from pathlib import Path; import webbrowser; webbrowser.open(Path('htmlcov/index.html').resolve().as_uri())"
+	mise exec -- uv run python tests/coverage_dashboard.py
+	mise exec -- uv run python -c "from pathlib import Path; import webbrowser; webbrowser.open(Path('htmlcov/dashboard.html').resolve().as_uri())"
 
 run:
 	./run.sh $(PORT)
