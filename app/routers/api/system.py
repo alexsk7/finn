@@ -1,13 +1,9 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 
+from app.schemas.system import ResetBody
 from app.services.system import reset_all_data
 
 router = APIRouter(tags=["system"])
-
-
-class ResetBody(BaseModel):
-    confirm: str
 
 
 @router.post("/reset")

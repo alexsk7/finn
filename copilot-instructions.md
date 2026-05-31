@@ -19,6 +19,7 @@
 ## Architecture Rules
 
 - Keep app wiring in `app/main.py`, routes in `app/routers/`, and route handlers thin.
+- Keep request/response schemas in `app/schemas/` and import them into routers.
 - Route handlers should call domain services in `app/services/`.
 - Keep read SQL in `app/queries.py` and write SQL in `app/writer.py` unless a migration step explicitly moves it.
 - Prefer plain SQL over an ORM.
@@ -30,7 +31,7 @@
 ## Backend Change Patterns
 
 - For a new page: add a query function, add a route in `app/routers/pages.py`, add a sidebar link in `templates/base.html`, then create a template extending `base.html`.
-- For a new API endpoint: add query/write helper(s), expose through a domain service in `app/services/`, add the Pydantic model and route in `app/routers/api/<domain>.py`, then call it from the relevant template.
+- For a new API endpoint: add query/write helper(s), expose through a domain service in `app/services/`, add/extend schema models in `app/schemas/<domain>.py`, add the route in `app/routers/api/<domain>.py`, then call it from the relevant template.
 - For data writes, keep logic in `app/writer.py` and return structured JSON responses.
 - Preserve existing naming and data-shape conventions used by nearby code.
 - Avoid introducing unnecessary abstraction layers.

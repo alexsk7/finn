@@ -1,8 +1,13 @@
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 
+from app.schemas.budget import (
+    BudgetCategoryBody,
+    BudgetCategoryUpdate,
+    BudgetMonthBody,
+    BudgetMonthCopyBody,
+)
 from app.services.budget import (
     add_budget_category,
     copy_budget_month,
@@ -27,32 +32,6 @@ async def api_budget(month: Optional[str] = None):
 @router.get("/budget-categories")
 async def api_budget_categories():
     return get_budget_categories_full()
-
-
-class BudgetCategoryBody(BaseModel):
-    name: str
-    monthly_target: float
-    direction: str = "expense"
-
-
-class BudgetCategoryUpdate(BaseModel):
-    name: str
-    monthly_target: float
-
-
-class BudgetMonthItemBody(BaseModel):
-    category_id: int
-    planned_amount: float = 0
-
-
-class BudgetMonthBody(BaseModel):
-    items: list[BudgetMonthItemBody]
-    notes: Optional[str] = None
-
-
-class BudgetMonthCopyBody(BaseModel):
-    source_month: str
-    overwrite: bool = False
 
 
 @router.post("/budget-categories")

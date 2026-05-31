@@ -14,9 +14,10 @@ See [`docs/services-migration.md`](docs/services-migration.md) for the phased mi
 
 1. Add a read function to `app/queries.py` or write function to `app/writer.py`
 2. Re-export the function through the relevant domain service module under `app/services/` (for example `app/services/transactions.py`)
-3. Add a Pydantic model (for POST/PUT bodies) and route in the relevant domain router under `app/routers/api/`
-4. Import the function in that domain router from `app.services.*`
-5. Call from JS via `fetch('/api/...')` in the relevant template
+3. Add/extend request schemas in `app/schemas/<domain>.py`
+4. Add a route in the relevant domain router under `app/routers/api/` and import schemas from `app.schemas.*`
+5. Import service functions in that domain router from `app.services.*`
+6. Call from JS via `fetch('/api/...')` in the relevant template
 
 During migration work, keep endpoint payloads stable and move orchestration to services before moving low-level SQL.
 

@@ -1,8 +1,6 @@
-from typing import Optional
-
 from fastapi import APIRouter
-from pydantic import BaseModel
 
+from app.schemas.journal import JournalBody, JournalUpdateBody
 from app.services.journal import add_journal_entry, delete_journal_entry, get_journal, update_journal_entry
 
 router = APIRouter(tags=["journal"])
@@ -11,15 +9,6 @@ router = APIRouter(tags=["journal"])
 @router.get("/journal")
 async def api_journal(limit: int = 100):
     return get_journal(limit)
-
-
-class JournalBody(BaseModel):
-    title: str
-    body: Optional[str] = None
-    entry_date: Optional[str] = None
-    tags: Optional[str] = None
-    is_milestone: bool = False
-    milestone_value: Optional[float] = None
 
 
 @router.post("/journal")
@@ -32,15 +21,6 @@ async def api_journal_post(entry: JournalBody):
         entry.is_milestone,
         entry.milestone_value,
     )
-
-
-class JournalUpdateBody(BaseModel):
-    title: str
-    body: Optional[str] = None
-    entry_date: Optional[str] = None
-    tags: Optional[str] = None
-    is_milestone: bool = False
-    milestone_value: Optional[float] = None
 
 
 @router.put("/journal/{entry_id}")

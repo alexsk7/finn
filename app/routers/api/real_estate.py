@@ -1,8 +1,12 @@
-from typing import Optional
-
 from fastapi import APIRouter
-from pydantic import BaseModel
 
+from app.schemas.real_estate import (
+    MortgageConfigBody,
+    PropertyCostBody,
+    RealEstateAdd,
+    RealEstateLinkBody,
+    RealEstateUpdate,
+)
 from app.services.real_estate import (
     add_real_estate,
     delete_real_estate,
@@ -22,25 +26,9 @@ async def api_real_estate():
     return get_real_estate()
 
 
-class RealEstateUpdate(BaseModel):
-    property_id: int
-    estimated_value: float
-    mortgage_balance: float
-
-
 @router.post("/real-estate/update")
 async def api_real_estate_update(body: RealEstateUpdate):
     return update_real_estate(body.property_id, body.estimated_value, body.mortgage_balance)
-
-
-class RealEstateAdd(BaseModel):
-    name: str
-    estimated_value: float
-    mortgage_balance: float = 0
-    address: Optional[str] = None
-    purchase_price: float = 0
-    purchase_date: Optional[str] = None
-    account_id: Optional[int] = None
 
 
 @router.post("/real-estate")
@@ -54,10 +42,6 @@ async def api_real_estate_add(body: RealEstateAdd):
         body.purchase_date,
         body.account_id,
     )
-
-
-class RealEstateLinkBody(BaseModel):
-    account_id: Optional[int] = None
 
 
 @router.post("/real-estate/{property_id}/link-account")
@@ -78,16 +62,6 @@ async def api_amortization(property_id: int):
     return data
 
 
-class MortgageConfigBody(BaseModel):
-    property_id: int
-    loan_amount: float
-    annual_rate_pct: float
-    term_months: int
-    monthly_payment: float
-    start_date: str
-    appreciation_rate: float = 2.5
-
-
 @router.post("/real-estate/mortgage-config")
 async def api_mortgage_config(body: MortgageConfigBody):
     return save_mortgage_config(
@@ -99,14 +73,6 @@ async def api_mortgage_config(body: MortgageConfigBody):
         body.start_date,
         body.appreciation_rate,
     )
-
-
-class PropertyCostBody(BaseModel):
-    property_id: int
-    cost_year: int
-    cost_month: int
-    amount: float
-    memo: Optional[str] = None
 
 
 @router.post("/real-estate/cost")

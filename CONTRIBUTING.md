@@ -24,6 +24,7 @@ There is not currently a committed test suite. If you add tests, document the ex
 app/
   main.py      FastAPI app wiring and startup jobs
   routers/     FastAPI route modules
+  schemas/     Pydantic request schemas by domain
   services/    service-layer facades used by routers
   db.py        schema init and migrations
   queries.py   all read queries (plain SQL, no ORM)
@@ -40,7 +41,7 @@ For service-layer refactors, follow [`docs/services-migration.md`](docs/services
 ## Making changes
 
 - **New page**: add a query in `queries.py`, a route in `app/routers/pages.py`, a nav link in `base.html`, and a template. See the "Adding a new page" section in [`docs/development.md`](docs/development.md).
-- **New API endpoint**: add the function in `queries.py` or `writer.py`, expose it via the relevant domain module in `app/services/`, add a Pydantic model + route in `app/routers/api/<domain>.py`, then call it from the relevant template.
+- **New API endpoint**: add the function in `queries.py` or `writer.py`, expose it via the relevant domain module in `app/services/`, add/extend request schemas in `app/schemas/<domain>.py`, add the route in `app/routers/api/<domain>.py`, then call it from the relevant template.
 - **Schema changes**: add idempotent `ALTER TABLE` migrations in `db.py` (inside the try/except block after `executescript`).
 
 ## Submitting a PR

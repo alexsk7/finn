@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 
+from app.schemas.portfolios import PortfolioNewBody, PortfolioRenameBody, PortfolioSwitchBody
 from app.services.portfolios import (
     create_new_portfolio,
     get_portfolios,
@@ -18,10 +18,6 @@ async def api_portfolios():
     return get_portfolios()
 
 
-class PortfolioSwitchBody(BaseModel):
-    name: str
-
-
 @router.post("/portfolio/switch")
 async def api_portfolio_switch(body: PortfolioSwitchBody):
     try:
@@ -30,20 +26,12 @@ async def api_portfolio_switch(body: PortfolioSwitchBody):
         return JSONResponse(status_code=400, content={"error": str(e)})
 
 
-class PortfolioNewBody(BaseModel):
-    name: str
-
-
 @router.post("/portfolio/new")
 async def api_portfolio_new(body: PortfolioNewBody):
     try:
         return create_new_portfolio(body.name)
     except ValueError as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
-
-
-class PortfolioRenameBody(BaseModel):
-    name: str
 
 
 @router.put("/portfolio/{portfolio_name:path}")

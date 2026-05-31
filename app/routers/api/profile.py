@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
 
+from app.schemas.profile import ProfileBody
 from app.services.profile import get_profile, save_profile
 
 router = APIRouter(tags=["profile"])
@@ -9,11 +9,6 @@ router = APIRouter(tags=["profile"])
 @router.get("/profile")
 async def api_profile_get():
     return get_profile()
-
-
-class ProfileBody(BaseModel):
-    user_name: str = ""
-    currency_symbol: str = "$"
 
 
 @router.post("/profile")

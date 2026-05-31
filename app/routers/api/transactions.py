@@ -1,9 +1,15 @@
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 
 from app.routers.api.overrides import runtime_override
+from app.schemas.transactions import (
+    TransactionBody,
+    TransactionBulkCategoryBody,
+    TransactionDetectBody,
+    TransactionImportBody,
+    TransactionUpdateBody,
+)
 from app.services.transactions import (
     add_transaction,
     bulk_update_transaction_category,
@@ -31,17 +37,6 @@ async def api_transactions_list(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-class TransactionBody(BaseModel):
-    txn_date: str
-    amount: float
-    direction: str
-    category: str = "uncategorized"
-    payee: Optional[str] = None
-    description: Optional[str] = None
-    account_id: Optional[int] = None
-    recurring: bool = False
-
-
 @router.post("/transactions")
 async def api_transaction_post(txn: TransactionBody):
     return add_transaction(
@@ -54,16 +49,6 @@ async def api_transaction_post(txn: TransactionBody):
         txn.account_id,
         txn.recurring,
     )
-
-
-class TransactionUpdateBody(BaseModel):
-    txn_date: str
-    amount: float
-    direction: str
-    category: str = "uncategorized"
-    payee: Optional[str] = None
-    description: Optional[str] = None
-    account_id: Optional[int] = None
 
 
 @router.put("/transactions/{txn_id}")
@@ -80,11 +65,6 @@ async def api_transaction_update(txn_id: int, body: TransactionUpdateBody):
     )
 
 
-class TransactionBulkCategoryBody(BaseModel):
-    ids: list[int]
-    category: str = "uncategorized"
-
-
 @router.post("/transactions/bulk-category")
 async def api_transaction_bulk_category(body: TransactionBulkCategoryBody):
     return bulk_update_transaction_category(body.ids, body.category)
@@ -94,16 +74,6 @@ async def api_transaction_bulk_category(body: TransactionBulkCategoryBody):
 async def api_transaction_delete(txn_id: int):
     delete_transaction(txn_id)
     return {"ok": True}
-
-
-class TransactionImportBody(BaseModel):
-    csv_text: str
-    account_id: Optional[int] = None
-    field_mapping: Optional[dict[str, str]] = None
-
-
-class TransactionDetectBody(BaseModel):
-    csv_text: str
 
 
 @router.post("/transactions/detect-columns")

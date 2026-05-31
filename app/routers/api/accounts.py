@@ -1,9 +1,7 @@
-from typing import Optional
-
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 
+from app.schemas.accounts import AccountBody, AccountUpdateBody
 from app.services.accounts import (
     add_account,
     delete_account,
@@ -34,16 +32,6 @@ async def api_account_transactions(account_id: int, limit: int = 500):
     return get_account_transactions(account_id, limit)
 
 
-class AccountBody(BaseModel):
-    name: str
-    institution: str
-    type: str
-    notes: Optional[str] = None
-    interest_rate: Optional[float] = None
-    minimum_payment: Optional[float] = None
-    opening_balance: Optional[float] = None
-
-
 @router.post("/accounts")
 async def api_account_add(body: AccountBody):
     return add_account(
@@ -55,12 +43,6 @@ async def api_account_add(body: AccountBody):
         body.minimum_payment,
         body.opening_balance,
     )
-
-
-class AccountUpdateBody(BaseModel):
-    interest_rate: Optional[float] = None
-    minimum_payment: Optional[float] = None
-    opening_balance: Optional[float] = None
 
 
 @router.put("/accounts/{account_id}")
