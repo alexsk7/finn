@@ -99,7 +99,9 @@ class ColumnProfile:
 _DATE_FORMATS = ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%m-%d-%Y", "%Y/%m/%d")
 
 
-def _attach_date_fallback(mapping: dict[str, str], headers: list[str], score_lookup: dict[str, float] | None = None) -> None:
+def _attach_date_fallback(
+    mapping: dict[str, str], headers: list[str], score_lookup: dict[str, float] | None = None
+) -> None:
     """Attach post-date fallback header when available and not already selected as primary date."""
     if not headers:
         return
@@ -263,7 +265,9 @@ def _profile_score(field: str, p: ColumnProfile) -> float:
         median_hint = 1.0 if 0 < p.median_abs < 20000 else 0.6
         return max(0.0, min(1.0, 0.65 * p.numeric_rate + 0.2 * (1 - p.null_rate) + 0.15 * median_hint))
     if field == "direction":
-        return max(0.0, min(1.0, 0.55 * p.direction_token_rate + 0.25 * (1 - p.numeric_rate) + 0.2 * (1 - p.unique_ratio)))
+        return max(
+            0.0, min(1.0, 0.55 * p.direction_token_rate + 0.25 * (1 - p.numeric_rate) + 0.2 * (1 - p.unique_ratio))
+        )
     if field == "recurring":
         return max(0.0, min(1.0, 0.75 * p.bool_rate + 0.25 * (1 - p.unique_ratio)))
     if field == "account_id":
@@ -278,7 +282,9 @@ def _profile_score(field: str, p: ColumnProfile) -> float:
     return 0.0
 
 
-def _maybe_model_probs(profiles: dict[str, ColumnProfile], header_scores: dict[str, dict[str, float]]) -> dict[str, dict[str, float]]:
+def _maybe_model_probs(
+    profiles: dict[str, ColumnProfile], header_scores: dict[str, dict[str, float]]
+) -> dict[str, dict[str, float]]:
     """Optional weakly-supervised sklearn model; safely no-op if unavailable."""
     try:
         from sklearn.linear_model import LogisticRegression  # type: ignore
@@ -387,15 +393,9 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
             "strategy": "exact_alias",
         }
 
-    profiles = {
-        h: _profile_column([(r.get(h, "") or "") for r in sample_rows])
-        for h in headers
-    }
+    profiles = {h: _profile_column([(r.get(h, "") or "") for r in sample_rows]) for h in headers}
 
-    header_scores = {
-        h: {f: _header_score(f, h) for f in TARGET_FIELDS}
-        for h in headers
-    }
+    header_scores = {h: {f: _header_score(f, h) for f in TARGET_FIELDS} for h in headers}
     model_probs = _maybe_model_probs(profiles, header_scores)
 
     # Blend fuzzy header and profile-model confidence
@@ -443,10 +443,7 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
     alternatives: dict[str, list[dict]] = {}
     for field in TARGET_FIELDS:
         ranked = sorted(headers, key=lambda h: blended[h][field], reverse=True)[:3]
-        alternatives[field] = [
-            {"header": h, "score": round(blended[h][field], 3)}
-            for h in ranked
-        ]
+        alternatives[field] = [{"header": h, "score": round(blended[h][field], 3)} for h in ranked]
 
     low_required = any(confidence.get(f, 0.0) < MEDIUM_CONFIDENCE for f in REQUIRED_FIELDS)
     low_any = any(v < HIGH_CONFIDENCE for k, v in confidence.items() if not k.startswith("_"))

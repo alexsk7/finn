@@ -617,6 +617,7 @@ def import_transaction_csv(
         for i, row in enumerate(reader, 1):
             try:
                 if field_mapping:
+
                     def mapped(field: str) -> str:
                         key = field_mapping.get(field)
                         return ((row.get(key, "") if key else "") or "").strip().strip('"')
