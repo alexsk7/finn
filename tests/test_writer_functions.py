@@ -117,6 +117,12 @@ def test_private_category_and_month_helpers(frozen_now):
     except ValueError:
         pass
 
+    try:
+        writer._normalize_month("2026-13")
+        assert False, "Expected ValueError for out-of-range month"
+    except ValueError:
+        pass
+
     with frozen_now("2026-07-15 10:00:00"):
         assert writer._current_month() == "2026-07"
 
@@ -216,6 +222,36 @@ BND,US Bond Market,8,520,Bond
     assert row is not None
     assert row["shares"] == 8.0
     assert row["cost_basis"] == 65.0
+
+
+def test_import_holdings_csv_handles_empty_and_missing_header():
+    empty = import_holdings_csv("\n\n", account_id=2)
+    assert empty["inserted"] == 0
+    assert empty["updated"] == 0
+    assert empty["skipped"] == 0
+    assert empty["errors"] == ["Empty input"]
+
+    missing_header = import_holdings_csv("name,quantity\nVTI,10\n", account_id=2)
+    assert missing_header["inserted"] == 0
+    assert missing_header["updated"] == 0
+    assert missing_header["skipped"] == 0
+    assert "could not detect header row" in missing_header["errors"][0].lower()
+
+
+def test_import_holdings_csv_skips_totals_and_invalid_rows(minimal_seed_data, db_conn):
+    csv_text = """Symbol,Description,Quantity,Cost Basis Total,Security Type
+TOTAL,Portfolio total,1,100,Equity
+VTI,Vanguard Total Stock Market ETF,,100,Equity
+VXUS,Vanguard Total International,-2,100,Equity
+BND,US Bond Market,abc,390,Bond
+"""
+
+    result = import_holdings_csv(csv_text, account_id=2)
+
+    assert result["inserted"] == 0
+    assert result["updated"] == 0
+    assert result["skipped"] == 4
+    assert any("could not convert string to float" in err.lower() for err in result["errors"])
 
 
 def test_mortgage_and_property_cost_upserts(init_schema, minimal_seed_data):

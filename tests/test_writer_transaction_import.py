@@ -213,3 +213,96 @@ def test_import_explicit_field_mapping_bypasses_detector_confidence_gate(db_conn
     assert row["txn_date"] == "2026-05-01"
     assert row["amount"] == 25.0
     assert row["direction"] == "expense"
+
+
+def test_import_transaction_csv_rejects_empty_input():
+    result = import_transaction_csv("\n\n")
+
+    assert result["inserted"] == 0
+    assert result["skipped"] == 0
+    assert result["errors"] == ["Empty input"]
+
+
+def test_import_transaction_csv_blocks_when_no_mapping_available(monkeypatch):
+    csv_text = """alpha,beta
+foo,bar
+"""
+
+    def _detector_without_mapping(_csv_text: str):
+        return {
+            "ok": False,
+            "delimiter": ",",
+            "confidence": {"date": 1.0, "amount": 1.0},
+        }
+
+    monkeypatch.setattr(csv_mapper, "detect_transaction_csv_mapping", _detector_without_mapping)
+
+    result = import_transaction_csv(csv_text)
+
+    assert result["inserted"] == 0
+    assert result["skipped"] == 0
+    assert "could not determine a reliable column mapping" in result["warning"].lower()
+
+
+def test_import_transaction_csv_skips_rows_missing_required_values_with_mapping(db_conn):
+    csv_text = """Date,Amount
+,12.00
+2026-05-01,
+"""
+
+    result = import_transaction_csv(
+        csv_text,
+        field_mapping={
+            "date": "Date",
+            "amount": "Amount",
+        },
+    )
+
+    assert result["inserted"] == 0
+    assert result["skipped"] == 2
+    assert any("missing date" in err.lower() for err in result["errors"])
+    assert any("missing amount" in err.lower() for err in result["errors"])
+
+
+def test_import_transaction_csv_skips_zero_amount_and_ignores_bad_account_id(db_conn):
+    csv_text = """Date,Amount,account_id
+2026-05-01,0.00,abc
+2026-05-02,-15.00,abc
+"""
+
+    result = import_transaction_csv(
+        csv_text,
+        field_mapping={
+            "date": "Date",
+            "amount": "Amount",
+            "account_id": "account_id",
+        },
+    )
+
+    assert result["inserted"] == 1
+    assert result["skipped"] == 1
+
+    row = db_conn.execute("SELECT txn_date, amount, account_id FROM transactions ORDER BY id DESC LIMIT 1").fetchone()
+
+    assert row is not None
+    assert row["txn_date"] == "2026-05-02"
+    assert row["amount"] == 15.0
+    assert row["account_id"] is None
+
+
+def test_import_transaction_csv_records_parse_errors_as_skipped_rows(db_conn):
+    csv_text = """Date,Amount
+31-05-2026,-10.00
+"""
+
+    result = import_transaction_csv(
+        csv_text,
+        field_mapping={
+            "date": "Date",
+            "amount": "Amount",
+        },
+    )
+
+    assert result["inserted"] == 0
+    assert result["skipped"] == 1
+    assert any("unrecognized date format" in err.lower() for err in result["errors"])

@@ -567,9 +567,7 @@ def import_transaction_csv(
 
     detect_confidence = detect.get("confidence", {}) if isinstance(detect, dict) else {}
     low_required_fields = [
-        f
-        for f in ("date", "amount")
-        if float(detect_confidence.get(f, 0.0) or 0.0) < MEDIUM_CONFIDENCE
+        f for f in ("date", "amount") if float(detect_confidence.get(f, 0.0) or 0.0) < MEDIUM_CONFIDENCE
     ]
     if field_mapping is None and low_required_fields:
         details = ", ".join(
@@ -610,6 +608,7 @@ def import_transaction_csv(
     with get_conn() as conn:
         for i, row in enumerate(reader, 1):
             try:
+
                 def mapped(field: str) -> str:
                     key = field_mapping.get(field)
                     return ((row.get(key, "") if key else "") or "").strip().strip('"')

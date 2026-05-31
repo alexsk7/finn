@@ -10,6 +10,7 @@ from app.csv_mapper import (
     MAX_CSV_LINES,
     MAX_CSV_TEXT_CHARS,
     ColumnProfile,
+    _attach_date_fallback,
     _adaptive_blend_weights,
     _best_delimiter_fallback,
     _maybe_model_probs,
@@ -501,3 +502,91 @@ date,amount,description
     assert len(res["preview"]) == 2
     assert res["preview"][0]["date"] == "#2026-05-01"
     assert res["preview"][1]["date"] == "2026-05-02"
+
+
+def test_attach_date_fallback_promotes_transaction_when_score_lookup_none():
+    mapping = {"date": "Post Date"}
+    headers = ["Post Date", "Transaction Date", "Amount"]
+
+    _attach_date_fallback(mapping, headers, score_lookup=None)
+
+    assert mapping["date"] == "Transaction Date"
+    assert mapping["_date_fallback"] == "Post Date"
+
+
+def test_attach_date_fallback_noop_for_missing_inputs():
+    mapping: dict[str, str] = {}
+    _attach_date_fallback(mapping, [], score_lookup=None)
+    assert mapping == {}
+
+    mapping = {"amount": "Amount"}
+    _attach_date_fallback(mapping, ["Transaction Date", "Post Date"], score_lookup=None)
+    assert "_date_fallback" not in mapping
+
+
+def test_best_delimiter_fallback_empty_lines_returns_comma():
+    assert _best_delimiter_fallback([]) == ","
+
+
+def test_parse_float_returns_none_for_empty_input():
+    assert _parse_float("") is None
+
+
+def test_profile_score_returns_zero_for_unknown_field():
+    profile = ColumnProfile(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0)
+    assert _profile_score("unmapped_field", profile) == 0.0
+
+
+def test_maybe_model_probs_trains_when_anchors_sufficient(monkeypatch):
+    sklearn_linear_model = pytest.importorskip("sklearn.linear_model")
+
+    class FakeLogisticRegression:
+        def __init__(self, *args, **kwargs):
+            self.classes_ = []
+
+        def fit(self, _features, labels):
+            self.classes_ = sorted(set(labels))
+
+        def predict_proba(self, _features):
+            # Return deterministic probability distribution for two classes.
+            return [[0.8, 0.2]]
+
+    monkeypatch.setattr(sklearn_linear_model, "LogisticRegression", FakeLogisticRegression)
+
+    profiles = {
+        "txn_dt": ColumnProfile(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 10.0, 0.7, 0.0),
+        "value": ColumnProfile(0.0, 0.0, 1.0, 0.0, 0.4, 50.0, 5.0, 0.7, 0.0),
+    }
+    header_scores = {
+        "txn_dt": {field: (0.95 if field == "date" else 0.0) for field in [
+            "date",
+            "amount",
+            "direction",
+            "category",
+            "payee",
+            "description",
+            "memo",
+            "account_id",
+            "recurring",
+        ]},
+        "value": {field: (0.95 if field == "amount" else 0.0) for field in [
+            "date",
+            "amount",
+            "direction",
+            "category",
+            "payee",
+            "description",
+            "memo",
+            "account_id",
+            "recurring",
+        ]},
+    }
+
+    probs, meta = _maybe_model_probs(profiles, header_scores)
+
+    assert meta["available"] is True
+    assert meta["status"] == "trained"
+    assert meta["anchor_count"] == 2
+    assert meta["class_count"] == 2
+    assert probs["txn_dt"]["date"] == 0.8
+    assert probs["txn_dt"]["amount"] == 0.2

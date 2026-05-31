@@ -241,6 +241,13 @@ The transaction importer now blocks writes when either required field (`date` or
 - Import result returns `inserted: 0` and a `warning` string explaining which required field confidence is too low.
 - The Data page renders this warning so users can re-run detection and review the mapping before importing.
 
+It also blocks writes when no usable mapping is available.
+
+- Accepted mapping sources are:
+  - explicit `field_mapping` supplied by the caller
+  - auto-detected `mapping` returned by `detect_transaction_csv_mapping`
+- If neither is available, import returns `inserted: 0` with a warning and does not fall back to a separate alias-only parser path.
+
 ### One-to-One Assignment
 
 1. Compute blended scores for all (header, field) pairs
@@ -315,10 +322,9 @@ graph TD
 
 1. **Date parsing**: Try formats in order: `%Y-%m-%d`, `%m/%d/%Y`, `%m/%d/%y`, `%m-%d-%Y`, `%Y/%m/%d`
 2. **Amount parsing**:
-  - Handles currency symbols and trailing currency codes (for example `USD`, `EUR`)
-  - Handles accounting negatives (`(123.45)`), trailing minus, and locale separators
-  - Supports common US/EU number formats (`1,234.56`, `1.234,56`, `1234,56`)
-  - Rejects non-finite numeric values
+  - Strips commas and dollar signs (for example `1,234.56`, `$99.95`)
+  - Handles accounting negatives (`(123.45)`)
+  - Raises row-level parse errors for unsupported formats
 3. **Direction inference**: If direction column missing, infer from amount sign
 4. **Description concat**: If both description and memo present, join as `f"{desc} | {memo}"`
 5. **Field mapping**: Apply detected mapping to extract values
