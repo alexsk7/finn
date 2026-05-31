@@ -558,28 +558,34 @@ def test_maybe_model_probs_trains_when_anchors_sufficient(monkeypatch):
         "value": ColumnProfile(0.0, 0.0, 1.0, 0.0, 0.4, 50.0, 5.0, 0.7, 0.0),
     }
     header_scores = {
-        "txn_dt": {field: (0.95 if field == "date" else 0.0) for field in [
-            "date",
-            "amount",
-            "direction",
-            "category",
-            "payee",
-            "description",
-            "memo",
-            "account_id",
-            "recurring",
-        ]},
-        "value": {field: (0.95 if field == "amount" else 0.0) for field in [
-            "date",
-            "amount",
-            "direction",
-            "category",
-            "payee",
-            "description",
-            "memo",
-            "account_id",
-            "recurring",
-        ]},
+        "txn_dt": {
+            field: (0.95 if field == "date" else 0.0)
+            for field in [
+                "date",
+                "amount",
+                "direction",
+                "category",
+                "payee",
+                "description",
+                "memo",
+                "account_id",
+                "recurring",
+            ]
+        },
+        "value": {
+            field: (0.95 if field == "amount" else 0.0)
+            for field in [
+                "date",
+                "amount",
+                "direction",
+                "category",
+                "payee",
+                "description",
+                "memo",
+                "account_id",
+                "recurring",
+            ]
+        },
     }
 
     probs, meta = _maybe_model_probs(profiles, header_scores)
