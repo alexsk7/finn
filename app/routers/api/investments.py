@@ -10,7 +10,7 @@ from app.schemas.investments import (
     SnapshotImportBody,
 )
 from app.services.investments import (
-    add_holding,
+    add_holding_validated,
     delete_holding,
     get_all_holdings_raw,
     get_allocation_targets,
@@ -18,7 +18,7 @@ from app.services.investments import (
     import_snapshot_csv,
     refresh_prices,
     save_snapshot,
-    update_holding,
+    update_holding_validated,
     update_price,
     upsert_allocation_target,
 )
@@ -43,31 +43,35 @@ async def api_holdings_all():
 
 @router.post("/holdings")
 async def api_holding_add(body: HoldingBody):
-    sym = body.symbol.strip().upper()
-    if body.is_manual and not sym.startswith("M:"):
-        raise HTTPException(status_code=400, detail="Manual holding symbols must start with 'M:'")
-    if not body.is_manual and sym.startswith("M:"):
-        raise HTTPException(status_code=400, detail="Non-manual symbols cannot start with 'M:'")
-    return add_holding(body.account_id, sym, body.asset_class, body.shares, body.cost_basis, body.name, body.is_manual)
+    try:
+        return add_holding_validated(
+            body.account_id,
+            body.symbol,
+            body.asset_class,
+            body.shares,
+            body.cost_basis,
+            body.name,
+            body.is_manual,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.put("/holdings/{holding_id}")
 async def api_holding_update(holding_id: int, body: HoldingBody):
-    sym = body.symbol.strip().upper()
-    if body.is_manual and not sym.startswith("M:"):
-        raise HTTPException(status_code=400, detail="Manual holding symbols must start with 'M:'")
-    if not body.is_manual and sym.startswith("M:"):
-        raise HTTPException(status_code=400, detail="Non-manual symbols cannot start with 'M:'")
-    return update_holding(
-        holding_id,
-        body.account_id,
-        sym,
-        body.asset_class,
-        body.shares,
-        body.cost_basis,
-        body.name,
-        body.is_manual,
-    )
+    try:
+        return update_holding_validated(
+            holding_id,
+            body.account_id,
+            body.symbol,
+            body.asset_class,
+            body.shares,
+            body.cost_basis,
+            body.name,
+            body.is_manual,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/holdings/{holding_id}")

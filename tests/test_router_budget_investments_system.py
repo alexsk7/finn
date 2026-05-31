@@ -63,8 +63,25 @@ def test_investments_router_routes_and_validation(import_main_safely, monkeypatc
     )
     monkeypatch.setattr("app.routers.api.investments.upsert_allocation_target", lambda *args: {"ok": True})
     monkeypatch.setattr("app.routers.api.investments.get_all_holdings_raw", lambda: [{"id": 1, "symbol": "VTI"}])
-    monkeypatch.setattr("app.routers.api.investments.add_holding", lambda *args: {"id": 1})
-    monkeypatch.setattr("app.routers.api.investments.update_holding", lambda *args: {"ok": True})
+
+    def fake_add_holding_validated(account_id, symbol, asset_class, shares, cost_basis, name, is_manual):
+        sym = symbol.strip().upper()
+        if is_manual and not sym.startswith("M:"):
+            raise ValueError("Manual holding symbols must start with 'M:'")
+        if not is_manual and sym.startswith("M:"):
+            raise ValueError("Non-manual symbols cannot start with 'M:'")
+        return {"id": 1}
+
+    def fake_update_holding_validated(holding_id, account_id, symbol, asset_class, shares, cost_basis, name, is_manual):
+        sym = symbol.strip().upper()
+        if is_manual and not sym.startswith("M:"):
+            raise ValueError("Manual holding symbols must start with 'M:'")
+        if not is_manual and sym.startswith("M:"):
+            raise ValueError("Non-manual symbols cannot start with 'M:'")
+        return {"ok": True}
+
+    monkeypatch.setattr("app.routers.api.investments.add_holding_validated", fake_add_holding_validated)
+    monkeypatch.setattr("app.routers.api.investments.update_holding_validated", fake_update_holding_validated)
     monkeypatch.setattr("app.routers.api.investments.delete_holding", lambda *args: None)
     monkeypatch.setattr("app.routers.api.investments.import_holdings_csv", lambda *args: {"inserted": 2})
     monkeypatch.setattr("app.routers.api.investments.update_price", lambda *args: None)
