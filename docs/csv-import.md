@@ -18,6 +18,26 @@ The CSV transaction import feature intelligently detects and maps columns from b
 
 ## User Guide
 
+### Workflow Diagram
+
+```mermaid
+graph LR
+    A["📄 Paste/Upload<br/>CSV File"] -->|csv_text| B["🔍 Detect<br/>Columns"]
+    B -->|mapping result| C["👁️ Review<br/>Mapping"]
+    C -->|confirm| D["⚙️ Set<br/>Account"]
+    D -->|click Import| E["✓ Import<br/>to DB"]
+    E -->|success| F["📊 View<br/>Results"]
+    
+    style A fill:#e8f5e9
+    style B fill:#fff3e0
+    style C fill:#fff3e0
+    style D fill:#e3f2fd
+    style E fill:#f3e5f5
+    style F fill:#c8e6c9
+```
+
+---
+
 ### Step 1: Paste or Upload CSV
 
 1. Go to **Data** tab → **Import Transactions CSV** section
@@ -69,6 +89,38 @@ Results show: "**✓ 142 imported · 3 skipped**"
 ---
 
 ## Technical Details
+
+### Algorithm Overview
+
+```mermaid
+graph TD
+    A["CSV Headers<br/>+ Sample Rows"] --> B["Stage 1:<br/>Header Fuzzy Match"]
+    A --> C["Stage 2:<br/>Column Profiling"]
+    C --> D["Compute 9 Statistics<br/>null_rate, date_rate,<br/>numeric_rate, etc."]
+    D --> E["Field-Specific<br/>Profile Scores"]
+    
+    B --> B1["SequenceMatcher<br/>+ Heuristics"]
+    B1 --> B2["header_score<br/>0.0 - 1.0"]
+    
+    E --> F["Stage 3:<br/>Blend Scores"]
+    B2 --> F
+    
+    F --> F1["Optional ML Model<br/>if 4+ anchors"]
+    F1 --> F2["blended_score =<br/>0.55×header +<br/>0.30×profile +<br/>0.15×model"]
+    
+    F2 --> G["One-to-One<br/>Assignment"]
+    G --> H["Enforce Required Fields<br/>date, amount"]
+    H --> I["Result:<br/>mapping dict +<br/>confidence scores"]
+    
+    style A fill:#e1f5fe
+    style B fill:#fff3e0
+    style C fill:#fff3e0
+    style F fill:#f3e5f5
+    style G fill:#e8f5e9
+    style I fill:#c8e6c9
+```
+
+---
 
 ### Algorithm
 
@@ -130,9 +182,27 @@ HIGH_CONFIDENCE = 0.78  # Green ✓
 MEDIUM_CONFIDENCE = 0.58  # Orange △
 ```
 
-- Scores ≥ 0.78 → "✓ High confidence"
-- Scores 0.58–0.77 → "△ Medium confidence"
-- Scores < 0.58 → "✗ Low confidence"
+Score ranges and corresponding UI indicators:
+
+```mermaid
+graph LR
+    A["0.0"] -->|"Low Confidence<br/>✗ Red"| B["0.58"]
+    B -->|"Medium Confidence<br/>△ Orange"| C["0.78"]
+    C -->|"High Confidence<br/>✓ Green"| D["1.0"]
+    
+    A -.->|"Don't auto-import<br/>Requires review"| B
+    B -.->|"Review recommended<br/>May have errors"| C
+    C -.->|"Safe to import<br/>High accuracy"| D
+    
+    style A fill:#ffebee
+    style B fill:#fff3e0
+    style C fill:#e8f5e9
+    style D fill:#c8e6c9
+```
+
+- **Scores ≥ 0.78** → "✓ High confidence" (green badge)
+- **Scores 0.58–0.77** → "△ Medium confidence" (orange badge)
+- **Scores < 0.58** → "✗ Low confidence" (red badge)
 
 ### One-to-One Assignment
 
@@ -151,6 +221,46 @@ If a "date" field is detected and a post/posted header exists:
 ### Data Processing
 
 At import time (`import_transaction_csv`):
+
+```mermaid
+graph TD
+    A["CSV Row<br/>Raw Values"] --> B["Apply Field<br/>Mapping"]
+    B --> C["Parse Date<br/>Try 5 formats"]
+    B --> D["Parse Amount<br/>Strip $, commas<br/>Handle -parens-"]
+    B --> E["Infer Direction<br/>From amount sign<br/>if needed"]
+    B --> F["Description?<br/>+ Memo?"]
+    
+    C -->|Success| C1["txn_date"]
+    C -->|Fail| C2["Skip row"]
+    
+    D -->|Success| D1["amount"]
+    D -->|Fail| D2["Skip row"]
+    
+    E --> E1["direction"]
+    
+    F -->|Both| F1["Concat:<br/>desc | memo"]
+    F -->|One| F2["Use that one"]
+    F -->|Neither| F3["NULL"]
+    
+    F1 --> G["Prepared Row"]
+    F2 --> G
+    F3 --> G
+    C1 --> G
+    D1 --> G
+    E1 --> G
+    
+    G --> H["Insert into<br/>transactions table"]
+    H --> I["✓ Row imported"]
+    
+    C2 --> J["✗ Row skipped"]
+    D2 --> J
+    J --> K["Report: skipped"]
+    
+    style A fill:#e1f5fe
+    style H fill:#f3e5f5
+    style I fill:#c8e6c9
+    style K fill:#ffcdd2
+```
 
 1. **Date parsing**: Try formats in order: `%Y-%m-%d`, `%m/%d/%Y`, `%m/%d/%y`, `%m-%d-%Y`, `%Y/%m/%d`
 2. **Amount parsing**: Strip `$`, `,`; handle parentheses as negative
