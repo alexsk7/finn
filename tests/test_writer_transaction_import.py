@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import app.csv_mapper as csv_mapper
-
 from app.writer import import_transaction_csv
 
 
