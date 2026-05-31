@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from app.csv_mapper import (
+    AMOUNT_MEDIAN_ABS_MAX,
     _adaptive_blend_weights,
     _best_delimiter_fallback,
     _parse_float,
+    _profile_score,
     _profile_column,
     detect_transaction_csv_mapping,
 )
@@ -178,3 +180,13 @@ def test_detect_fails_when_required_fields_need_reused_header():
     assert res["ok"] is False
     assert "not enough distinct headers" in res["error"].lower()
     assert res["mapping"].get("amount") == "Amount"
+
+
+def test_amount_profile_score_uses_configured_median_bounds():
+    in_range = _profile_column(["10", "25", "35", "45"])
+    out_of_range = _profile_column([str(AMOUNT_MEDIAN_ABS_MAX + 1), str(AMOUNT_MEDIAN_ABS_MAX + 2)])
+
+    in_range_score = _profile_score("amount", in_range)
+    out_of_range_score = _profile_score("amount", out_of_range)
+
+    assert in_range_score > out_of_range_score

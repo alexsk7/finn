@@ -16,6 +16,12 @@ MEDIUM_CONFIDENCE = 0.58
 MIN_MODEL_ANCHORS = 2
 MIN_MODEL_CLASSES = 2
 
+# Amount profiling heuristics: tuneable bounds for "typical" transaction values.
+AMOUNT_MEDIAN_ABS_MIN = 0.0
+AMOUNT_MEDIAN_ABS_MAX = 20000.0
+AMOUNT_MEDIAN_HINT_IN_RANGE = 1.0
+AMOUNT_MEDIAN_HINT_OUT_OF_RANGE = 0.6
+
 TARGET_FIELDS = [
     "date",
     "amount",
@@ -287,7 +293,11 @@ def _profile_score(field: str, p: ColumnProfile) -> float:
     if field == "date":
         return max(0.0, min(1.0, 0.85 * p.date_rate + 0.1 * (1 - p.null_rate) + 0.05 * (1 - p.numeric_rate)))
     if field == "amount":
-        median_hint = 1.0 if 0 < p.median_abs < 20000 else 0.6
+        median_hint = (
+            AMOUNT_MEDIAN_HINT_IN_RANGE
+            if AMOUNT_MEDIAN_ABS_MIN < p.median_abs < AMOUNT_MEDIAN_ABS_MAX
+            else AMOUNT_MEDIAN_HINT_OUT_OF_RANGE
+        )
         return max(0.0, min(1.0, 0.65 * p.numeric_rate + 0.2 * (1 - p.null_rate) + 0.15 * median_hint))
     if field == "direction":
         return max(
