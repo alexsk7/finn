@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.csv_mapper import _profile_column, detect_transaction_csv_mapping
+from app.csv_mapper import _best_delimiter_fallback, _profile_column, detect_transaction_csv_mapping
 
 
 def test_detect_fuzzy_match_with_standard_headers():
@@ -77,3 +77,29 @@ def test_detect_preserves_hash_prefixed_data_rows_in_preview():
     assert res["ok"] is True
     assert len(res["preview"]) == 2
     assert res["preview"][0]["date"] == "#2026-05-01"
+
+
+def test_best_delimiter_fallback_handles_quoted_commas_in_semicolon_csv():
+    lines = [
+        '"name, desc";"value"',
+        '"foo, bar";"100"',
+    ]
+
+    assert _best_delimiter_fallback(lines) == ";"
+
+
+def test_detect_uses_quote_aware_fallback_when_sniffer_fails(monkeypatch):
+    import csv as _csv
+
+    def _raise_sniffer_error(*args, **kwargs):
+        raise _csv.Error("forced sniff failure")
+
+    monkeypatch.setattr("app.csv_mapper.csv.Sniffer.sniff", _raise_sniffer_error)
+
+    csv_text = 'Txn Dt;Value USD;Narration\n"05/01/2026";"-12.50";"Coffee, shop"\n'
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    assert res["delimiter"] == ";"
+    assert "date" in res["mapping"]
+    assert "amount" in res["mapping"]
