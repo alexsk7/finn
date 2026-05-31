@@ -275,3 +275,43 @@ def test_column_profile_validation_rejects_out_of_range_values():
             unique_ratio=0.0,
             direction_token_rate=0.0,
         )
+
+
+def test_detect_handles_utf8_bom_header():
+    csv_text = "\ufeffdate,amount,description\n2026-05-01,-12.50,Coffee\n"
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    assert "date" in res["mapping"]
+    assert "amount" in res["mapping"]
+
+
+def test_detect_handles_mismatched_row_lengths_without_crashing():
+    csv_text = "date,amount,description\n2026-05-01,-12.50,Coffee\n2026-05-02,-8.00\n"
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    assert res["headers"] == ["date", "amount", "description"]
+
+
+def test_detect_handles_very_wide_csv_headers():
+    headers = [f"col{i}" for i in range(120)]
+    rows = ["x" for _ in range(120)]
+    csv_text = ",".join(headers) + "\n" + ",".join(rows) + "\n"
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    assert len(res["headers"]) == 120
+
+
+def test_detect_handles_embedded_newline_in_quoted_field():
+    csv_text = 'date,amount,description\n2026-05-01,-12.50,"Coffee\nShop"\n'
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    assert len(res["preview"]) == 1
+    assert "Coffee" in res["preview"][0]["description"]
