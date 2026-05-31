@@ -4,22 +4,13 @@ import random
 
 import pytest
 
-from app.csv_mapper import (
-    AMOUNT_MEDIAN_ABS_MAX,
-    BOOL_TOKENS_LOWER,
-    MAX_CSV_LINES,
-    MAX_CSV_TEXT_CHARS,
-    ColumnProfile,
-    _adaptive_blend_weights,
-    _attach_date_fallback,
-    _best_delimiter_fallback,
-    _maybe_model_probs,
-    _parse_date,
-    _parse_float,
-    _profile_column,
-    _profile_score,
-    detect_transaction_csv_mapping,
-)
+from app.csv_mapper import detect_transaction_csv_mapping
+from app.helpers.csv_mapper_constants import AMOUNT_MEDIAN_ABS_MAX, BOOL_TOKENS_LOWER, MAX_CSV_LINES, MAX_CSV_TEXT_CHARS
+from app.helpers.csv_mapper_io import best_delimiter_fallback
+from app.helpers.csv_mapper_model import maybe_model_probs
+from app.helpers.csv_mapper_parsing import parse_date, parse_float, profile_column
+from app.helpers.csv_mapper_scoring import adaptive_blend_weights, attach_date_fallback, profile_score
+from app.helpers.csv_mapper_types import ColumnProfile
 
 
 def test_detect_fuzzy_match_with_standard_headers():
@@ -76,12 +67,12 @@ def test_transaction_date_preferred_over_posted_date_when_primary_has_blanks():
 
 
 def test_profile_column_median_abs_even_count():
-    profile = _profile_column(["1", "3", "5", "7"])
+    profile = profile_column(["1", "3", "5", "7"])
     assert profile.median_abs == 4.0
 
 
 def test_profile_column_median_abs_odd_count():
-    profile = _profile_column(["1", "3", "5"])
+    profile = profile_column(["1", "3", "5"])
     assert profile.median_abs == 3.0
 
 
@@ -118,7 +109,7 @@ def test_best_delimiter_fallback_handles_quoted_commas_in_semicolon_csv():
         '"foo, bar";"100"',
     ]
 
-    assert _best_delimiter_fallback(lines) == ";"
+    assert best_delimiter_fallback(lines) == ";"
 
 
 def test_detect_uses_quote_aware_fallback_when_sniffer_fails(monkeypatch):
@@ -127,7 +118,7 @@ def test_detect_uses_quote_aware_fallback_when_sniffer_fails(monkeypatch):
     def _raise_sniffer_error(*args, **kwargs):
         raise _csv.Error("forced sniff failure")
 
-    monkeypatch.setattr("app.csv_mapper.csv.Sniffer.sniff", _raise_sniffer_error)
+    monkeypatch.setattr("app.helpers.csv_mapper_io.csv.Sniffer.sniff", _raise_sniffer_error)
 
     csv_text = 'Txn Dt;Value USD;Narration\n"05/01/2026";"-12.50";"Coffee, shop"\n'
     res = detect_transaction_csv_mapping(csv_text)
@@ -139,38 +130,38 @@ def test_detect_uses_quote_aware_fallback_when_sniffer_fails(monkeypatch):
 
 
 def test_parse_float_handles_currency_code_and_thousands():
-    assert _parse_float("$1,234.56 USD") == 1234.56
+    assert parse_float("$1,234.56 USD") == 1234.56
 
 
 def test_parse_float_handles_parenthesized_currency_negative():
-    assert _parse_float("($1,234.56)") == -1234.56
+    assert parse_float("($1,234.56)") == -1234.56
 
 
 def test_parse_float_handles_european_decimal_format():
-    assert _parse_float("(€1.234,50)") == -1234.5
+    assert parse_float("(€1.234,50)") == -1234.5
 
 
 def test_adaptive_blend_weights_sum_to_one_without_model():
-    header_w, profile_w, model_w = _adaptive_blend_weights(0.8, 0.4, 0.0, model_available=False)
+    header_w, profile_w, model_w = adaptive_blend_weights(0.8, 0.4, 0.0, model_available=False)
     assert round(header_w + profile_w + model_w, 10) == 1.0
     assert model_w == 0.0
 
 
 def test_adaptive_blend_weights_shift_with_header_strength():
-    low_header_w, _, _ = _adaptive_blend_weights(0.2, 0.6, 0.0, model_available=False)
-    high_header_w, _, _ = _adaptive_blend_weights(0.9, 0.6, 0.0, model_available=False)
+    low_header_w, _, _ = adaptive_blend_weights(0.2, 0.6, 0.0, model_available=False)
+    high_header_w, _, _ = adaptive_blend_weights(0.9, 0.6, 0.0, model_available=False)
     assert high_header_w > low_header_w
 
 
 def test_adaptive_blend_weights_uses_model_when_available():
-    _, _, low_model_w = _adaptive_blend_weights(0.6, 0.6, 0.1, model_available=True)
-    _, _, high_model_w = _adaptive_blend_weights(0.6, 0.6, 0.9, model_available=True)
+    _, _, low_model_w = adaptive_blend_weights(0.6, 0.6, 0.1, model_available=True)
+    _, _, high_model_w = adaptive_blend_weights(0.6, 0.6, 0.9, model_available=True)
     assert high_model_w > low_model_w
 
 
 def test_adaptive_blend_weights_shift_with_profile_strength():
-    _, low_profile_w, _ = _adaptive_blend_weights(0.7, 0.1, 0.0, model_available=False)
-    _, high_profile_w, _ = _adaptive_blend_weights(0.7, 0.9, 0.0, model_available=False)
+    _, low_profile_w, _ = adaptive_blend_weights(0.7, 0.1, 0.0, model_available=False)
+    _, high_profile_w, _ = adaptive_blend_weights(0.7, 0.9, 0.0, model_available=False)
     assert high_profile_w > low_profile_w
 
 
@@ -208,11 +199,11 @@ def test_detect_fails_when_required_fields_need_reused_header():
 
 
 def test_amount_profile_score_uses_configured_median_bounds():
-    in_range = _profile_column(["10", "25", "35", "45"])
-    out_of_range = _profile_column([str(AMOUNT_MEDIAN_ABS_MAX + 1), str(AMOUNT_MEDIAN_ABS_MAX + 2)])
+    in_range = profile_column(["10", "25", "35", "45"])
+    out_of_range = profile_column([str(AMOUNT_MEDIAN_ABS_MAX + 1), str(AMOUNT_MEDIAN_ABS_MAX + 2)])
 
-    in_range_score = _profile_score("amount", in_range)
-    out_of_range_score = _profile_score("amount", out_of_range)
+    in_range_score = profile_score("amount", in_range)
+    out_of_range_score = profile_score("amount", out_of_range)
 
     assert in_range_score > out_of_range_score
 
@@ -229,15 +220,15 @@ def test_detect_fails_when_header_exists_but_no_data_rows():
 
 
 def test_parse_date_accepts_day_first_format():
-    assert _parse_date("31/05/2026") is True
+    assert parse_date("31/05/2026") is True
 
 
 def test_parse_date_accepts_iso_datetime_z_suffix():
-    assert _parse_date("2026-05-31T14:30:00Z") is True
+    assert parse_date("2026-05-31T14:30:00Z") is True
 
 
 def test_profile_column_direction_token_rate_includes_new_variants():
-    profile = _profile_column(["inflow", "outflow", "payment", "receive", "other"])
+    profile = profile_column(["inflow", "outflow", "payment", "receive", "other"])
     assert profile.direction_token_rate == 0.8
 
 
@@ -250,9 +241,9 @@ def test_detect_maps_direction_column_with_new_token_values():
     res = detect_transaction_csv_mapping(csv_text)
 
     assert res["ok"] is True
-    movement_profile = _profile_column(["outflow", "inflow"])
-    desc_profile = _profile_column(["Coffee", "Refund"])
-    assert _profile_score("direction", movement_profile) > _profile_score("direction", desc_profile)
+    movement_profile = profile_column(["outflow", "inflow"])
+    desc_profile = profile_column(["Coffee", "Refund"])
+    assert profile_score("direction", movement_profile) > profile_score("direction", desc_profile)
 
 
 def test_bool_tokens_lower_is_defensively_normalized():
@@ -336,30 +327,30 @@ def test_detect_handles_embedded_newline_in_quoted_field():
 
 
 def test_parse_float_handles_mixed_currency_symbols():
-    assert _parse_float("$100") == 100.0
-    assert _parse_float("€50") == 50.0
-    assert _parse_float("¥1000") == 1000.0
+    assert parse_float("$100") == 100.0
+    assert parse_float("€50") == 50.0
+    assert parse_float("¥1000") == 1000.0
 
 
 def test_parse_float_handles_multiple_negative_notations():
-    assert _parse_float("(100)") == -100.0
-    assert _parse_float("-100") == -100.0
-    assert _parse_float("100-") == -100.0
+    assert parse_float("(100)") == -100.0
+    assert parse_float("-100") == -100.0
+    assert parse_float("100-") == -100.0
 
 
 def test_parse_float_handles_locale_thousands_separators():
-    assert _parse_float("1,000.00") == 1000.0
-    assert _parse_float("1.000,00") == 1000.0
+    assert parse_float("1,000.00") == 1000.0
+    assert parse_float("1.000,00") == 1000.0
 
 
 def test_parse_float_handles_scientific_notation():
-    assert _parse_float("1.23e4") == 12300.0
+    assert parse_float("1.23e4") == 12300.0
 
 
 def test_parse_float_rejects_nan_and_infinity():
-    assert _parse_float("NaN") is None
-    assert _parse_float("Infinity") is None
-    assert _parse_float("-inf") is None
+    assert parse_float("NaN") is None
+    assert parse_float("Infinity") is None
+    assert parse_float("-inf") is None
 
 
 def test_detect_handles_100_plus_columns_and_returns_model_meta():
@@ -436,7 +427,7 @@ def test_maybe_model_probs_reports_training_error(monkeypatch):
         },
     }
 
-    probs, meta = _maybe_model_probs(profiles, header_scores)
+    probs, meta = maybe_model_probs(profiles, header_scores)
 
     assert meta["available"] is False
     assert meta["status"] == "skipped_training_error"
@@ -483,7 +474,7 @@ def test_detect_randomized_direction_token_profile_stability():
 
     for _ in range(40):
         values = [rng.choice(direction_pool) for _ in range(rng.randint(3, 12))]
-        profile = _profile_column(values)
+        profile = profile_column(values)
         # With all values from known direction token pool, token rate should be perfect.
         assert profile.direction_token_rate == 1.0
 
@@ -508,7 +499,7 @@ def test_attach_date_fallback_promotes_transaction_when_score_lookup_none():
     mapping = {"date": "Post Date"}
     headers = ["Post Date", "Transaction Date", "Amount"]
 
-    _attach_date_fallback(mapping, headers, score_lookup=None)
+    attach_date_fallback(mapping, headers, score_lookup=None)
 
     assert mapping["date"] == "Transaction Date"
     assert mapping["_date_fallback"] == "Post Date"
@@ -516,25 +507,25 @@ def test_attach_date_fallback_promotes_transaction_when_score_lookup_none():
 
 def test_attach_date_fallback_noop_for_missing_inputs():
     mapping: dict[str, str] = {}
-    _attach_date_fallback(mapping, [], score_lookup=None)
+    attach_date_fallback(mapping, [], score_lookup=None)
     assert mapping == {}
 
     mapping = {"amount": "Amount"}
-    _attach_date_fallback(mapping, ["Transaction Date", "Post Date"], score_lookup=None)
+    attach_date_fallback(mapping, ["Transaction Date", "Post Date"], score_lookup=None)
     assert "_date_fallback" not in mapping
 
 
 def test_best_delimiter_fallback_empty_lines_returns_comma():
-    assert _best_delimiter_fallback([]) == ","
+    assert best_delimiter_fallback([]) == ","
 
 
 def test_parse_float_returns_none_for_empty_input():
-    assert _parse_float("") is None
+    assert parse_float("") is None
 
 
 def test_profile_score_returns_zero_for_unknown_field():
     profile = ColumnProfile(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0)
-    assert _profile_score("unmapped_field", profile) == 0.0
+    assert profile_score("unmapped_field", profile) == 0.0
 
 
 def test_maybe_model_probs_trains_when_anchors_sufficient(monkeypatch):
@@ -588,7 +579,7 @@ def test_maybe_model_probs_trains_when_anchors_sufficient(monkeypatch):
         },
     }
 
-    probs, meta = _maybe_model_probs(profiles, header_scores)
+    probs, meta = maybe_model_probs(profiles, header_scores)
 
     assert meta["available"] is True
     assert meta["status"] == "trained"
