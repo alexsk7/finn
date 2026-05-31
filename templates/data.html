@@ -1938,8 +1938,13 @@ VXUS,Vanguard Total International,18,58.72"
       resultEl.style.color = 'var(--red)';
     }
 
+    if (res.warning) {
+      resultEl.innerHTML += `<div style="font-size:10px;color:#ff9800;margin-top:3px;">⚠ ${res.warning}</div>`;
+    }
+
     if (res.errors && res.errors.length) {
-      const errorList = res.errors.map(e => `<div style="font-size:10px;color:var(--red);margin-top:3px;">⚠ ${e}</div>`).join('');
+      const renderedErrors = res.warning ? res.errors.filter(e => e !== res.warning) : res.errors;
+      const errorList = renderedErrors.map(e => `<div style="font-size:10px;color:var(--red);margin-top:3px;">⚠ ${e}</div>`).join('');
       resultEl.innerHTML = resultEl.innerHTML + errorList;
     }
 

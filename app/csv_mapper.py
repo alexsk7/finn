@@ -171,23 +171,24 @@ def _profile_column(values: list[str]) -> ColumnProfile:
 
 def _header_score(field: str, header: str) -> float:
     norm = _normalize_header(header)
+    tokens = set(norm.split())
     # Pure fuzzy matching: compare header against field name.
     best = SequenceMatcher(None, norm, field).ratio()
 
     # Field-specific heuristics for clarity.
     if field == "date":
         # Strongly prefer transaction/txn date over posted date.
-        if "transaction" in norm or norm.startswith("txn"):
-            best += 0.20
+        if "transaction" in norm or "txn" in tokens or "dt" in tokens:
+            best += 0.35
         elif "post" in norm or "posted" in norm:
             best -= 0.15
     elif field == "amount":
         # Boost for numeric/value indicators.
-        if "amt" in norm or "value" in norm or "price" in norm:
-            best += 0.10
+        if tokens.intersection({"amount", "amt", "value", "price", "usd", "debit", "credit"}):
+            best += 0.30
     elif field == "direction":
         # Boost for type/direction keywords.
-        if "type" in norm or "direction" in norm or "dr" in norm or "credit" in norm:
+        if tokens.intersection({"type", "direction", "dr", "credit", "debit", "cr"}):
             best += 0.10
     elif field == "payee":
         # Boost for merchant/vendor indicators.
@@ -344,9 +345,11 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
     for field in REQUIRED_FIELDS:
         if field in mapping:
             continue
-        best_h = max(headers, key=lambda h: blended[h][field])
+        available_headers = [h for h in headers if h not in used_headers] or headers
+        best_h = max(available_headers, key=lambda h: blended[h][field])
         mapping[field] = best_h
         confidence[field] = round(blended[best_h][field], 3)
+        used_headers.add(best_h)
 
     # Post date fallback for date parsing when transaction date exists.
     _attach_date_fallback(mapping, headers, {h: blended[h]["date"] for h in headers})

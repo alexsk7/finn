@@ -72,3 +72,56 @@ def test_import_concatenates_description_and_memo(init_schema):
     assert row["direction"] == "expense"
     assert row["category"] == "food"
     assert row["description"] == "Coffee | AM run"
+
+
+def test_import_with_variant_headers_uses_detected_mapping(init_schema):
+    csv_text = """Txn Dt,Posted On,Narration,Category,Txn Type,Value USD,Memo Text
+05/01/2026,05/02/2026,Coffee,food,debit,-12.50,AM run
+"""
+
+    result = import_transaction_csv(csv_text)
+    assert result["inserted"] == 1
+    assert result["skipped"] == 0
+
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT txn_date, amount, direction, category, description FROM transactions ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+
+    assert row is not None
+    assert row["txn_date"] == "2026-05-01"
+    assert row["amount"] == 12.5
+    assert row["direction"] == "expense"
+    assert row["category"] == "food"
+
+
+def test_import_accepts_parenthesized_negative_amount(init_schema):
+    csv_text = """transaction_date,amount,direction,category,description
+2026-05-01,(12.50),debit,food,Coffee
+"""
+
+    result = import_transaction_csv(csv_text)
+    assert result["inserted"] == 1
+    assert result["skipped"] == 0
+
+    with get_conn() as conn:
+        row = conn.execute("SELECT amount, direction FROM transactions ORDER BY id DESC LIMIT 1").fetchone()
+
+    assert row is not None
+    assert row["amount"] == 12.5
+    assert row["direction"] == "expense"
+
+
+def test_import_fails_when_required_confidence_below_medium(init_schema):
+    csv_text = """alpha,beta
+not-a-date,not-a-number
+"""
+
+    result = import_transaction_csv(csv_text)
+
+    assert result["inserted"] == 0
+    assert result["skipped"] == 0
+    assert result["total"] == 0
+    assert result.get("warning")
+    assert "below medium" in result["warning"].lower()
+    assert result["errors"]

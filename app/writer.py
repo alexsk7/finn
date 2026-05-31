@@ -523,7 +523,7 @@ def import_transaction_csv(
     import csv as _csv
     import io
 
-    from .csv_mapper import detect_transaction_csv_mapping
+    from .csv_mapper import MEDIUM_CONFIDENCE, detect_transaction_csv_mapping
 
     COL_ALIASES = {
         "date": "date",
@@ -590,6 +590,14 @@ def import_transaction_csv(
                 continue
         raise ValueError(f"unrecognized date format: {s!r}")
 
+    def parse_amount(s: str) -> float:
+        txt = (s or "").strip().replace(",", "").replace("$", "")
+        if txt.startswith("(") and txt.endswith(")"):
+            txt = "-" + txt[1:-1]
+        if not txt:
+            raise ValueError("missing amount")
+        return float(txt)
+
     lines = [line for line in csv_text.strip().splitlines() if line.strip() and not line.strip().startswith("#")]
     if not lines:
         return {"inserted": 0, "skipped": 0, "errors": ["Empty input"], "total": 0}
@@ -597,18 +605,44 @@ def import_transaction_csv(
     detect = detect_transaction_csv_mapping(csv_text)
     delimiter = detect.get("delimiter", ",") if isinstance(detect, dict) else ","
 
-    first_row = next(_csv.reader(io.StringIO(lines[0]), delimiter=delimiter), [])
-    first_cols = [c.lower().strip().strip('"') for c in first_row]
-    has_header = any(c in COL_ALIASES for c in first_cols)
-
     if field_mapping is None and isinstance(detect, dict) and detect.get("ok"):
         field_mapping = detect.get("mapping")
 
-    if has_header:
+    detect_confidence = detect.get("confidence", {}) if isinstance(detect, dict) else {}
+    low_required_fields = [
+        f
+        for f in ("date", "amount")
+        if float(detect_confidence.get(f, 0.0) or 0.0) < MEDIUM_CONFIDENCE
+    ]
+    if low_required_fields:
+        details = ", ".join(
+            f"{f}={float(detect_confidence.get(f, 0.0) or 0.0):.3f} (< {MEDIUM_CONFIDENCE:.2f})"
+            for f in low_required_fields
+        )
+        warning = (
+            "Import blocked: required field confidence is below medium. "
+            f"{details}. Review column detection and confirm mappings before importing."
+        )
+        return {
+            "inserted": 0,
+            "skipped": 0,
+            "errors": [warning],
+            "warning": warning,
+            "total": 0,
+        }
+
+    if field_mapping:
+        # Mapping keys reference CSV header names, so preserve the incoming header row.
         reader = _csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delimiter)
     else:
-        fieldnames = ["date", "amount", "direction", "category", "description"]
-        reader = _csv.DictReader(io.StringIO("\n".join(lines)), fieldnames=fieldnames, delimiter=delimiter)
+        first_row = next(_csv.reader(io.StringIO(lines[0]), delimiter=delimiter), [])
+        first_cols = [c.lower().strip().strip('"') for c in first_row]
+        has_header = any(c in COL_ALIASES for c in first_cols)
+        if has_header:
+            reader = _csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delimiter)
+        else:
+            fieldnames = ["date", "amount", "direction", "category", "description"]
+            reader = _csv.DictReader(io.StringIO("\n".join(lines)), fieldnames=fieldnames, delimiter=delimiter)
 
     inserted = skipped = 0
     errors: list[str] = []
@@ -650,12 +684,12 @@ def import_transaction_csv(
 
                 txn_date = parse_date(txn_date_raw)
 
-                amt_raw = norm.get("amount", "").replace(",", "").replace("$", "")
-                if not amt_raw:
+                amt_raw = norm.get("amount", "")
+                if not amt_raw.strip():
                     errors.append(f"Row {i}: missing amount")
                     skipped += 1
                     continue
-                amount_raw = float(amt_raw)
+                amount_raw = parse_amount(amt_raw)
 
                 dir_raw = norm.get("direction", "").lower().strip()
                 if dir_raw:

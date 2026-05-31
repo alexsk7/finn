@@ -204,6 +204,13 @@ graph LR
 - **Scores 0.58–0.77** → "△ Medium confidence" (orange badge)
 - **Scores < 0.58** → "✗ Low confidence" (red badge)
 
+### Import Guardrail
+
+The transaction importer now blocks writes when either required field (`date` or `amount`) is below the medium threshold (`0.58`).
+
+- Import result returns `inserted: 0` and a `warning` string explaining which required field confidence is too low.
+- The Data page renders this warning so users can re-run detection and review the mapping before importing.
+
 ### One-to-One Assignment
 
 1. Compute blended scores for all (header, field) pairs
