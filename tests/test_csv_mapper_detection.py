@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from app.csv_mapper import (
     AMOUNT_MEDIAN_ABS_MAX,
+    _parse_date,
     _adaptive_blend_weights,
     _best_delimiter_fallback,
     _parse_float,
@@ -201,3 +202,11 @@ def test_detect_fails_when_header_exists_but_no_data_rows():
     assert res["error"] == "No data rows found"
     assert res["headers"] == ["date", "amount", "description"]
     assert res["model"]["status"] == "skipped_no_data"
+
+
+def test_parse_date_accepts_day_first_format():
+    assert _parse_date("31/05/2026") is True
+
+
+def test_parse_date_accepts_iso_datetime_z_suffix():
+    assert _parse_date("2026-05-31T14:30:00Z") is True

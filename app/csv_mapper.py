@@ -65,7 +65,17 @@ class ColumnProfile:
     direction_token_rate: float
 
 
-_DATE_FORMATS = ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%m-%d-%Y", "%Y/%m/%d")
+_DATE_FORMATS = (
+    "%Y-%m-%d",
+    "%m/%d/%Y",
+    "%m/%d/%y",
+    "%m-%d-%Y",
+    "%Y/%m/%d",
+    "%d/%m/%Y",
+    "%d-%m-%Y",
+    "%Y-%m-%d %H:%M:%S",
+    "%Y/%m/%d %H:%M:%S",
+)
 
 
 def _attach_date_fallback(
@@ -208,7 +218,16 @@ def _parse_date(v: str) -> bool:
             return True
         except Exception:
             continue
-    return False
+
+    # Fall back to ISO-8601 parsing for timezone/fractional second variants.
+    iso_txt = txt
+    if iso_txt.endswith("Z"):
+        iso_txt = f"{iso_txt[:-1]}+00:00"
+    try:
+        datetime.fromisoformat(iso_txt)
+        return True
+    except Exception:
+        return False
 
 
 def _median_abs(values: list[float]) -> float:
