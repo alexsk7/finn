@@ -145,3 +145,24 @@ def test_adaptive_blend_weights_shift_with_profile_strength():
     _, low_profile_w, _ = _adaptive_blend_weights(0.7, 0.1, 0.0, model_available=False)
     _, high_profile_w, _ = _adaptive_blend_weights(0.7, 0.9, 0.0, model_available=False)
     assert high_profile_w > low_profile_w
+
+
+def test_detect_exposes_model_status_metadata():
+    csv_text = """Txn Dt,Posted On,Narration,Category,Txn Type,Value USD,Memo Text
+05/01/2026,05/02/2026,Coffee,food,debit,-12.50,AM run
+"""
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert "model" in res
+    model = res["model"]
+    assert set(model.keys()) == {"available", "status", "anchor_count", "class_count"}
+    assert isinstance(model["available"], bool)
+    assert isinstance(model["anchor_count"], int)
+    assert isinstance(model["class_count"], int)
+    assert model["status"] in {
+        "trained",
+        "skipped_no_sklearn",
+        "skipped_insufficient_anchors",
+        "skipped_training_error",
+    }

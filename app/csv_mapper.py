@@ -13,6 +13,8 @@ from difflib import SequenceMatcher
 # Hardcoded confidence thresholds
 HIGH_CONFIDENCE = 0.78
 MEDIUM_CONFIDENCE = 0.58
+MIN_MODEL_ANCHORS = 2
+MIN_MODEL_CLASSES = 2
 
 TARGET_FIELDS = [
     "date",
@@ -354,12 +356,22 @@ def _adaptive_blend_weights(
 
 def _maybe_model_probs(
     profiles: dict[str, ColumnProfile], header_scores: dict[str, dict[str, float]]
-) -> dict[str, dict[str, float]]:
+) -> tuple[dict[str, dict[str, float]], dict[str, str | int | bool]]:
     """Optional weakly-supervised sklearn model; safely no-op if unavailable."""
+    zero_probs = {h: {f: 0.0 for f in TARGET_FIELDS} for h in profiles}
+
     try:
         from sklearn.linear_model import LogisticRegression  # type: ignore
     except Exception:
-        return {h: {f: 0.0 for f in TARGET_FIELDS} for h in profiles}
+        return (
+            zero_probs,
+            {
+                "available": False,
+                "status": "skipped_no_sklearn",
+                "anchor_count": 0,
+                "class_count": 0,
+            },
+        )
 
     anchors_x: list[list[float]] = []
     anchors_y: list[str] = []
@@ -384,8 +396,19 @@ def _maybe_model_probs(
             anchors_x.append(vec(profiles[header]))
             anchors_y.append(field)
 
-    if len(anchors_x) < 4 or len(set(anchors_y)) < 2:
-        return {h: {f: 0.0 for f in TARGET_FIELDS} for h in profiles}
+    anchor_count = len(anchors_x)
+    class_count = len(set(anchors_y))
+
+    if anchor_count < MIN_MODEL_ANCHORS or class_count < MIN_MODEL_CLASSES:
+        return (
+            zero_probs,
+            {
+                "available": False,
+                "status": "skipped_insufficient_anchors",
+                "anchor_count": anchor_count,
+                "class_count": class_count,
+            },
+        )
 
     try:
         model = LogisticRegression(max_iter=300, multi_class="auto")
@@ -398,9 +421,25 @@ def _maybe_model_probs(
             for idx, cls in enumerate(classes):
                 class_prob[str(cls)] = float(probs[idx])
             out[header] = class_prob
-        return out
+        return (
+            out,
+            {
+                "available": True,
+                "status": "trained",
+                "anchor_count": anchor_count,
+                "class_count": len(classes),
+            },
+        )
     except Exception:
-        return {h: {f: 0.0 for f in TARGET_FIELDS} for h in profiles}
+        return (
+            zero_probs,
+            {
+                "available": False,
+                "status": "skipped_training_error",
+                "anchor_count": anchor_count,
+                "class_count": class_count,
+            },
+        )
 
 
 def _prepare_csv_lines(csv_text: str) -> list[str]:
@@ -457,8 +496,8 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
     profiles = {h: _profile_column([(r.get(h, "") or "") for r in sample_rows]) for h in headers}
 
     header_scores = {h: {f: _header_score(f, h) for f in TARGET_FIELDS} for h in headers}
-    model_probs = _maybe_model_probs(profiles, header_scores)
-    model_available = any(model_probs[h][f] > 0.0 for h in headers for f in TARGET_FIELDS)
+    model_probs, model_meta = _maybe_model_probs(profiles, header_scores)
+    model_available = bool(model_meta.get("available", False))
 
     # Blend fuzzy header and profile-model confidence
     blended: dict[str, dict[str, float]] = {}
@@ -532,6 +571,7 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
         "delimiter": delimiter,
         "headers": headers,
         "preview": preview,
+        "model": model_meta,
         "thresholds": {
             "high": HIGH_CONFIDENCE,
             "medium": MEDIUM_CONFIDENCE,
