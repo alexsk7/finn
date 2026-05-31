@@ -17,17 +17,17 @@
 
 ## Architecture Rules
 
-- Keep server logic in `main.py`, read queries in `app/queries.py`, and write logic in `app/writer.py`.
+- Keep app wiring in `app/main.py`, routes in `app/routers/`, read queries in `app/queries.py`, and write logic in `app/writer.py`.
 - Prefer plain SQL over an ORM.
 - Keep schema changes idempotent and place migrations in `app/db.py` after `executescript()` inside the existing try/except migration block.
 - Use `CREATE INDEX IF NOT EXISTS` for indexes.
 - Keep the app local-first; do not introduce cloud or network dependencies unless explicitly requested.
-- Background work should stay consistent with the existing APScheduler usage in `main.py`.
+- Background work should stay consistent with the existing APScheduler usage in `app/main.py`.
 
 ## Backend Change Patterns
 
-- For a new page: add a query function, add a route in `main.py`, add a sidebar link in `templates/base.html`, then create a template extending `base.html`.
-- For a new API endpoint: add the query/write helper, add the Pydantic model and route in `main.py`, then call it from the relevant template.
+- For a new page: add a query function, add a route in `app/routers/pages.py`, add a sidebar link in `templates/base.html`, then create a template extending `base.html`.
+- For a new API endpoint: add the query/write helper, add the Pydantic model and route in a domain module under `app/routers/api/`, then call it from the relevant template.
 - For data writes, keep logic in `app/writer.py` and return structured JSON responses.
 - Preserve existing naming and data-shape conventions used by nearby code.
 - Avoid introducing unnecessary abstraction layers.

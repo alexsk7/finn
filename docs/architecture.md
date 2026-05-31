@@ -6,8 +6,8 @@ Local-first, single-process web app. No authentication, no external API dependen
 
 ## Request flow
 
-1. Browser hits a page route (`/`, `/investments`, etc.) in `main.py`
-2. FastAPI renders a Jinja2 template via the shared `page()` helper — only `active` (sidebar key) is passed as context. Exception: `/accounts/{account_id}` also passes `account_id`.
+1. Browser hits a page route (`/`, `/investments`, etc.) in `app/routers/pages.py`
+2. FastAPI renders a Jinja2 template via the shared `_page()` helper — only `active` (sidebar key) is passed as context. Exception: `/accounts/{account_id}` also passes `account_id`.
 3. The HTML shell makes `fetch()` calls to `/api/*` endpoints on load
 4. API endpoints call `app/queries.py` (reads) or `app/writer.py` (writes) and return JSON
 5. JS in `{% block scripts %}` builds the UI from the response
@@ -21,7 +21,7 @@ Local-first, single-process web app. No authentication, no external API dependen
 
 ## Background jobs
 
-APScheduler `BackgroundScheduler` starts at module load in `main.py`. One cron job: Mon–Fri 16:05 America/New_York, calls `refresh_prices()`. Skips silently if no holdings exist; skips any symbol with `is_manual=1` (i.e. `M:` prefix). Cleaned up via `atexit`. Dependency: `apscheduler>=3.10,<4`.
+APScheduler `BackgroundScheduler` starts at module load in `app/main.py`. One cron job: Mon–Fri 16:05 America/New_York, calls `refresh_prices()`. Skips silently if no holdings exist; skips any symbol with `is_manual=1` (i.e. `M:` prefix). Cleaned up via `atexit`. Dependency: `apscheduler>=3.10,<4`.
 
 ## SQLite connection settings
 

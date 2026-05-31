@@ -99,7 +99,7 @@ def minimal_seed_data(db_conn) -> dict[str, Any]:
 
 @pytest.fixture
 def import_main_safely(monkeypatch: pytest.MonkeyPatch):
-    """Import main.py with startup side effects disabled for API/scheduler tests."""
+    """Import app.main with startup side effects disabled for API/scheduler tests."""
 
     class _DummyScheduler:
         def __init__(self, *args, **kwargs):
@@ -118,10 +118,10 @@ def import_main_safely(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr("app.seed.seed_demo", lambda *args, **kwargs: None)
     monkeypatch.setattr("apscheduler.schedulers.background.BackgroundScheduler", _DummyScheduler)
 
-    if "main" in sys.modules:
-        del sys.modules["main"]
+    if "app.main" in sys.modules:
+        del sys.modules["app.main"]
 
-    return importlib.import_module("main")
+    return importlib.import_module("app.main")
 
 
 @pytest.fixture

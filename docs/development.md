@@ -3,7 +3,7 @@
 ## Adding a new page
 
 1. Add a query function to `app/queries.py`
-2. Add a GET route to `main.py` using the `page()` helper with a new `active` key
+2. Add a GET route to `app/routers/pages.py` using the `_page()` helper with a new `active` key
 3. Add the nav link to `templates/base.html` sidebar with the matching `active` check
 4. Create `templates/<name>.html` extending `base.html`; fetch data in `{% block scripts %}`
 5. For multi-column layouts that need to collapse on mobile, use a named layout class from `style.css`
@@ -11,9 +11,10 @@
 ## Adding a new API endpoint
 
 1. Add a read function to `app/queries.py` or write function to `app/writer.py`
-2. Add a Pydantic model (for POST/PUT bodies) and route to `main.py`
-3. Import the function in `main.py` (in the relevant `from app.queries import ...` or `from app.writer import ...` block)
-4. Call from JS via `fetch('/api/...')` in the relevant template
+2. Re-export the function through `app/services/reads.py`, `app/services/writes.py`, or `app/services/profile.py`
+3. Add a Pydantic model (for POST/PUT bodies) and route in the relevant domain router under `app/routers/api/`
+4. Import the function in that domain router from `app.services.*`
+5. Call from JS via `fetch('/api/...')` in the relevant template
 
 ## Adding a CSV import to a tab
 
@@ -32,7 +33,7 @@ Zero-based budget planning spans three layers:
 - `budget_months` creates a specific `YYYY-MM` planning period.
 - `budget_month_items` stores planned amounts per category for that month.
 
-When changing budget behavior, update `get_budget_month()` in `queries.py`, the month write helpers in `writer.py`, and the `/api/budget*` routes in `main.py`. Keep `/api/cashflow` working until callers have fully moved to `/api/budget`.
+When changing budget behavior, update `get_budget_month()` in `queries.py`, the month write helpers in `writer.py`, and the `/api/budget*` routes in `app/routers/api/budget.py`. Keep `/api/cashflow` working until callers have fully moved to `/api/budget`.
 
 ## Schema migrations
 
