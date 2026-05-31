@@ -9,6 +9,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from difflib import SequenceMatcher
+from typing import TypedDict
 
 # Hardcoded confidence thresholds
 HIGH_CONFIDENCE = 0.78
@@ -96,6 +97,38 @@ class ColumnProfile:
             raise ValueError(f"median_abs must be >= 0.0, got {self.median_abs}")
         if self.mean_len < 0.0:
             raise ValueError(f"mean_len must be >= 0.0, got {self.mean_len}")
+
+
+class CsvThresholds(TypedDict):
+    high: float
+    medium: float
+
+
+class CsvAlternative(TypedDict):
+    header: str
+    score: float
+
+
+class CsvModelMeta(TypedDict):
+    available: bool
+    status: str
+    anchor_count: int
+    class_count: int
+
+
+class CsvMappingResult(TypedDict, total=False):
+    ok: bool
+    error: str
+    mapping: dict[str, str]
+    confidence: dict[str, float]
+    alternatives: dict[str, list[CsvAlternative]]
+    needs_confirmation: bool
+    delimiter: str
+    headers: list[str]
+    preview: list[dict[str, str]]
+    thresholds: CsvThresholds
+    strategy: str
+    model: CsvModelMeta
 
 
 _DATE_FORMATS = (
@@ -418,7 +451,7 @@ def _adaptive_blend_weights(
 
 def _maybe_model_probs(
     profiles: dict[str, ColumnProfile], header_scores: dict[str, dict[str, float]]
-) -> tuple[dict[str, dict[str, float]], dict[str, str | int | bool]]:
+) -> tuple[dict[str, dict[str, float]], CsvModelMeta]:
     """Optional weakly-supervised sklearn model; safely no-op if unavailable."""
     zero_probs = {h: {f: 0.0 for f in TARGET_FIELDS} for h in profiles}
 
@@ -524,7 +557,7 @@ def _prepare_csv_lines(csv_text: str) -> list[str]:
     return [line for line in raw_lines[start:] if line.strip()]
 
 
-def detect_transaction_csv_mapping(csv_text: str) -> dict:
+def detect_transaction_csv_mapping(csv_text: str) -> CsvMappingResult:
     if len(csv_text or "") > MAX_CSV_TEXT_CHARS:
         return {
             "ok": False,
@@ -677,7 +710,7 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
     _attach_date_fallback(mapping, headers, {h: blended[h]["date"] for h in headers})
 
     # Alternatives for UI explanation.
-    alternatives: dict[str, list[dict]] = {}
+    alternatives: dict[str, list[CsvAlternative]] = {}
     for field in TARGET_FIELDS:
         ranked = sorted(headers, key=lambda h: blended[h][field], reverse=True)[:3]
         alternatives[field] = [{"header": h, "score": round(blended[h][field], 3)} for h in ranked]
