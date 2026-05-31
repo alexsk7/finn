@@ -47,6 +47,15 @@ DIRECTION_TOKENS = {
     "income",
     "expense",
     "transfer",
+    "in",
+    "out",
+    "inflow",
+    "outflow",
+    "spend",
+    "purchase",
+    "payment",
+    "send",
+    "receive",
 }
 
 BOOL_TOKENS = {"0", "1", "true", "false", "yes", "no"}

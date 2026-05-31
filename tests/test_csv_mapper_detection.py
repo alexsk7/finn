@@ -210,3 +210,22 @@ def test_parse_date_accepts_day_first_format():
 
 def test_parse_date_accepts_iso_datetime_z_suffix():
     assert _parse_date("2026-05-31T14:30:00Z") is True
+
+
+def test_profile_column_direction_token_rate_includes_new_variants():
+    profile = _profile_column(["inflow", "outflow", "payment", "receive", "other"])
+    assert profile.direction_token_rate == 0.8
+
+
+def test_detect_maps_direction_column_with_new_token_values():
+    csv_text = """date,amount,movement,description
+2026-05-01,-12.50,outflow,Coffee
+2026-05-02,20.00,inflow,Refund
+"""
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    movement_profile = _profile_column(["outflow", "inflow"])
+    desc_profile = _profile_column(["Coffee", "Refund"])
+    assert _profile_score("direction", movement_profile) > _profile_score("direction", desc_profile)
