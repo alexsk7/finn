@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from app.csv_mapper import (
     AMOUNT_MEDIAN_ABS_MAX,
+    BOOL_TOKENS_LOWER,
     _adaptive_blend_weights,
     _best_delimiter_fallback,
     _parse_date,
@@ -229,3 +230,10 @@ def test_detect_maps_direction_column_with_new_token_values():
     movement_profile = _profile_column(["outflow", "inflow"])
     desc_profile = _profile_column(["Coffee", "Refund"])
     assert _profile_score("direction", movement_profile) > _profile_score("direction", desc_profile)
+
+
+def test_bool_tokens_lower_is_defensively_normalized():
+    assert "true" in BOOL_TOKENS_LOWER
+    assert "false" in BOOL_TOKENS_LOWER
+    assert "yes" in BOOL_TOKENS_LOWER
+    assert "no" in BOOL_TOKENS_LOWER

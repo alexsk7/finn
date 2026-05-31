@@ -59,6 +59,7 @@ DIRECTION_TOKENS = {
 }
 
 BOOL_TOKENS = {"0", "1", "true", "false", "yes", "no"}
+BOOL_TOKENS_LOWER = {token.lower() for token in BOOL_TOKENS}
 
 
 @dataclass
@@ -261,7 +262,7 @@ def _profile_column(values: list[str]) -> ColumnProfile:
     date_hits = sum(1 for v in non_empty if _parse_date(v))
     numeric_vals = [_parse_float(v) for v in non_empty]
     numeric_clean = [v for v in numeric_vals if v is not None]
-    bool_hits = sum(1 for v in non_empty if v.lower() in BOOL_TOKENS)
+    bool_hits = sum(1 for v in non_empty if v.lower() in BOOL_TOKENS_LOWER)
 
     neg_rate = 0.0
     if numeric_clean:
