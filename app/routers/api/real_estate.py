@@ -10,7 +10,7 @@ from app.schemas.real_estate import (
 from app.services.real_estate import (
     add_real_estate,
     delete_real_estate,
-    get_amortization,
+    get_amortization_or_empty,
     get_real_estate,
     link_real_estate_account,
     save_mortgage_config,
@@ -56,10 +56,7 @@ async def api_real_estate_delete(property_id: int):
 
 @router.get("/real-estate/{property_id}/amortization")
 async def api_amortization(property_id: int):
-    data = get_amortization(property_id)
-    if data is None:
-        return {"config": None, "schedule": [], "summary": {}}
-    return data
+    return get_amortization_or_empty(property_id)
 
 
 @router.post("/real-estate/mortgage-config")

@@ -1,5 +1,6 @@
 from app.services import budget as budget_svc
 from app.services import investments as inv_svc
+from app.services import real_estate as re_svc
 from app.services import transactions as txn_svc
 
 
@@ -61,3 +62,12 @@ def test_investments_symbol_normalization_and_validated_wrappers(monkeypatch):
 
     updated = inv_svc.update_holding_validated(7, 1, " vti ", "us_equity", 2, 3, "ETF", False)
     assert updated["args"][2] == "VTI"
+
+
+def test_real_estate_amortization_fallback_wrapper(monkeypatch):
+    monkeypatch.setattr("app.services.real_estate.get_amortization", lambda property_id: None)
+    assert re_svc.get_amortization_or_empty(1) == {"config": None, "schedule": [], "summary": {}}
+
+    expected = {"config": {"property_id": 1}, "schedule": [{"month": 1}], "summary": {"paid": 100}}
+    monkeypatch.setattr("app.services.real_estate.get_amortization", lambda property_id: expected)
+    assert re_svc.get_amortization_or_empty(1) == expected
