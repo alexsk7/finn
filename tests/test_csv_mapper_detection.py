@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.csv_mapper import detect_transaction_csv_mapping
+from app.csv_mapper import _profile_column, detect_transaction_csv_mapping
 
 
 def test_detect_fuzzy_match_with_standard_headers():
@@ -40,3 +40,13 @@ def test_transaction_date_preferred_with_post_date_fallback():
     assert res["strategy"] == "fuzzy_match"
     assert res["mapping"]["date"] == "Transaction Date"
     assert res["mapping"].get("_date_fallback") == "Post Date"
+
+
+def test_profile_column_median_abs_even_count():
+    profile = _profile_column(["1", "3", "5", "7"])
+    assert profile.median_abs == 4.0
+
+
+def test_profile_column_median_abs_odd_count():
+    profile = _profile_column(["1", "3", "5"])
+    assert profile.median_abs == 3.0

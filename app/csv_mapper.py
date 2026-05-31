@@ -129,6 +129,19 @@ def _parse_date(v: str) -> bool:
     return False
 
 
+def _median_abs(values: list[float]) -> float:
+    """Return median of absolute values; empty input yields 0.0."""
+    if not values:
+        return 0.0
+
+    arr = sorted(abs(v) for v in values)
+    n_vals = len(arr)
+    mid = n_vals // 2
+    if n_vals % 2 == 1:
+        return arr[mid]
+    return (arr[mid - 1] + arr[mid]) / 2
+
+
 def _profile_column(values: list[str]) -> ColumnProfile:
     n = len(values) or 1
     stripped = [(v or "").strip() for v in values]
@@ -144,11 +157,7 @@ def _profile_column(values: list[str]) -> ColumnProfile:
     if numeric_clean:
         neg_rate = sum(1 for v in numeric_clean if v < 0) / len(numeric_clean)
 
-    median_abs = 0.0
-    if numeric_clean:
-        arr = sorted(abs(v) for v in numeric_clean)
-        mid = len(arr) // 2
-        median_abs = arr[mid] if len(arr) % 2 else (arr[mid - 1] + arr[mid]) / 2
+    median_abs = _median_abs(numeric_clean)
 
     mean_len = (sum(len(v) for v in non_empty) / len(non_empty)) if non_empty else 0.0
     unique_ratio = (len({v.lower() for v in non_empty}) / len(non_empty)) if non_empty else 0.0
