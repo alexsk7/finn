@@ -315,3 +315,30 @@ def test_detect_handles_embedded_newline_in_quoted_field():
     assert res["ok"] is True
     assert len(res["preview"]) == 1
     assert "Coffee" in res["preview"][0]["description"]
+
+
+def test_parse_float_handles_mixed_currency_symbols():
+    assert _parse_float("$100") == 100.0
+    assert _parse_float("€50") == 50.0
+    assert _parse_float("¥1000") == 1000.0
+
+
+def test_parse_float_handles_multiple_negative_notations():
+    assert _parse_float("(100)") == -100.0
+    assert _parse_float("-100") == -100.0
+    assert _parse_float("100-") == -100.0
+
+
+def test_parse_float_handles_locale_thousands_separators():
+    assert _parse_float("1,000.00") == 1000.0
+    assert _parse_float("1.000,00") == 1000.0
+
+
+def test_parse_float_handles_scientific_notation():
+    assert _parse_float("1.23e4") == 12300.0
+
+
+def test_parse_float_rejects_nan_and_infinity():
+    assert _parse_float("NaN") is None
+    assert _parse_float("Infinity") is None
+    assert _parse_float("-inf") is None
