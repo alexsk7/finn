@@ -435,31 +435,31 @@ def _maybe_model_probs(
             },
         )
 
-    anchors_x: list[list[float]] = []
-    anchors_y: list[str] = []
+    anchor_features: list[list[float]] = []
+    anchor_labels: list[str] = []
 
-    def vec(p: ColumnProfile) -> list[float]:
+    def profile_vector(profile: ColumnProfile) -> list[float]:
         return [
-            p.null_rate,
-            p.date_rate,
-            p.numeric_rate,
-            p.bool_rate,
-            p.neg_rate,
-            p.median_abs,
-            p.mean_len,
-            p.unique_ratio,
-            p.direction_token_rate,
+            profile.null_rate,
+            profile.date_rate,
+            profile.numeric_rate,
+            profile.bool_rate,
+            profile.neg_rate,
+            profile.median_abs,
+            profile.mean_len,
+            profile.unique_ratio,
+            profile.direction_token_rate,
         ]
 
-    for header, field_scores in header_scores.items():
-        field = max(field_scores, key=lambda k: field_scores[k])
-        score = field_scores[field]
+    for header, scores_for_header in header_scores.items():
+        top_field = max(scores_for_header, key=lambda field_name: scores_for_header[field_name])
+        score = scores_for_header[top_field]
         if score >= 0.92:
-            anchors_x.append(vec(profiles[header]))
-            anchors_y.append(field)
+            anchor_features.append(profile_vector(profiles[header]))
+            anchor_labels.append(top_field)
 
-    anchor_count = len(anchors_x)
-    class_count = len(set(anchors_y))
+    anchor_count = len(anchor_features)
+    class_count = len(set(anchor_labels))
 
     if anchor_count < MIN_MODEL_ANCHORS or class_count < MIN_MODEL_CLASSES:
         return (
@@ -474,17 +474,17 @@ def _maybe_model_probs(
 
     try:
         model = LogisticRegression(max_iter=300, multi_class="auto")
-        model.fit(anchors_x, anchors_y)
-        out: dict[str, dict[str, float]] = {}
+        model.fit(anchor_features, anchor_labels)
+        probabilities_by_header: dict[str, dict[str, float]] = {}
         classes = list(model.classes_)
-        for header, p in profiles.items():
-            probs = model.predict_proba([vec(p)])[0]
-            class_prob = {f: 0.0 for f in TARGET_FIELDS}
+        for header, profile in profiles.items():
+            probabilities = model.predict_proba([profile_vector(profile)])[0]
+            class_probabilities = {f: 0.0 for f in TARGET_FIELDS}
             for idx, cls in enumerate(classes):
-                class_prob[str(cls)] = float(probs[idx])
-            out[header] = class_prob
+                class_probabilities[str(cls)] = float(probabilities[idx])
+            probabilities_by_header[header] = class_probabilities
         return (
-            out,
+            probabilities_by_header,
             {
                 "available": True,
                 "status": "trained",

@@ -5,9 +5,9 @@ import pytest
 from app.csv_mapper import (
     AMOUNT_MEDIAN_ABS_MAX,
     BOOL_TOKENS_LOWER,
-    ColumnProfile,
     MAX_CSV_LINES,
     MAX_CSV_TEXT_CHARS,
+    ColumnProfile,
     _adaptive_blend_weights,
     _best_delimiter_fallback,
     _parse_date,
