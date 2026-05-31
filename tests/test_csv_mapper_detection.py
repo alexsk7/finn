@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 import pytest
 
 from app.csv_mapper import (
@@ -8,9 +9,9 @@ from app.csv_mapper import (
     MAX_CSV_LINES,
     MAX_CSV_TEXT_CHARS,
     ColumnProfile,
-    _maybe_model_probs,
     _adaptive_blend_weights,
     _best_delimiter_fallback,
+    _maybe_model_probs,
     _parse_date,
     _parse_float,
     _profile_column,
@@ -404,3 +405,46 @@ def test_maybe_model_probs_reports_training_error(monkeypatch):
     assert meta["anchor_count"] == 2
     assert meta["class_count"] == 2
     assert probs["h_date"]["date"] == 0.0
+
+
+def test_detect_randomized_header_variants_is_stable():
+    rng = random.Random(20260531)
+    date_headers = ["date", "transaction date", "txn dt", "posted on", "date_recorded"]
+    amount_headers = ["amount", "value", "amt", "value usd", "debit credit"]
+    desc_headers = ["description", "memo", "narration", "details", "note"]
+
+    for _ in range(50):
+        d_h = rng.choice(date_headers)
+        a_h = rng.choice(amount_headers)
+        x_h = rng.choice(desc_headers)
+
+        # Vary row count and value shape while keeping required fields present.
+        n_rows = rng.randint(1, 8)
+        rows = []
+        for i in range(n_rows):
+            day = 1 + (i % 28)
+            amount = -float(rng.randint(1, 500)) / 10.0
+            desc = f"item-{rng.randint(100, 999)}"
+            rows.append(f"2026-05-{day:02d},{amount:.2f},{desc}")
+
+        csv_text = f"{d_h},{a_h},{x_h}\n" + "\n".join(rows) + "\n"
+        res = detect_transaction_csv_mapping(csv_text)
+
+        assert "ok" in res
+        if res["ok"]:
+            assert "date" in res["mapping"]
+            assert "amount" in res["mapping"]
+        else:
+            # Valid for edge randomizations to require confirmation/fallback, but must be explicit.
+            assert "error" in res
+
+
+def test_detect_randomized_direction_token_profile_stability():
+    rng = random.Random(8675309)
+    direction_pool = ["debit", "credit", "inflow", "outflow", "payment", "receive"]
+
+    for _ in range(40):
+        values = [rng.choice(direction_pool) for _ in range(rng.randint(3, 12))]
+        profile = _profile_column(values)
+        # With all values from known direction token pool, token rate should be perfect.
+        assert profile.direction_token_rate == 1.0
