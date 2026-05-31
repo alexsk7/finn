@@ -8,6 +8,7 @@ from app.csv_mapper import (
     MAX_CSV_LINES,
     MAX_CSV_TEXT_CHARS,
     ColumnProfile,
+    _maybe_model_probs,
     _adaptive_blend_weights,
     _best_delimiter_fallback,
     _parse_date,
@@ -342,3 +343,64 @@ def test_parse_float_rejects_nan_and_infinity():
     assert _parse_float("NaN") is None
     assert _parse_float("Infinity") is None
     assert _parse_float("-inf") is None
+
+
+def test_detect_handles_100_plus_columns_and_returns_model_meta():
+    headers = ["date", "amount"] + [f"col{i}" for i in range(130)]
+    row = ["2026-05-01", "-12.50"] + ["x" for _ in range(130)]
+    csv_text = ",".join(headers) + "\n" + ",".join(row) + "\n"
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    assert "model" in res
+    assert set(res["model"].keys()) == {"available", "status", "anchor_count", "class_count"}
+
+
+def test_detect_handles_identical_rows_consistently():
+    csv_text = """date,amount,description
+2026-05-01,-12.50,Coffee
+2026-05-01,-12.50,Coffee
+2026-05-01,-12.50,Coffee
+"""
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    assert "date" in res["mapping"]
+    assert "amount" in res["mapping"]
+    assert "model" in res
+
+
+def test_maybe_model_probs_reports_training_error(monkeypatch):
+    sklearn_linear_model = pytest.importorskip("sklearn.linear_model")
+
+    class FailingLogisticRegression:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def fit(self, *args, **kwargs):
+            raise RuntimeError("forced training failure")
+
+    monkeypatch.setattr(sklearn_linear_model, "LogisticRegression", FailingLogisticRegression)
+
+    profiles = {
+        "h_date": ColumnProfile(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 10.0, 0.5, 0.0),
+        "h_amount": ColumnProfile(0.0, 0.0, 1.0, 0.0, 0.5, 50.0, 6.0, 0.5, 0.0),
+    }
+    header_scores = {
+        "h_date": {field: (0.95 if field == "date" else 0.0) for field in [
+            "date", "amount", "direction", "category", "payee", "description", "memo", "account_id", "recurring"
+        ]},
+        "h_amount": {field: (0.95 if field == "amount" else 0.0) for field in [
+            "date", "amount", "direction", "category", "payee", "description", "memo", "account_id", "recurring"
+        ]},
+    }
+
+    probs, meta = _maybe_model_probs(profiles, header_scores)
+
+    assert meta["available"] is False
+    assert meta["status"] == "skipped_training_error"
+    assert meta["anchor_count"] == 2
+    assert meta["class_count"] == 2
+    assert probs["h_date"]["date"] == 0.0
