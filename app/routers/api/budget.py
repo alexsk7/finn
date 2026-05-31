@@ -4,7 +4,13 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.services.reads import get_budget_categories_full, get_budget_month
-from app.services.writes import add_budget_category, copy_budget_month, delete_budget_category, save_budget_month, update_budget_category
+from app.services.writes import (
+    add_budget_category,
+    copy_budget_month,
+    delete_budget_category,
+    save_budget_month,
+    update_budget_category,
+)
 
 router = APIRouter(tags=["budget"])
 

@@ -3,10 +3,11 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.services.reads import get_allocation_targets
 from app.routers.api.overrides import runtime_override
+from app.services.reads import get_allocation_targets
 from app.services.writes import (
     add_holding,
+    delete_holding,
     get_all_holdings_raw,
     import_holdings_csv,
     import_snapshot_csv,
@@ -15,7 +16,6 @@ from app.services.writes import (
     update_holding,
     update_price,
     upsert_allocation_target,
-    delete_holding,
 )
 
 router = APIRouter(tags=["investments"])
