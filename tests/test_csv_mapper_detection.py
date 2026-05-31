@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.csv_mapper import _best_delimiter_fallback, _profile_column, detect_transaction_csv_mapping
+from app.csv_mapper import _best_delimiter_fallback, _parse_float, _profile_column, detect_transaction_csv_mapping
 
 
 def test_detect_fuzzy_match_with_standard_headers():
@@ -103,3 +103,15 @@ def test_detect_uses_quote_aware_fallback_when_sniffer_fails(monkeypatch):
     assert res["delimiter"] == ";"
     assert "date" in res["mapping"]
     assert "amount" in res["mapping"]
+
+
+def test_parse_float_handles_currency_code_and_thousands():
+    assert _parse_float("$1,234.56 USD") == 1234.56
+
+
+def test_parse_float_handles_parenthesized_currency_negative():
+    assert _parse_float("($1,234.56)") == -1234.56
+
+
+def test_parse_float_handles_european_decimal_format():
+    assert _parse_float("(€1.234,50)") == -1234.5

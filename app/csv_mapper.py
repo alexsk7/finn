@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -140,11 +141,51 @@ def _parse_float(v: str) -> float | None:
     txt = (v or "").strip()
     if not txt:
         return None
-    txt = txt.replace("$", "").replace(",", "")
+
+    neg = False
+
+    # Accounting-style negatives: (123.45), ($1,234.56), (€1.234,50)
     if txt.startswith("(") and txt.endswith(")"):
-        txt = "-" + txt[1:-1]
+        neg = True
+        txt = txt[1:-1].strip()
+
+    # Handle leading/trailing explicit sign markers.
+    if txt.startswith("-") or txt.endswith("-"):
+        neg = True
+    txt = txt.strip("+-")
+
+    # Remove common currency symbols and whitespace separators.
+    txt = re.sub(r"[$€£¥₹₽₩₪₦₱₨฿]", "", txt)
+    txt = txt.replace("\u00a0", " ").replace(" ", "")
+
+    # Remove trailing currency code (e.g. USD, EUR).
+    txt = re.sub(r"(?i)([A-Z]{3})$", "", txt)
+    txt = txt.strip()
+
+    if not txt:
+        return None
+
+    # Normalize thousands/decimal separators for common US/EU formats.
+    if "." in txt and "," in txt:
+        if txt.rfind(".") > txt.rfind(","):
+            # 1,234.56 -> 1234.56
+            txt = txt.replace(",", "")
+        else:
+            # 1.234,56 -> 1234.56
+            txt = txt.replace(".", "").replace(",", ".")
+    elif "," in txt:
+        if re.search(r",\d{1,2}$", txt):
+            # 1234,56 -> 1234.56
+            txt = txt.replace(",", ".")
+        else:
+            # 1,234 or 1,234,567 -> 1234 / 1234567
+            txt = txt.replace(",", "")
+
     try:
-        return float(txt)
+        out = float(txt)
+        if not math.isfinite(out):
+            return None
+        return -out if neg else out
     except Exception:
         return None
 
