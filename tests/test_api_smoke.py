@@ -50,7 +50,7 @@ def test_api_transactions_detect_columns_endpoint(import_main_safely):
             "mapping": {"date": "Transaction Date", "amount": "Amount"},
             "confidence": {"date": 0.99, "amount": 0.99},
             "needs_confirmation": False,
-            "strategy": "exact_alias",
+            "strategy": "fuzzy_match",
         }
 
     import_main_safely.detect_transaction_csv_mapping = fake_detect

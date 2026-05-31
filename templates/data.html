@@ -411,46 +411,66 @@ VXUS,Vanguard Total International,18,58.72"
     <div class="card" style="margin-bottom:var(--gap);">
       <div class="section-title">Import Transactions CSV</div>
       <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">
-        Import from a bank or brokerage CSV export. Recognized columns:
-        <code style="color:var(--accent);">date, amount, direction, category, payee, merchant, description</code>.
-        Category is optional and uncategorized rows can be assigned in bulk after import.
-        Direction is inferred from the amount sign if omitted (negative = expense).
-        Assign all rows to one account, or include an <code style="color:var(--accent);">account_id</code> column.
+        Paste or upload a CSV from your bank or brokerage. The import process has three steps:
+        <strong style="color:var(--text);">① Paste CSV → ② Detect columns → ③ Review &amp; Import</strong>
       </p>
 
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
         <label class="btn-secondary" style="cursor:pointer;display:inline-block;">
-          Choose file
+          📁 Choose file
           <input type="file" accept=".csv,.txt" id="txn-csv-file" onchange="loadTxnCSVFile(this)" style="display:none;">
         </label>
-        <span style="font-size:11px;color:var(--text-dim);">or paste below</span>
-        <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-          <label class="field-label" style="margin:0;white-space:nowrap;">Assign to account:</label>
-          <select id="txn-csv-acct" class="field-input" style="width:200px;">
-            <option value="">— auto / column —</option>
-          </select>
-        </div>
+        <span style="font-size:11px;color:var(--text-dim);">or paste CSV data below</span>
       </div>
 
-      <textarea id="txn-csv-paste" rows="6" class="field-input" placeholder="date,amount,direction,payee,description
+      <textarea id="txn-csv-paste" rows="5" class="field-input" placeholder="date,amount,direction,payee,description
 2026-01-15,9800,income,Payroll,Paycheck
 2026-01-16,-634,,Whole Foods,Groceries
 2026-01-20,-265,,Local Cafe,Dinner"
         style="width:100%;font-size:11px;resize:vertical;line-height:1.6;font-family:var(--font);"
         oninput="previewTxnCSV()"></textarea>
 
-      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
-        <button class="btn-secondary" onclick="detectTxnColumns()">Detect mapping</button>
-        <button class="btn-primary" onclick="importTxnCSV()">Import</button>
-        <button class="btn-secondary" onclick="
-            document.getElementById('txn-csv-paste').value='';
-            document.getElementById('txn-csv-preview').innerHTML='';
-            document.getElementById('txn-csv-result').textContent='';
-            txnDetectedMapping = null;">Clear</button>
-        <span id="txn-csv-result" style="font-size:11px;"></span>
+      <!-- Step 1: Preview Section -->
+      <div id="txn-csv-preview" style="margin-top:14px;"></div>
+
+      <!-- Step 2: Mapping Detection Section (hidden until needed) -->
+      <div id="txn-mapping-section" style="margin-top:14px;display:none;border:1px solid var(--border);border-radius:4px;padding:12px;background:var(--bg2);">
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">
+          Column Mapping
+          <span id="txn-mapping-status" style="display:inline-block;margin-left:8px;padding:2px 6px;border-radius:3px;font-size:10px;"></span>
+        </div>
+        <div id="txn-mapping-fields" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;"></div>
       </div>
 
-      <div id="txn-csv-preview" style="margin-top:16px;"></div>
+      <!-- Step 3: Account Assignment & Actions -->
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding:8px;background:var(--bg2);border-radius:4px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label class="field-label" style="margin:0;white-space:nowrap;font-size:11px;">Account:</label>
+          <select id="txn-csv-acct" class="field-input" style="width:180px;">
+            <option value="">— auto / CSV column —</option>
+          </select>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">
+          <button class="btn-primary" id="txn-detect-btn" onclick="detectTxnColumns()" style="font-weight:600;">
+            🔍 Detect Columns
+          </button>
+          <button class="btn-primary" id="txn-import-btn" onclick="importTxnCSV()" style="display:none;font-weight:600;">
+            ✓ Import
+          </button>
+          <button class="btn-secondary" onclick="
+            document.getElementById('txn-csv-paste').value='';
+            document.getElementById('txn-csv-preview').innerHTML='';
+            document.getElementById('txn-mapping-section').style.display='none';
+            document.getElementById('txn-import-btn').style.display='none';
+            document.getElementById('txn-detect-btn').style.display='inline-block';
+            txnDetectedMapping = null;">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <div id="txn-csv-result" style="margin-top:8px;font-size:11px;"></div>
     </div>
 
     <div class="card">
@@ -1692,7 +1712,11 @@ VXUS,Vanguard Total International,18,58.72"
 
   function _renderTxnPreview(lines, delimiter = ',', mappingRes = null) {
     const previewEl = document.getElementById('txn-csv-preview');
-    const resultEl = document.getElementById('txn-csv-result');
+    const mappingSectionEl = document.getElementById('txn-mapping-section');
+    const mappingFieldsEl = document.getElementById('txn-mapping-fields');
+    const mappingStatusEl = document.getElementById('txn-mapping-status');
+    const importBtnEl = document.getElementById('txn-import-btn');
+    const detectBtnEl = document.getElementById('txn-detect-btn');
 
     const preview = lines.slice(0, 7);
     const tableRows = preview.map((line, i) => {
@@ -1700,44 +1724,99 @@ VXUS,Vanguard Total International,18,58.72"
       if (i === 0) {
         return `<tr>${cols.map(c => `<th style="padding:4px 8px;color:var(--accent);font-size:10px;letter-spacing:.06em;">${c.trim()}</th>`).join('')}</tr>`;
       }
-      return `<tr>${cols.map(c => `<td style="padding:4px 8px;font-size:11px;">${c.trim()}</td>`).join('')}</tr>`;
+      return `<tr>${cols.map(c => `<td style="padding:4px 8px;font-size:11px;">${(c.trim() || '—')}</td>`).join('')}</tr>`;
     }).join('');
 
     const more = lines.length > 7
       ? `<div style="font-size:10px;color:var(--text-dim);margin-top:5px;">… ${lines.length - 7} more row${lines.length - 7 === 1 ? '' : 's'}</div>`
       : '';
 
-    const mapLines = (mappingRes && mappingRes.mapping)
-      ? Object.entries(mappingRes.mapping)
-          .filter(([k]) => !k.startsWith('_'))
-          .map(([k, v]) => {
-            const score = mappingRes.confidence && mappingRes.confidence[k] !== undefined ? ` (${mappingRes.confidence[k]})` : '';
-            return `<span style="margin-right:10px;">${k} → <strong>${v}</strong>${score}</span>`;
-          })
-          .join('')
-      : '';
+    const previewHtml = `
+      <div style="font-size:10px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">
+        CSV Preview · ${lines.length} row${lines.length === 1 ? '' : 's'}
+      </div>
+      <div class="table-scroll"><table class="data-table">${tableRows}</table></div>
+      ${more}`;
 
-    const strategyBadge = (mappingRes && mappingRes.strategy)
-      ? `<span style="display:inline-block;margin-top:8px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);">Strategy: ${mappingRes.strategy}</span>`
-      : '';
+    previewEl.innerHTML = previewHtml;
 
-    previewEl.innerHTML = `
-    <div style="font-size:10px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em;">
-      Preview · ${lines.length} row${lines.length === 1 ? '' : 's'}
-    </div>
-    <div class="table-scroll"><table class="data-table">${tableRows}</table></div>
-    ${more}
-    ${mapLines ? `<div style="font-size:10px;color:var(--text-dim);margin-top:8px;line-height:1.6;">${mapLines}</div>` : ''}
-    ${strategyBadge}`;
+    // Render mapping section if detection was successful
+    if (mappingRes && mappingRes.ok && mappingRes.mapping) {
+      mappingSectionEl.style.display = 'block';
+      importBtnEl.style.display = 'inline-block';
+      detectBtnEl.style.display = 'none';
 
-    if (mappingRes && mappingRes.ok) {
+      // Determine overall status
+      let statusBadge = '';
+      let statusColor = '';
       if (mappingRes.needs_confirmation) {
-        resultEl.textContent = 'Review detected mapping before import.';
-        resultEl.style.color = 'var(--text-dim)';
+        statusBadge = '⚠ Review Recommended';
+        statusColor = '#ff9800';
       } else {
-        resultEl.textContent = '✓ High-confidence mapping detected.';
-        resultEl.style.color = 'var(--green)';
+        statusBadge = '✓ High Confidence';
+        statusColor = 'var(--green)';
       }
+      mappingStatusEl.textContent = statusBadge;
+      mappingStatusEl.style.color = 'white';
+      mappingStatusEl.style.backgroundColor = statusColor;
+
+      // Render individual field mappings
+      const requiredFields = new Set(['date', 'amount']);
+      const mappedHeaders = new Set();
+      
+      const fieldHtml = Object.entries(mappingRes.mapping)
+        .filter(([k]) => !k.startsWith('_'))
+        .sort((a, b) => (requiredFields.has(a[0]) ? -1 : 1))
+        .map(([field, header]) => {
+          mappedHeaders.add(header);
+          const conf = mappingRes.confidence && mappingRes.confidence[field];
+          const isRequired = requiredFields.has(field);
+          const confLevel = conf >= 0.78 ? 'high' : conf >= 0.58 ? 'medium' : 'low';
+          const confColor = confLevel === 'high' ? '#4caf50' : confLevel === 'medium' ? '#ff9800' : '#f44336';
+          const confLabel = confLevel === 'high' ? '✓' : confLevel === 'medium' ? '△' : '✗';
+          const badge = isRequired ? '★ Required' : '◇ Optional';
+
+          return `
+            <div style="padding:8px;border:1px solid var(--border);border-radius:3px;font-size:11px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <strong style="color:var(--text)">${field}</strong>
+                <span style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;">${badge}</span>
+              </div>
+              <div style="color:var(--accent);margin-bottom:4px;word-break:break-word;">${header}</div>
+              <div style="display:flex;align-items:center;gap:4px;font-size:9px;color:${confColor};">
+                ${confLabel} ${(conf * 100).toFixed(0)}% confidence
+              </div>
+            </div>`;
+        })
+        .join('');
+
+      // Render unmapped/ignored columns
+      const unmappedHeaders = mappingRes.headers.filter(h => !mappedHeaders.has(h));
+      let unmappedHtml = '';
+      if (unmappedHeaders.length > 0) {
+        unmappedHtml = `
+          <div style="margin-top:12px;padding:10px;background:var(--bg3);border-radius:3px;border-left:3px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">
+              ℹ Ignored Columns (${unmappedHeaders.length})
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              ${unmappedHeaders.map(h => `
+                <span style="display:inline-block;padding:3px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:3px;font-size:10px;color:var(--text-dim);">
+                  ${h}
+                </span>
+              `).join('')}
+            </div>
+            <div style="font-size:9px;color:var(--text-dim);margin-top:6px;">
+              These columns won't be imported. You can re-upload with different columns or add them manually after import.
+            </div>
+          </div>`;
+      }
+
+      mappingFieldsEl.innerHTML = fieldHtml + unmappedHtml;
+    } else {
+      mappingSectionEl.style.display = 'none';
+      importBtnEl.style.display = 'none';
+      detectBtnEl.style.display = 'inline-block';
     }
   }
 
@@ -1764,80 +1843,106 @@ VXUS,Vanguard Total International,18,58.72"
   async function detectTxnColumns() {
     const text = document.getElementById('txn-csv-paste').value.trim();
     const resultEl = document.getElementById('txn-csv-result');
+    const detectBtnEl = document.getElementById('txn-detect-btn');
 
     if (!text) {
-      resultEl.textContent = 'Paste or load a CSV first.';
+      resultEl.textContent = '❌ Paste CSV data first.';
       resultEl.style.color = 'var(--red)';
       return;
     }
 
     const lines = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
     if (!lines.length) {
-      resultEl.textContent = 'Paste or load a CSV first.';
+      resultEl.textContent = '❌ No valid rows found.';
       resultEl.style.color = 'var(--red)';
       return;
     }
 
-    resultEl.textContent = 'Detecting mapping…';
+    detectBtnEl.disabled = true;
+    resultEl.textContent = '⏳ Detecting columns…';
     resultEl.style.color = 'var(--text-dim)';
 
     const res = await fetch('/api/transactions/detect-columns', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ csv_text: text }),
-    }).then(r => r.json());
+    }).then(r => r.json()).catch(e => {
+      console.error(e);
+      return { ok: false, error: 'Network error' };
+    }).finally(() => {
+      detectBtnEl.disabled = false;
+    });
 
     if (!res.ok) {
       txnDetectedMapping = null;
-      resultEl.textContent = `✗ ${res.error || 'Could not detect columns'}`;
+      resultEl.textContent = `❌ ${res.error || 'Could not detect columns. Ensure CSV has date and amount columns.'}`;
       resultEl.style.color = 'var(--red)';
       _renderTxnPreview(lines);
       return;
     }
 
     txnDetectedMapping = res.mapping || null;
+    resultEl.textContent = '';
+    resultEl.style.color = 'inherit';
     _renderTxnPreview(lines, (res && res.delimiter) ? res.delimiter : ',', res);
   }
 
   async function importTxnCSV() {
     const text = document.getElementById('txn-csv-paste').value.trim();
     const resultEl = document.getElementById('txn-csv-result');
+    const importBtnEl = document.getElementById('txn-import-btn');
+
     if (!text) {
-      resultEl.textContent = 'Paste or load a CSV first.';
-      resultEl.style.color = 'var(--red)'; return;
+      resultEl.textContent = '❌ Paste CSV data first.';
+      resultEl.style.color = 'var(--red)';
+      return;
     }
+
     const acctVal = document.getElementById('txn-csv-acct').value;
     const acctId = acctVal ? parseInt(acctVal) : null;
 
     if (!txnDetectedMapping) {
       await detectTxnColumns();
       if (!txnDetectedMapping) {
-        resultEl.textContent = '✗ Could not detect required fields (date/amount).';
+        resultEl.textContent = '❌ Could not detect required fields (date & amount). Please review the CSV format.';
         resultEl.style.color = 'var(--red)';
         return;
       }
     }
 
-    resultEl.textContent = 'Importing…';
+    importBtnEl.disabled = true;
+    resultEl.textContent = '⏳ Importing…';
     resultEl.style.color = 'var(--text-dim)';
 
     const res = await fetch('/api/transactions/import-csv', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ csv_text: text, account_id: acctId, field_mapping: txnDetectedMapping }),
-    }).then(r => r.json());
+    }).then(r => r.json()).catch(e => {
+      console.error(e);
+      return { inserted: 0, skipped: 0, errors: ['Network error'] };
+    }).finally(() => {
+      importBtnEl.disabled = false;
+    });
 
     const parts = [];
     if (res.inserted) parts.push(`${res.inserted} imported`);
     if (res.skipped) parts.push(`${res.skipped} skipped`);
+
     const ok = res.inserted > 0;
-    resultEl.textContent = parts.length ? `✓ ${parts.join(' · ')}` : '✗ Nothing imported';
-    resultEl.style.color = ok ? 'var(--green)' : 'var(--red)';
+    if (ok) {
+      resultEl.textContent = `✓ ${parts.join(' · ')}`;
+      resultEl.style.color = 'var(--green)';
+    } else {
+      resultEl.textContent = `✗ ${parts.length > 0 ? parts.join(' · ') : 'Nothing imported — check format and try again'}`;
+      resultEl.style.color = 'var(--red)';
+    }
 
     if (res.errors && res.errors.length) {
-      document.getElementById('txn-csv-preview').innerHTML +=
-        res.errors.map(e => `<div style="font-size:10px;color:var(--red);margin-top:3px;">${e}</div>`).join('');
+      const errorList = res.errors.map(e => `<div style="font-size:10px;color:var(--red);margin-top:3px;">⚠ ${e}</div>`).join('');
+      resultEl.innerHTML = resultEl.innerHTML + errorList;
     }
+
     if (ok) {
       currentTxnFilter = 'uncategorized';
       updateTxnFilterButtons();

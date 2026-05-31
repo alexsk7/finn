@@ -1,4 +1,4 @@
-"""Hybrid transaction CSV column mapper: fuzzy header + profile model."""
+"""Fuzzy transaction CSV column mapper: field-name fuzzy matching + profile + optional ML model."""
 
 from __future__ import annotations
 
@@ -26,46 +26,6 @@ TARGET_FIELDS = [
 ]
 
 REQUIRED_FIELDS = {"date", "amount"}
-
-FIELD_ALIASES = {
-    "date": {
-        "date",
-        "txn_date",
-        "transaction_date",
-        "transaction date",
-        "posted_date",
-        "posted date",
-        "post_date",
-        "post date",
-        "posting_date",
-        "posting date",
-    },
-    "amount": {
-        "amount",
-        "amt",
-        "debit_amount",
-        "debit amount",
-        "credit_amount",
-        "credit amount",
-        "value",
-    },
-    "direction": {
-        "direction",
-        "type",
-        "dr_cr",
-        "dr/cr",
-        "transaction_type",
-        "transaction type",
-        "credit_debit",
-        "credit/debit",
-    },
-    "category": {"category", "cat", "merchant_category", "merchant category"},
-    "payee": {"payee", "merchant", "vendor", "name", "counterparty"},
-    "description": {"description", "desc", "details", "narrative"},
-    "memo": {"memo", "note", "notes", "reference", "ref"},
-    "account_id": {"account_id", "account id", "account", "account_number", "account number"},
-    "recurring": {"recurring", "is_recurring", "repeat", "autopay"},
-}
 
 DIRECTION_TOKENS = {
     "debit",
@@ -123,30 +83,6 @@ def _attach_date_fallback(
         if "post" in h_norm or "posted" in h_norm:
             mapping["_date_fallback"] = h
             return
-
-
-def _exact_alias_mapping(headers: list[str]) -> tuple[dict[str, str], dict[str, float]]:
-    """Map headers by exact alias only (normalized exact equality, no fuzzy scoring)."""
-    mapping: dict[str, str] = {}
-    confidence: dict[str, float] = {}
-    used_headers: set[str] = set()
-
-    norm_headers = {h: _normalize_header(h) for h in headers}
-
-    # Keep deterministic field ordering.
-    for field in TARGET_FIELDS:
-        aliases = {_normalize_header(a) for a in FIELD_ALIASES[field]}
-        for h in headers:
-            if h in used_headers:
-                continue
-            if norm_headers[h] in aliases:
-                mapping[field] = h
-                confidence[field] = 1.0
-                used_headers.add(h)
-                break
-
-    _attach_date_fallback(mapping, headers)
-    return mapping, confidence
 
 
 def _normalize_header(s: str) -> str:
@@ -235,25 +171,28 @@ def _profile_column(values: list[str]) -> ColumnProfile:
 
 def _header_score(field: str, header: str) -> float:
     norm = _normalize_header(header)
-    aliases = FIELD_ALIASES[field]
+    # Pure fuzzy matching: compare header against field name.
+    best = SequenceMatcher(None, norm, field).ratio()
 
-    best = 0.0
-    for alias in aliases:
-        alias_n = _normalize_header(alias)
-        if norm == alias_n:
-            best = max(best, 1.0)
-            continue
-        if alias_n in norm or norm in alias_n:
-            best = max(best, 0.9)
-            continue
-        best = max(best, SequenceMatcher(None, norm, alias_n).ratio())
-
-    # Prefer transaction date over posted date for primary mapping.
+    # Field-specific heuristics for clarity.
     if field == "date":
+        # Strongly prefer transaction/txn date over posted date.
         if "transaction" in norm or norm.startswith("txn"):
-            best += 0.08
-        if "post" in norm or "posted" in norm:
-            best -= 0.06
+            best += 0.20
+        elif "post" in norm or "posted" in norm:
+            best -= 0.15
+    elif field == "amount":
+        # Boost for numeric/value indicators.
+        if "amt" in norm or "value" in norm or "price" in norm:
+            best += 0.10
+    elif field == "direction":
+        # Boost for type/direction keywords.
+        if "type" in norm or "direction" in norm or "dr" in norm or "credit" in norm:
+            best += 0.10
+    elif field == "payee":
+        # Boost for merchant/vendor indicators.
+        if "merchant" in norm or "vendor" in norm or "counterparty" in norm:
+            best += 0.10
 
     return max(0.0, min(1.0, best))
 
@@ -365,34 +304,7 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
             "preview": [],
         }
 
-    # Fast path: exact alias mapping with no model/scoring overhead.
-    exact_mapping, exact_confidence = _exact_alias_mapping(headers)
-    exact_required_ok = all(f in exact_mapping for f in REQUIRED_FIELDS)
-    if exact_required_ok:
-        preview = []
-        for row in rows[:5]:
-            preview.append({h: (row.get(h, "") or "") for h in headers})
-
-        alternatives: dict[str, list[dict]] = {}
-        for field in TARGET_FIELDS:
-            alternatives[field] = [{"header": exact_mapping[field], "score": 1.0}] if field in exact_mapping else []
-
-        return {
-            "ok": True,
-            "mapping": exact_mapping,
-            "confidence": exact_confidence,
-            "alternatives": alternatives,
-            "needs_confirmation": False,
-            "delimiter": delimiter,
-            "headers": headers,
-            "preview": preview,
-            "thresholds": {
-                "high": HIGH_CONFIDENCE,
-                "medium": MEDIUM_CONFIDENCE,
-            },
-            "strategy": "exact_alias",
-        }
-
+    # Pure fuzzy + profile scoring (no exact-alias fast path).
     profiles = {h: _profile_column([(r.get(h, "") or "") for r in sample_rows]) for h in headers}
 
     header_scores = {h: {f: _header_score(f, h) for f in TARGET_FIELDS} for h in headers}
@@ -465,5 +377,5 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
             "high": HIGH_CONFIDENCE,
             "medium": MEDIUM_CONFIDENCE,
         },
-        "strategy": "hybrid_fallback",
+        "strategy": "fuzzy_match",
     }

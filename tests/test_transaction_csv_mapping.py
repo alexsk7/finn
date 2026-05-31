@@ -7,25 +7,20 @@ from app.db import get_conn
 from app.writer import import_transaction_csv
 
 
-def test_detect_exact_alias_strategy_skips_model(monkeypatch: pytest.MonkeyPatch):
+def test_detect_fuzzy_match_with_standard_headers():
     csv_text = """date,amount,direction,category,payee,description,memo
 2026-05-01,-12.50,debit,food,Cafe,Coffee,AM run
 """
 
-    def _fail_if_called(*args, **kwargs):
-        raise AssertionError("_maybe_model_probs should not run for exact-alias mapping")
-
-    monkeypatch.setattr("app.csv_mapper._maybe_model_probs", _fail_if_called)
-
     res = detect_transaction_csv_mapping(csv_text)
 
     assert res["ok"] is True
-    assert res["strategy"] == "exact_alias"
+    assert res["strategy"] == "fuzzy_match"
     assert res["mapping"]["date"] == "date"
     assert res["mapping"]["amount"] == "amount"
 
 
-def test_detect_hybrid_fallback_strategy_when_exact_alias_not_sufficient():
+def test_detect_fuzzy_match_with_variant_headers():
     csv_text = """Txn Dt,Posted On,Narration,Category,Txn Type,Value USD,Memo Text
 05/01/2026,05/02/2026,Coffee,food,debit,-12.50,AM run
 """
@@ -33,7 +28,7 @@ def test_detect_hybrid_fallback_strategy_when_exact_alias_not_sufficient():
     res = detect_transaction_csv_mapping(csv_text)
 
     assert res["ok"] is True
-    assert res["strategy"] == "hybrid_fallback"
+    assert res["strategy"] == "fuzzy_match"
     assert "date" in res["mapping"]
     assert "amount" in res["mapping"]
 
@@ -46,6 +41,7 @@ def test_transaction_date_preferred_with_post_date_fallback():
     res = detect_transaction_csv_mapping(csv_text)
 
     assert res["ok"] is True
+    assert res["strategy"] == "fuzzy_match"
     assert res["mapping"]["date"] == "Transaction Date"
     assert res["mapping"].get("_date_fallback") == "Post Date"
 

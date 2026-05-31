@@ -162,11 +162,13 @@ Single-process, local-only web app. No build step, no external services required
 
 ## CSV import formats
 
-| Import | Location | Format |
-|---|---|---|
-| Holdings | Data → Holdings | Fidelity, Schwab, or Vanguard export |
-| Transactions | Data → Transactions | Standard bank CSV (`date`, `amount`, optional `direction`, optional `category`, `payee`/`merchant`, `description`) |
-| Snapshots | Data → Snapshot | `date, net_worth, liquid_cash, invested_total, home_equity, debt_total` |
+| Import | Location | Format | Docs |
+|---|---|---|---|
+| Holdings | Data → Holdings | Fidelity, Schwab, or Vanguard export | |
+| Transactions | Data → Transactions | Standard bank CSV (auto-detected) | [csv-import.md](docs/csv-import.md) |
+| Snapshots | Data → Snapshot | `date, net_worth, liquid_cash, invested_total, home_equity, debt_total` | |
+
+**Transactions** use intelligent column detection — just paste your bank export and the system automatically identifies date, amount, category, payee, and description columns. See [csv-import.md](docs/csv-import.md) for details on how the auto-detection works and examples.
 
 Transaction categories are optional on import. Rows without a category are saved as `uncategorized` so you can import quickly, then categorize them later in bulk.
 
