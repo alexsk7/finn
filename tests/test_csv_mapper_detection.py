@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from app.csv_mapper import _best_delimiter_fallback, _parse_float, _profile_column, detect_transaction_csv_mapping
+from app.csv_mapper import (
+    _adaptive_blend_weights,
+    _best_delimiter_fallback,
+    _parse_float,
+    _profile_column,
+    detect_transaction_csv_mapping,
+)
 
 
 def test_detect_fuzzy_match_with_standard_headers():
@@ -115,3 +121,21 @@ def test_parse_float_handles_parenthesized_currency_negative():
 
 def test_parse_float_handles_european_decimal_format():
     assert _parse_float("(€1.234,50)") == -1234.5
+
+
+def test_adaptive_blend_weights_sum_to_one_without_model():
+    header_w, profile_w, model_w = _adaptive_blend_weights(0.8, 0.4, 0.0, model_available=False)
+    assert round(header_w + profile_w + model_w, 10) == 1.0
+    assert model_w == 0.0
+
+
+def test_adaptive_blend_weights_shift_with_header_strength():
+    low_header_w, _, _ = _adaptive_blend_weights(0.2, 0.6, 0.0, model_available=False)
+    high_header_w, _, _ = _adaptive_blend_weights(0.9, 0.6, 0.0, model_available=False)
+    assert high_header_w > low_header_w
+
+
+def test_adaptive_blend_weights_uses_model_when_available():
+    _, _, low_model_w = _adaptive_blend_weights(0.6, 0.6, 0.1, model_available=True)
+    _, _, high_model_w = _adaptive_blend_weights(0.6, 0.6, 0.9, model_available=True)
+    assert high_model_w > low_model_w

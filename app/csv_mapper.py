@@ -305,6 +305,47 @@ def _profile_score(field: str, p: ColumnProfile) -> float:
     return 0.0
 
 
+def _adaptive_blend_weights(
+    header_component: float,
+    profile_component: float,
+    model_component: float,
+    *,
+    model_available: bool,
+) -> tuple[float, float, float]:
+    """Compute dynamic blend weights for header/profile/model components.
+
+    - Strong header signals increase header influence.
+    - Profile remains a stabilizing component.
+    - Model contributes only when available and confident.
+    """
+    header_component = max(0.0, min(1.0, header_component))
+    profile_component = max(0.0, min(1.0, profile_component))
+    model_component = max(0.0, min(1.0, model_component))
+
+    # Header dominates when lexical evidence is strong.
+    header_w = 0.45 + 0.35 * header_component
+    profile_w = 1.0 - header_w
+    model_w = 0.0
+
+    # Introduce model weight only when predictions are available.
+    if model_available:
+        # Scale model contribution by confidence, capped to keep explainability.
+        model_w = 0.2 * model_component
+        profile_w -= model_w
+
+    # Keep profile as a minimum anchor to avoid overfitting to header/model noise.
+    if profile_w < 0.1:
+        deficit = 0.1 - profile_w
+        profile_w = 0.1
+        header_w = max(0.0, header_w - deficit)
+
+    # Normalize to exactly 1.0.
+    total = header_w + profile_w + model_w
+    if total <= 0:
+        return 0.6, 0.4, 0.0
+    return header_w / total, profile_w / total, model_w / total
+
+
 def _maybe_model_probs(
     profiles: dict[str, ColumnProfile], header_scores: dict[str, dict[str, float]]
 ) -> dict[str, dict[str, float]]:
@@ -411,6 +452,7 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
 
     header_scores = {h: {f: _header_score(f, h) for f in TARGET_FIELDS} for h in headers}
     model_probs = _maybe_model_probs(profiles, header_scores)
+    model_available = any(model_probs[h][f] > 0.0 for h in headers for f in TARGET_FIELDS)
 
     # Blend fuzzy header and profile-model confidence
     blended: dict[str, dict[str, float]] = {}
@@ -420,7 +462,14 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
         for f in TARGET_FIELDS:
             profile_component = _profile_score(f, p)
             model_component = model_probs[h][f]
-            blended[h][f] = 0.55 * header_scores[h][f] + 0.3 * profile_component + 0.15 * model_component
+            header_component = header_scores[h][f]
+            header_w, profile_w, model_w = _adaptive_blend_weights(
+                header_component,
+                profile_component,
+                model_component,
+                model_available=model_available,
+            )
+            blended[h][f] = header_w * header_component + profile_w * profile_component + model_w * model_component
 
     # One-to-one assignment by global best scores
     candidates: list[tuple[float, str, str]] = []
