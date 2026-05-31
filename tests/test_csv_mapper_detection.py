@@ -139,3 +139,9 @@ def test_adaptive_blend_weights_uses_model_when_available():
     _, _, low_model_w = _adaptive_blend_weights(0.6, 0.6, 0.1, model_available=True)
     _, _, high_model_w = _adaptive_blend_weights(0.6, 0.6, 0.9, model_available=True)
     assert high_model_w > low_model_w
+
+
+def test_adaptive_blend_weights_shift_with_profile_strength():
+    _, low_profile_w, _ = _adaptive_blend_weights(0.7, 0.1, 0.0, model_available=False)
+    _, high_profile_w, _ = _adaptive_blend_weights(0.7, 0.9, 0.0, model_available=False)
+    assert high_profile_w > low_profile_w

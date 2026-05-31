@@ -325,6 +325,12 @@ def _adaptive_blend_weights(
     # Header dominates when lexical evidence is strong.
     header_w = 0.45 + 0.35 * header_component
     profile_w = 1.0 - header_w
+
+    # Strong profile evidence should reclaim some weight from header confidence.
+    # This keeps profiling relevant for ambiguous or weakly named headers.
+    profile_boost = 0.15 * profile_component
+    header_w = max(0.0, header_w - profile_boost)
+    profile_w += profile_boost
     model_w = 0.0
 
     # Introduce model weight only when predictions are available.

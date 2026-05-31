@@ -8,9 +8,12 @@ The CSV transaction import feature intelligently detects and maps columns from b
 
 - **Smart column detection** — Recognizes variants like "Transaction Date", "Txn Dt", "Posted On", etc.
 - **Confidence scoring** — Shows confidence levels (high/medium/low) for each detected mapping
+- **Adaptive score blending** — Dynamically weights header/profile/model signals instead of fixed constants
 - **Required field validation** — Ensures date and amount are always present
 - **Post-date fallback** — Automatically uses "posted date" if "transaction date" is ambiguous
 - **Description + memo concatenation** — Combines description and memo fields with " | " separator
+- **Comment-aware CSV preprocessing** — Ignores leading comment prologue lines while preserving post-header hash-prefixed rows
+- **Quote-aware delimiter fallback** — Uses parse-consistency scoring when `csv.Sniffer` fails
 - **Ignored columns visibility** — Shows which CSV columns won't be imported
 - **Three-step workflow** — Paste → Detect → Review → Import
 
@@ -95,6 +98,8 @@ Results show: "**✓ 142 imported · 3 skipped**"
 ```mermaid
 graph TD
     A["CSV Headers<br/>+ Sample Rows"] --> B["Stage 1:<br/>Header Fuzzy Match"]
+    A --> A1["Preprocess Input<br/>drop leading comments<br/>keep post-header rows"]
+    A1 --> B
     A --> C["Stage 2:<br/>Column Profiling"]
     C --> D["Compute 9 Statistics<br/>null_rate, date_rate,<br/>numeric_rate, etc."]
     D --> E["Field-Specific<br/>Profile Scores"]
@@ -106,7 +111,7 @@ graph TD
     B2 --> F
     
     F --> F1["Optional ML Model<br/>if 4+ anchors"]
-    F1 --> F2["blended_score =<br/>0.55×header +<br/>0.30×profile +<br/>0.15×model"]
+    F1 --> F2["adaptive blend:<br/>header/profile/model<br/>weights per field"]
     
     F2 --> G["One-to-One<br/>Assignment"]
     G --> H["Enforce Required Fields<br/>date, amount"]
@@ -134,8 +139,8 @@ _header_score(field, header) → float [0.0, 1.0]
 
 - Compare field name (e.g., "date") with CSV header using `difflib.SequenceMatcher`
 - Apply field-specific heuristics:
-  - **date**: +0.20 boost for "transaction"/"txn", −0.15 penalty for "post"/"posted"
-  - **amount**: +0.10 for "amt"/"value"/"price"
+  - **date**: +0.35 boost for "transaction"/"txn"/"dt", −0.15 penalty for "post"/"posted"
+  - **amount**: +0.30 for "amount"/"amt"/"value"/"price"/"usd"/"debit"/"credit"
   - **direction**: +0.10 for "type"/"direction"/"dr"/"credit"
   - **payee**: +0.10 for "merchant"/"vendor"/"counterparty"
 
@@ -165,15 +170,40 @@ Each field gets a weighted profile score:
 
 #### Stage 3: Blended Confidence (with optional ML)
 
+The blend now uses adaptive per-field weights rather than a fixed formula.
+
 ```
-blended_score = 0.55 × header_score + 0.3 × profile_score + 0.15 × model_probability
+blended_score = w_h * header_score + w_p * profile_score + w_m * model_probability
+where w_h + w_p + w_m = 1.0
 ```
 
-- **Header score** (0.55 weight): Fuzzy match against field name
-- **Profile score** (0.30 weight): Column statistics match
-- **Model probability** (0.15 weight): Optional sklearn LogisticRegression (only if ≥4 high-confidence anchors)
+- **Header weight** (`w_h`) increases when lexical/header evidence is strong.
+- **Profile weight** (`w_p`) remains a stabilizing anchor (minimum floor).
+- **Model weight** (`w_m`) is only applied when model probabilities are actually available and is scaled by model confidence.
 
-The model is **optional** — sklearn import is guarded. If sklearn unavailable or insufficient training anchors, model_probability defaults to 0.0 for all fields.
+The model is **optional** — sklearn import is guarded. If sklearn is unavailable or there are insufficient training anchors, model probabilities are all zeros and the blend relies on header/profile only (no implicit model penalty).
+
+### Input Preprocessing
+
+Before delimiter/header detection:
+
+1. Drop blank lines.
+2. Drop only leading comment lines (`# ...`) before the header row.
+3. Keep all non-empty rows after header, including rows starting with `#`.
+
+This preserves legitimate hash-prefixed data while still supporting CSV exports that include metadata comment blocks.
+
+### Delimiter Detection Fallback
+
+Primary path uses `csv.Sniffer(..., delimiters=",\t;|")`.
+
+If sniffer fails, fallback is quote-aware and parse-based:
+
+1. Parse sample lines using each candidate delimiter (`,`, `\t`, `;`, `|`) via `csv.reader`.
+2. Score each candidate by parse consistency (mode column-count frequency), number of multi-column rows, and average detected columns.
+3. Choose the highest-scoring delimiter.
+
+This avoids naive raw-character counting errors when commas appear inside quoted fields.
 
 ### Confidence Thresholds
 
@@ -270,7 +300,11 @@ graph TD
 ```
 
 1. **Date parsing**: Try formats in order: `%Y-%m-%d`, `%m/%d/%Y`, `%m/%d/%y`, `%m-%d-%Y`, `%Y/%m/%d`
-2. **Amount parsing**: Strip `$`, `,`; handle parentheses as negative
+2. **Amount parsing**:
+  - Handles currency symbols and trailing currency codes (for example `USD`, `EUR`)
+  - Handles accounting negatives (`(123.45)`), trailing minus, and locale separators
+  - Supports common US/EU number formats (`1,234.56`, `1.234,56`, `1234,56`)
+  - Rejects non-finite numeric values
 3. **Direction inference**: If direction column missing, infer from amount sign
 4. **Description concat**: If both description and memo present, join as `f"{desc} | {memo}"`
 5. **Field mapping**: Apply detected mapping to extract values
