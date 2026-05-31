@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import app.csv_mapper as csv_mapper
+
 from app.writer import import_transaction_csv
 
 
@@ -160,3 +162,36 @@ def test_import_transaction_csv_infers_direction_from_amount_sign(db_conn):
     assert ordered[1]["txn_date"] == "2026-05-02"
     assert ordered[1]["direction"] == "income"
     assert ordered[1]["amount"] == 30.0
+
+
+def test_import_explicit_field_mapping_bypasses_detector_confidence_gate(db_conn, monkeypatch):
+    csv_text = """date,amount
+2026-05-01,-25.00
+"""
+
+    def _low_confidence_detector(_csv_text: str):
+        return {
+            "ok": False,
+            "delimiter": ",",
+            "confidence": {"date": 0.0, "amount": 0.0},
+        }
+
+    monkeypatch.setattr(csv_mapper, "detect_transaction_csv_mapping", _low_confidence_detector)
+
+    result = import_transaction_csv(
+        csv_text,
+        field_mapping={
+            "date": "date",
+            "amount": "amount",
+        },
+    )
+
+    assert result["inserted"] == 1
+    assert result["skipped"] == 0
+
+    row = db_conn.execute("SELECT txn_date, amount, direction FROM transactions ORDER BY id DESC LIMIT 1").fetchone()
+
+    assert row is not None
+    assert row["txn_date"] == "2026-05-01"
+    assert row["amount"] == 25.0
+    assert row["direction"] == "expense"

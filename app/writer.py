@@ -525,49 +525,6 @@ def import_transaction_csv(
 
     from .csv_mapper import MEDIUM_CONFIDENCE, detect_transaction_csv_mapping
 
-    COL_ALIASES = {
-        "date": "date",
-        "txn_date": "transaction_date",
-        "transaction_date": "transaction_date",
-        "transaction date": "transaction_date",
-        "posted_date": "post_date",
-        "posted date": "post_date",
-        "post_date": "post_date",
-        "post date": "post_date",
-        "posting_date": "post_date",
-        "posting date": "post_date",
-        "amount": "amount",
-        "amt": "amount",
-        "debit_amount": "amount",
-        "debit amount": "amount",
-        "direction": "direction",
-        "type": "direction",
-        "dr_cr": "direction",
-        "dr/cr": "direction",
-        "transaction_type": "direction",
-        "transaction type": "direction",
-        "credit_debit": "direction",
-        "credit/debit": "direction",
-        "category": "category",
-        "merchant": "payee",
-        "payee": "payee",
-        "vendor": "payee",
-        "name": "payee",
-        "counterparty": "payee",
-        "description": "description",
-        "desc": "description",
-        "memo": "memo",
-        "note": "memo",
-        "notes": "memo",
-        "narrative": "description",
-        "details": "description",
-        "account_id": "account_id",
-        "account id": "account_id",
-        "account": "account_id",
-        "recurring": "recurring",
-        "is_recurring": "recurring",
-    }
-
     DIR_MAP = {
         "debit": "expense",
         "dr": "expense",
@@ -614,7 +571,7 @@ def import_transaction_csv(
         for f in ("date", "amount")
         if float(detect_confidence.get(f, 0.0) or 0.0) < MEDIUM_CONFIDENCE
     ]
-    if low_required_fields:
+    if field_mapping is None and low_required_fields:
         details = ", ".join(
             f"{f}={float(detect_confidence.get(f, 0.0) or 0.0):.3f} (< {MEDIUM_CONFIDENCE:.2f})"
             for f in low_required_fields
@@ -631,18 +588,21 @@ def import_transaction_csv(
             "total": 0,
         }
 
-    if field_mapping:
-        # Mapping keys reference CSV header names, so preserve the incoming header row.
-        reader = _csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delimiter)
-    else:
-        first_row = next(_csv.reader(io.StringIO(lines[0]), delimiter=delimiter), [])
-        first_cols = [c.lower().strip().strip('"') for c in first_row]
-        has_header = any(c in COL_ALIASES for c in first_cols)
-        if has_header:
-            reader = _csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delimiter)
-        else:
-            fieldnames = ["date", "amount", "direction", "category", "description"]
-            reader = _csv.DictReader(io.StringIO("\n".join(lines)), fieldnames=fieldnames, delimiter=delimiter)
+    if not field_mapping:
+        warning = (
+            "Import blocked: could not determine a reliable column mapping. "
+            "Provide field_mapping explicitly or confirm auto-detection output before importing."
+        )
+        return {
+            "inserted": 0,
+            "skipped": 0,
+            "errors": [warning],
+            "warning": warning,
+            "total": 0,
+        }
+
+    # Mapping keys reference CSV header names, so preserve the incoming header row.
+    reader = _csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delimiter)
 
     inserted = skipped = 0
     errors: list[str] = []
@@ -650,30 +610,22 @@ def import_transaction_csv(
     with get_conn() as conn:
         for i, row in enumerate(reader, 1):
             try:
-                if field_mapping:
+                def mapped(field: str) -> str:
+                    key = field_mapping.get(field)
+                    return ((row.get(key, "") if key else "") or "").strip().strip('"')
 
-                    def mapped(field: str) -> str:
-                        key = field_mapping.get(field)
-                        return ((row.get(key, "") if key else "") or "").strip().strip('"')
-
-                    norm = {
-                        "transaction_date": mapped("date"),
-                        "post_date": mapped("_date_fallback"),
-                        "amount": mapped("amount"),
-                        "direction": mapped("direction"),
-                        "category": mapped("category"),
-                        "payee": mapped("payee"),
-                        "description": mapped("description"),
-                        "memo": mapped("memo"),
-                        "account_id": mapped("account_id"),
-                        "recurring": mapped("recurring"),
-                    }
-                else:
-                    norm = {
-                        COL_ALIASES.get(k.lower().strip().strip('"'), k.lower().strip()): (v or "").strip().strip('"')
-                        for k, v in row.items()
-                        if k
-                    }
+                norm = {
+                    "transaction_date": mapped("date"),
+                    "post_date": mapped("_date_fallback"),
+                    "amount": mapped("amount"),
+                    "direction": mapped("direction"),
+                    "category": mapped("category"),
+                    "payee": mapped("payee"),
+                    "description": mapped("description"),
+                    "memo": mapped("memo"),
+                    "account_id": mapped("account_id"),
+                    "recurring": mapped("recurring"),
+                }
 
                 # Prefer transaction date, then plain date, then posted date fallback.
                 txn_date_raw = (norm.get("transaction_date") or norm.get("date") or norm.get("post_date") or "").strip()
