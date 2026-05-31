@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 from app.csv_mapper import (
     AMOUNT_MEDIAN_ABS_MAX,
     BOOL_TOKENS_LOWER,
+    ColumnProfile,
     MAX_CSV_LINES,
     MAX_CSV_TEXT_CHARS,
     _adaptive_blend_weights,
@@ -257,3 +260,18 @@ def test_detect_fails_for_excessive_line_count():
 
     assert res["ok"] is False
     assert "exceeds max line count" in res["error"].lower()
+
+
+def test_column_profile_validation_rejects_out_of_range_values():
+    with pytest.raises(ValueError):
+        ColumnProfile(
+            null_rate=1.1,
+            date_rate=0.0,
+            numeric_rate=0.0,
+            bool_rate=0.0,
+            neg_rate=0.0,
+            median_abs=0.0,
+            mean_len=0.0,
+            unique_ratio=0.0,
+            direction_token_rate=0.0,
+        )
