@@ -282,10 +282,28 @@ def _maybe_model_probs(
         return {h: {f: 0.0 for f in TARGET_FIELDS} for h in profiles}
 
 
+def _prepare_csv_lines(csv_text: str) -> list[str]:
+    """Drop blank lines and leading comment lines, preserving all post-header rows."""
+    raw_lines = (csv_text or "").splitlines()
+
+    # Skip blank and comment-only prologue before the header row.
+    start = 0
+    while start < len(raw_lines):
+        candidate = raw_lines[start].strip()
+        if not candidate or candidate.startswith("#"):
+            start += 1
+            continue
+        break
+
+    if start >= len(raw_lines):
+        return []
+
+    # Keep non-empty lines from header onward. Do not drop hash-prefixed data rows.
+    return [line for line in raw_lines[start:] if line.strip()]
+
+
 def detect_transaction_csv_mapping(csv_text: str) -> dict:
-    lines: list[str] = [
-        line for line in (csv_text or "").strip().splitlines() if line.strip() and not line.strip().startswith("#")
-    ]
+    lines = _prepare_csv_lines(csv_text)
     if not lines:
         return {
             "ok": False,

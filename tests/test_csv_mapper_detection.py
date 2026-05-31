@@ -50,3 +50,30 @@ def test_profile_column_median_abs_even_count():
 def test_profile_column_median_abs_odd_count():
     profile = _profile_column(["1", "3", "5"])
     assert profile.median_abs == 3.0
+
+
+def test_detect_ignores_leading_comment_prologue():
+    csv_text = """# Exported by Example Bank
+# Account ending 1234
+date,amount,description
+2026-05-01,-10.00,Coffee
+"""
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    assert res["mapping"]["date"] == "date"
+    assert res["mapping"]["amount"] == "amount"
+
+
+def test_detect_preserves_hash_prefixed_data_rows_in_preview():
+    csv_text = """date,amount,description
+#2026-05-01,-10.00,hash row
+2026-05-02,-12.00,normal row
+"""
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    assert len(res["preview"]) == 2
+    assert res["preview"][0]["date"] == "#2026-05-01"
