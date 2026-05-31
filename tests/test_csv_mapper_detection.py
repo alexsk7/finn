@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+
 import pytest
 
 from app.csv_mapper import (
@@ -390,12 +391,34 @@ def test_maybe_model_probs_reports_training_error(monkeypatch):
         "h_amount": ColumnProfile(0.0, 0.0, 1.0, 0.0, 0.5, 50.0, 6.0, 0.5, 0.0),
     }
     header_scores = {
-        "h_date": {field: (0.95 if field == "date" else 0.0) for field in [
-            "date", "amount", "direction", "category", "payee", "description", "memo", "account_id", "recurring"
-        ]},
-        "h_amount": {field: (0.95 if field == "amount" else 0.0) for field in [
-            "date", "amount", "direction", "category", "payee", "description", "memo", "account_id", "recurring"
-        ]},
+        "h_date": {
+            field: (0.95 if field == "date" else 0.0)
+            for field in [
+                "date",
+                "amount",
+                "direction",
+                "category",
+                "payee",
+                "description",
+                "memo",
+                "account_id",
+                "recurring",
+            ]
+        },
+        "h_amount": {
+            field: (0.95 if field == "amount" else 0.0)
+            for field in [
+                "date",
+                "amount",
+                "direction",
+                "category",
+                "payee",
+                "description",
+                "memo",
+                "account_id",
+                "recurring",
+            ]
+        },
     }
 
     probs, meta = _maybe_model_probs(profiles, header_scores)
@@ -448,3 +471,19 @@ def test_detect_randomized_direction_token_profile_stability():
         profile = _profile_column(values)
         # With all values from known direction token pool, token rate should be perfect.
         assert profile.direction_token_rate == 1.0
+
+
+def test_detect_skips_only_leading_comments_not_hash_prefixed_data_rows():
+    csv_text = """# export metadata
+# generated at 2026-05-31
+date,amount,description
+#2026-05-01,-12.50,hash row
+2026-05-02,-8.00,normal row
+"""
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    assert len(res["preview"]) == 2
+    assert res["preview"][0]["date"] == "#2026-05-01"
+    assert res["preview"][1]["date"] == "2026-05-02"
