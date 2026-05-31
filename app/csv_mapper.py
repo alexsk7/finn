@@ -22,6 +22,10 @@ AMOUNT_MEDIAN_ABS_MAX = 20000.0
 AMOUNT_MEDIAN_HINT_IN_RANGE = 1.0
 AMOUNT_MEDIAN_HINT_OUT_OF_RANGE = 0.6
 
+# Input guardrails to avoid pathological memory usage on oversized CSV payloads.
+MAX_CSV_TEXT_CHARS = 10 * 1024 * 1024
+MAX_CSV_LINES = 200000
+
 TARGET_FIELDS = [
     "date",
     "amount",
@@ -502,6 +506,28 @@ def _prepare_csv_lines(csv_text: str) -> list[str]:
 
 
 def detect_transaction_csv_mapping(csv_text: str) -> dict:
+    if len(csv_text or "") > MAX_CSV_TEXT_CHARS:
+        return {
+            "ok": False,
+            "error": f"CSV input exceeds max size ({MAX_CSV_TEXT_CHARS} characters)",
+            "mapping": {},
+            "confidence": {},
+            "needs_confirmation": True,
+            "delimiter": ",",
+            "preview": [],
+        }
+
+    if (csv_text or "").count("\n") + 1 > MAX_CSV_LINES:
+        return {
+            "ok": False,
+            "error": f"CSV input exceeds max line count ({MAX_CSV_LINES})",
+            "mapping": {},
+            "confidence": {},
+            "needs_confirmation": True,
+            "delimiter": ",",
+            "preview": [],
+        }
+
     lines = _prepare_csv_lines(csv_text)
     if not lines:
         return {

@@ -3,6 +3,8 @@ from __future__ import annotations
 from app.csv_mapper import (
     AMOUNT_MEDIAN_ABS_MAX,
     BOOL_TOKENS_LOWER,
+    MAX_CSV_LINES,
+    MAX_CSV_TEXT_CHARS,
     _adaptive_blend_weights,
     _best_delimiter_fallback,
     _parse_date,
@@ -237,3 +239,21 @@ def test_bool_tokens_lower_is_defensively_normalized():
     assert "false" in BOOL_TOKENS_LOWER
     assert "yes" in BOOL_TOKENS_LOWER
     assert "no" in BOOL_TOKENS_LOWER
+
+
+def test_detect_fails_for_oversized_csv_text():
+    csv_text = "x" * (MAX_CSV_TEXT_CHARS + 1)
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is False
+    assert "exceeds max size" in res["error"].lower()
+
+
+def test_detect_fails_for_excessive_line_count():
+    csv_text = ("x\n" * MAX_CSV_LINES) + "x"
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is False
+    assert "exceeds max line count" in res["error"].lower()
