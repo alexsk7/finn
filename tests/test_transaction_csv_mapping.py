@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from app.csv_mapper import detect_transaction_csv_mapping
 from app.db import get_conn
 from app.writer import import_transaction_csv
