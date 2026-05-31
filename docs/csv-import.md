@@ -255,6 +255,20 @@ If a "date" field is detected and a post/posted header exists:
 - Store as `_date_fallback` key in mapping
 - At import time, try transaction date first; if missing/invalid, fall back to post date
 
+Example detected mapping payload:
+
+```json
+{
+  "date": "Transaction Date",
+  "_date_fallback": "Post Date",
+  "amount": "Amount"
+}
+```
+
+Importer precedence for date parsing is:
+1. mapped `date` column value
+2. mapped `_date_fallback` column value
+
 ### Data Processing
 
 At import time (`import_transaction_csv`):

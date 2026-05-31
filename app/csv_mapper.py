@@ -161,11 +161,30 @@ def _attach_date_fallback(
     if not primary:
         return
 
+    def _is_transaction_like(header: str) -> bool:
+        norm = _normalize_header(header)
+        tokens = set(norm.split())
+        return "transaction" in norm or "txn" in tokens or "dt" in tokens
+
+    def _is_post_like(header: str) -> bool:
+        norm = _normalize_header(header)
+        return "post" in norm or "posted" in norm
+
+    transaction_headers = [h for h in headers if _is_transaction_like(h)]
+    post_headers = [h for h in headers if _is_post_like(h)]
+
+    # If date selected a post/posted column, promote a transaction-like column to primary.
+    if _is_post_like(primary) and transaction_headers:
+        if score_lookup is None:
+            mapping["date"] = transaction_headers[0]
+        else:
+            mapping["date"] = max(transaction_headers, key=lambda h: score_lookup.get(h, 0.0))
+        primary = mapping["date"]
+
     for h in ordered:
         if h == primary:
             continue
-        h_norm = _normalize_header(h)
-        if "post" in h_norm or "posted" in h_norm:
+        if h in post_headers:
             mapping["_date_fallback"] = h
             return
 

@@ -60,6 +60,20 @@ def test_transaction_date_preferred_with_post_date_fallback():
     assert res["mapping"].get("_date_fallback") == "Post Date"
 
 
+def test_transaction_date_preferred_over_posted_date_when_primary_has_blanks():
+    csv_text = """Transaction Date,Post Date,Amount,Description
+2026-05-01,2026-05-02,-10.00,Coffee
+,2026-05-03,-11.00,Groceries
+2026-05-04,2026-05-05,-12.00,Transit
+"""
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is True
+    assert res["mapping"]["date"] == "Transaction Date"
+    assert res["mapping"].get("_date_fallback") == "Post Date"
+
+
 def test_profile_column_median_abs_even_count():
     profile = _profile_column(["1", "3", "5", "7"])
     assert profile.median_abs == 4.0

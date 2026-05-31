@@ -125,6 +125,25 @@ def test_import_transaction_csv_uses_post_date_fallback_for_missing_primary_date
     assert all(r["direction"] == "expense" for r in rows)
 
 
+def test_import_transaction_csv_detected_mapping_uses_post_date_fallback(db_conn):
+    csv_text = """Transaction Date,Post Date,Amount,Description
+2026-05-01,2026-05-02,-10.00,Coffee
+,2026-05-03,-11.00,Groceries
+2026-05-04,2026-05-05,-12.00,Transit
+"""
+
+    result = import_transaction_csv(csv_text)
+
+    assert result["inserted"] == 3
+    assert result["skipped"] == 0
+
+    rows = db_conn.execute("SELECT txn_date, amount, direction FROM transactions ORDER BY id DESC LIMIT 3").fetchall()
+
+    assert [r["txn_date"] for r in rows][::-1] == ["2026-05-01", "2026-05-03", "2026-05-04"]
+    assert [r["amount"] for r in rows][::-1] == [10.0, 11.0, 12.0]
+    assert all(r["direction"] == "expense" for r in rows)
+
+
 def test_import_transaction_csv_account_id_param_overrides_csv_value(minimal_seed_data, db_conn):
     csv_text = """date,amount,account_id
 2026-05-01,25.00,2
