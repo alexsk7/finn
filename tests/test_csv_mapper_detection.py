@@ -166,3 +166,15 @@ def test_detect_exposes_model_status_metadata():
         "skipped_insufficient_anchors",
         "skipped_training_error",
     }
+
+
+def test_detect_fails_when_required_fields_need_reused_header():
+    csv_text = """Amount
+-12.50
+"""
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is False
+    assert "not enough distinct headers" in res["error"].lower()
+    assert res["mapping"].get("amount") == "Amount"

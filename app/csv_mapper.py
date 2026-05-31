@@ -540,7 +540,27 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
     for field in REQUIRED_FIELDS:
         if field in mapping:
             continue
-        available_headers = [h for h in headers if h not in used_headers] or headers
+        available_headers = [h for h in headers if h not in used_headers]
+        if not available_headers:
+            preview = []
+            for row in rows[:5]:
+                preview.append({h: (row.get(h, "") or "") for h in headers})
+            return {
+                "ok": False,
+                "error": "Not enough distinct headers to map required fields without reusing columns",
+                "mapping": mapping,
+                "confidence": confidence,
+                "needs_confirmation": True,
+                "delimiter": delimiter,
+                "headers": headers,
+                "preview": preview,
+                "thresholds": {
+                    "high": HIGH_CONFIDENCE,
+                    "medium": MEDIUM_CONFIDENCE,
+                },
+                "strategy": "fuzzy_match",
+                "model": model_meta,
+            }
         best_h = max(available_headers, key=lambda h: blended[h][field])
         mapping[field] = best_h
         confidence[field] = round(blended[best_h][field], 3)
