@@ -68,6 +68,22 @@ def test_import_accepts_parenthesized_negative_amount(db_conn):
     assert row["direction"] == "expense"
 
 
+def test_import_accepts_parenthesized_negative_amount_with_currency_and_commas(db_conn):
+    csv_text = """transaction_date,amount,direction,category,description
+2026-05-01,"($1,234.50)",debit,food,Coffee
+"""
+
+    result = import_transaction_csv(csv_text)
+    assert result["inserted"] == 1
+    assert result["skipped"] == 0
+
+    row = db_conn.execute("SELECT amount, direction FROM transactions ORDER BY id DESC LIMIT 1").fetchone()
+
+    assert row is not None
+    assert row["amount"] == 1234.5
+    assert row["direction"] == "expense"
+
+
 def test_import_fails_when_required_confidence_below_medium(init_schema):
     csv_text = """alpha,beta
 not-a-date,not-a-number
