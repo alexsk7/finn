@@ -502,7 +502,11 @@ def import_snapshot_csv(csv_text: str) -> dict:
 # ── CSV Transaction Import ────────────────────────────────────────────────────
 
 
-def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict:
+def import_transaction_csv(
+    csv_text: str,
+    account_id: int | None = None,
+    field_mapping: dict[str, str] | None = None,
+) -> dict:
     """
     Import transactions from CSV. Accepts common bank export formats.
 
@@ -519,34 +523,49 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
     import csv as _csv
     import io
 
+    from .csv_mapper import detect_transaction_csv_mapping
+
     COL_ALIASES = {
         "date": "date",
-        "txn_date": "date",
-        "transaction_date": "date",
-        "posted_date": "date",
-        "post_date": "date",
-        "posting_date": "date",
+        "txn_date": "transaction_date",
+        "transaction_date": "transaction_date",
+        "transaction date": "transaction_date",
+        "posted_date": "post_date",
+        "posted date": "post_date",
+        "post_date": "post_date",
+        "post date": "post_date",
+        "posting_date": "post_date",
+        "posting date": "post_date",
         "amount": "amount",
         "amt": "amount",
         "debit_amount": "amount",
+        "debit amount": "amount",
         "direction": "direction",
         "type": "direction",
         "dr_cr": "direction",
+        "dr/cr": "direction",
         "transaction_type": "direction",
+        "transaction type": "direction",
         "credit_debit": "direction",
+        "credit/debit": "direction",
         "category": "category",
         "merchant": "payee",
         "payee": "payee",
         "vendor": "payee",
         "name": "payee",
+        "counterparty": "payee",
         "description": "description",
-        "memo": "description",
-        "note": "description",
+        "desc": "description",
+        "memo": "memo",
+        "note": "memo",
+        "notes": "memo",
         "narrative": "description",
         "details": "description",
         "account_id": "account_id",
+        "account id": "account_id",
         "account": "account_id",
         "recurring": "recurring",
+        "is_recurring": "recurring",
     }
 
     DIR_MAP = {
@@ -575,14 +594,21 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
     if not lines:
         return {"inserted": 0, "skipped": 0, "errors": ["Empty input"], "total": 0}
 
-    first_cols = [c.lower().strip().strip('"') for c in lines[0].split(",")]
+    detect = detect_transaction_csv_mapping(csv_text)
+    delimiter = detect.get("delimiter", ",") if isinstance(detect, dict) else ","
+
+    first_row = next(_csv.reader(io.StringIO(lines[0]), delimiter=delimiter), [])
+    first_cols = [c.lower().strip().strip('"') for c in first_row]
     has_header = any(c in COL_ALIASES for c in first_cols)
 
+    if field_mapping is None and isinstance(detect, dict) and detect.get("ok"):
+        field_mapping = detect.get("mapping")
+
     if has_header:
-        reader = _csv.DictReader(io.StringIO("\n".join(lines)))
+        reader = _csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delimiter)
     else:
         fieldnames = ["date", "amount", "direction", "category", "description"]
-        reader = _csv.DictReader(io.StringIO("\n".join(lines)), fieldnames=fieldnames)
+        reader = _csv.DictReader(io.StringIO("\n".join(lines)), fieldnames=fieldnames, delimiter=delimiter)
 
     inserted = skipped = 0
     errors: list[str] = []
@@ -590,13 +616,32 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
     with get_conn() as conn:
         for i, row in enumerate(reader, 1):
             try:
-                norm = {
-                    COL_ALIASES.get(k.lower().strip().strip('"'), k.lower().strip()): (v or "").strip().strip('"')
-                    for k, v in row.items()
-                    if k
-                }
+                if field_mapping:
+                    def mapped(field: str) -> str:
+                        key = field_mapping.get(field)
+                        return ((row.get(key, "") if key else "") or "").strip().strip('"')
 
-                txn_date_raw = norm.get("date", "").strip()
+                    norm = {
+                        "transaction_date": mapped("date"),
+                        "post_date": mapped("_date_fallback"),
+                        "amount": mapped("amount"),
+                        "direction": mapped("direction"),
+                        "category": mapped("category"),
+                        "payee": mapped("payee"),
+                        "description": mapped("description"),
+                        "memo": mapped("memo"),
+                        "account_id": mapped("account_id"),
+                        "recurring": mapped("recurring"),
+                    }
+                else:
+                    norm = {
+                        COL_ALIASES.get(k.lower().strip().strip('"'), k.lower().strip()): (v or "").strip().strip('"')
+                        for k, v in row.items()
+                        if k
+                    }
+
+                # Prefer transaction date, then plain date, then posted date fallback.
+                txn_date_raw = (norm.get("transaction_date") or norm.get("date") or norm.get("post_date") or "").strip()
                 if not txn_date_raw:
                     errors.append(f"Row {i}: missing date")
                     skipped += 1
@@ -626,7 +671,14 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
 
                 category = _clean_category(norm.get("category"))
                 payee = norm.get("payee", "").strip() or None
-                description = norm.get("description", "").strip() or None
+
+                # Keep both free-text fields when both are present.
+                desc_raw = norm.get("description", "").strip()
+                memo_raw = norm.get("memo", "").strip()
+                if desc_raw and memo_raw:
+                    description = f"{desc_raw} | {memo_raw}"
+                else:
+                    description = desc_raw or memo_raw or None
 
                 row_acct = account_id
                 if row_acct is None:

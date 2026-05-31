@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from app.csv_mapper import detect_transaction_csv_mapping
 from app.db import init_db
 from app.profile import get_profile, save_profile
 from app.queries import (
@@ -693,11 +694,21 @@ async def api_snapshot_import_csv(body: SnapshotImportBody):
 class TransactionImportBody(BaseModel):
     csv_text: str
     account_id: Optional[int] = None
+    field_mapping: Optional[dict[str, str]] = None
+
+
+class TransactionDetectBody(BaseModel):
+    csv_text: str
+
+
+@app.post("/api/transactions/detect-columns")
+async def api_transaction_detect_columns(body: TransactionDetectBody):
+    return detect_transaction_csv_mapping(body.csv_text)
 
 
 @app.post("/api/transactions/import-csv")
 async def api_transaction_import_csv(body: TransactionImportBody):
-    return import_transaction_csv(body.csv_text, body.account_id)
+    return import_transaction_csv(body.csv_text, body.account_id, body.field_mapping)
 
 
 # ── CSV Holdings Import ────────────────────────────────────────────────────────

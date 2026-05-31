@@ -440,11 +440,13 @@ VXUS,Vanguard Total International,18,58.72"
         oninput="previewTxnCSV()"></textarea>
 
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="detectTxnColumns()">Detect mapping</button>
         <button class="btn-primary" onclick="importTxnCSV()">Import</button>
         <button class="btn-secondary" onclick="
             document.getElementById('txn-csv-paste').value='';
             document.getElementById('txn-csv-preview').innerHTML='';
-            document.getElementById('txn-csv-result').textContent='';">Clear</button>
+            document.getElementById('txn-csv-result').textContent='';
+            txnDetectedMapping = null;">Clear</button>
         <span id="txn-csv-result" style="font-size:11px;"></span>
       </div>
 
@@ -1675,6 +1677,8 @@ VXUS,Vanguard Total International,18,58.72"
   }
 
   // ── Transaction CSV Import ─────────────────────────────────────────────────────
+  let txnDetectedMapping = null;
+
   function loadTxnCSVFile(input) {
     const file = input.files[0];
     if (!file) return;
@@ -1686,27 +1690,14 @@ VXUS,Vanguard Total International,18,58.72"
     reader.readAsText(file);
   }
 
-  function previewTxnCSV() {
-    const text = document.getElementById('txn-csv-paste').value.trim();
+  function _renderTxnPreview(lines, delimiter = ',', mappingRes = null) {
     const previewEl = document.getElementById('txn-csv-preview');
-    if (!text) { previewEl.innerHTML = ''; return; }
-
-    const lines = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
-    if (!lines.length) { previewEl.innerHTML = ''; return; }
-
-    const KNOWN_COLS = new Set([
-      'date', 'txn_date', 'transaction_date', 'posted_date', 'post_date', 'posting_date',
-      'amount', 'amt', 'direction', 'type', 'dr_cr', 'transaction_type', 'credit_debit',
-      'category', 'merchant', 'payee', 'description', 'memo', 'note', 'narrative', 'details',
-      'account_id', 'account', 'recurring',
-    ]);
-    const firstCols = lines[0].split(',').map(c => c.toLowerCase().trim().replace(/^"|"$/g, ''));
-    const isHeader = firstCols.some(c => KNOWN_COLS.has(c));
+    const resultEl = document.getElementById('txn-csv-result');
 
     const preview = lines.slice(0, 7);
     const tableRows = preview.map((line, i) => {
-      const cols = line.split(',');
-      if (i === 0 && isHeader) {
+      const cols = line.split(delimiter);
+      if (i === 0) {
         return `<tr>${cols.map(c => `<th style="padding:4px 8px;color:var(--accent);font-size:10px;letter-spacing:.06em;">${c.trim()}</th>`).join('')}</tr>`;
       }
       return `<tr>${cols.map(c => `<td style="padding:4px 8px;font-size:11px;">${c.trim()}</td>`).join('')}</tr>`;
@@ -1716,12 +1707,96 @@ VXUS,Vanguard Total International,18,58.72"
       ? `<div style="font-size:10px;color:var(--text-dim);margin-top:5px;">… ${lines.length - 7} more row${lines.length - 7 === 1 ? '' : 's'}</div>`
       : '';
 
+    const mapLines = (mappingRes && mappingRes.mapping)
+      ? Object.entries(mappingRes.mapping)
+          .filter(([k]) => !k.startsWith('_'))
+          .map(([k, v]) => {
+            const score = mappingRes.confidence && mappingRes.confidence[k] !== undefined ? ` (${mappingRes.confidence[k]})` : '';
+            return `<span style="margin-right:10px;">${k} → <strong>${v}</strong>${score}</span>`;
+          })
+          .join('')
+      : '';
+
+    const strategyBadge = (mappingRes && mappingRes.strategy)
+      ? `<span style="display:inline-block;margin-top:8px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);">Strategy: ${mappingRes.strategy}</span>`
+      : '';
+
     previewEl.innerHTML = `
     <div style="font-size:10px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em;">
-      Preview · ${lines.length} row${lines.length === 1 ? '' : 's'}${isHeader ? ' · header detected' : ''}
+      Preview · ${lines.length} row${lines.length === 1 ? '' : 's'}
     </div>
     <div class="table-scroll"><table class="data-table">${tableRows}</table></div>
-    ${more}`;
+    ${more}
+    ${mapLines ? `<div style="font-size:10px;color:var(--text-dim);margin-top:8px;line-height:1.6;">${mapLines}</div>` : ''}
+    ${strategyBadge}`;
+
+    if (mappingRes && mappingRes.ok) {
+      if (mappingRes.needs_confirmation) {
+        resultEl.textContent = 'Review detected mapping before import.';
+        resultEl.style.color = 'var(--text-dim)';
+      } else {
+        resultEl.textContent = '✓ High-confidence mapping detected.';
+        resultEl.style.color = 'var(--green)';
+      }
+    }
+  }
+
+  function previewTxnCSV() {
+    const text = document.getElementById('txn-csv-paste').value.trim();
+    const previewEl = document.getElementById('txn-csv-preview');
+    if (!text) {
+      previewEl.innerHTML = '';
+      txnDetectedMapping = null;
+      return;
+    }
+
+    const lines = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+    if (!lines.length) {
+      previewEl.innerHTML = '';
+      txnDetectedMapping = null;
+      return;
+    }
+
+    txnDetectedMapping = null;
+    _renderTxnPreview(lines);
+  }
+
+  async function detectTxnColumns() {
+    const text = document.getElementById('txn-csv-paste').value.trim();
+    const resultEl = document.getElementById('txn-csv-result');
+
+    if (!text) {
+      resultEl.textContent = 'Paste or load a CSV first.';
+      resultEl.style.color = 'var(--red)';
+      return;
+    }
+
+    const lines = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+    if (!lines.length) {
+      resultEl.textContent = 'Paste or load a CSV first.';
+      resultEl.style.color = 'var(--red)';
+      return;
+    }
+
+    resultEl.textContent = 'Detecting mapping…';
+    resultEl.style.color = 'var(--text-dim)';
+
+    const res = await fetch('/api/transactions/detect-columns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csv_text: text }),
+    }).then(r => r.json());
+
+    if (!res.ok) {
+      txnDetectedMapping = null;
+      resultEl.textContent = `✗ ${res.error || 'Could not detect columns'}`;
+      resultEl.style.color = 'var(--red)';
+      _renderTxnPreview(lines);
+      return;
+    }
+
+    txnDetectedMapping = res.mapping || null;
+    _renderTxnPreview(lines, (res && res.delimiter) ? res.delimiter : ',', res);
   }
 
   async function importTxnCSV() {
@@ -1733,13 +1808,23 @@ VXUS,Vanguard Total International,18,58.72"
     }
     const acctVal = document.getElementById('txn-csv-acct').value;
     const acctId = acctVal ? parseInt(acctVal) : null;
+
+    if (!txnDetectedMapping) {
+      await detectTxnColumns();
+      if (!txnDetectedMapping) {
+        resultEl.textContent = '✗ Could not detect required fields (date/amount).';
+        resultEl.style.color = 'var(--red)';
+        return;
+      }
+    }
+
     resultEl.textContent = 'Importing…';
     resultEl.style.color = 'var(--text-dim)';
 
     const res = await fetch('/api/transactions/import-csv', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ csv_text: text, account_id: acctId }),
+      body: JSON.stringify({ csv_text: text, account_id: acctId, field_mapping: txnDetectedMapping }),
     }).then(r => r.json());
 
     const parts = [];
