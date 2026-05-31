@@ -5,8 +5,8 @@ from app.csv_mapper import (
     _adaptive_blend_weights,
     _best_delimiter_fallback,
     _parse_float,
-    _profile_score,
     _profile_column,
+    _profile_score,
     detect_transaction_csv_mapping,
 )
 
@@ -190,3 +190,14 @@ def test_amount_profile_score_uses_configured_median_bounds():
     out_of_range_score = _profile_score("amount", out_of_range)
 
     assert in_range_score > out_of_range_score
+
+
+def test_detect_fails_when_header_exists_but_no_data_rows():
+    csv_text = "date,amount,description\n"
+
+    res = detect_transaction_csv_mapping(csv_text)
+
+    assert res["ok"] is False
+    assert res["error"] == "No data rows found"
+    assert res["headers"] == ["date", "amount", "description"]
+    assert res["model"]["status"] == "skipped_no_data"

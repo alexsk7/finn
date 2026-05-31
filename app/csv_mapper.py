@@ -502,6 +502,29 @@ def detect_transaction_csv_mapping(csv_text: str) -> dict:
             "preview": [],
         }
 
+    if not rows:
+        return {
+            "ok": False,
+            "error": "No data rows found",
+            "mapping": {},
+            "confidence": {},
+            "needs_confirmation": True,
+            "delimiter": delimiter,
+            "headers": headers,
+            "preview": [],
+            "model": {
+                "available": False,
+                "status": "skipped_no_data",
+                "anchor_count": 0,
+                "class_count": 0,
+            },
+            "thresholds": {
+                "high": HIGH_CONFIDENCE,
+                "medium": MEDIUM_CONFIDENCE,
+            },
+            "strategy": "fuzzy_match",
+        }
+
     # Pure fuzzy + profile scoring (no exact-alias fast path).
     profiles = {h: _profile_column([(r.get(h, "") or "") for r in sample_rows]) for h in headers}
 
