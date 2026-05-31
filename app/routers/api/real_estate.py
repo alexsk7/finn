@@ -3,10 +3,11 @@ from typing import Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.services.reads import get_amortization, get_real_estate
-from app.services.writes import (
+from app.services.real_estate import (
     add_real_estate,
     delete_real_estate,
+    get_amortization,
+    get_real_estate,
     link_real_estate_account,
     save_mortgage_config,
     update_real_estate,

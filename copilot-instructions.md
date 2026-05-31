@@ -12,12 +12,15 @@
 - Read `README.md` for the product overview and top-level feature set.
 - Read `docs/architecture.md` for system design and data flow.
 - Read `docs/development.md` for repo conventions and workflows.
+- Read `docs/services-migration.md` before making structural refactors.
 - Read `docs/schema.md`, `docs/frontend.md`, and `docs/pages.md` when touching those areas.
 - Read `TASKS.md` before making feature work if roadmap context matters.
 
 ## Architecture Rules
 
-- Keep app wiring in `app/main.py`, routes in `app/routers/`, read queries in `app/queries.py`, and write logic in `app/writer.py`.
+- Keep app wiring in `app/main.py`, routes in `app/routers/`, and route handlers thin.
+- Route handlers should call domain services in `app/services/`.
+- Keep read SQL in `app/queries.py` and write SQL in `app/writer.py` unless a migration step explicitly moves it.
 - Prefer plain SQL over an ORM.
 - Keep schema changes idempotent and place migrations in `app/db.py` after `executescript()` inside the existing try/except migration block.
 - Use `CREATE INDEX IF NOT EXISTS` for indexes.
@@ -27,7 +30,7 @@
 ## Backend Change Patterns
 
 - For a new page: add a query function, add a route in `app/routers/pages.py`, add a sidebar link in `templates/base.html`, then create a template extending `base.html`.
-- For a new API endpoint: add the query/write helper, add the Pydantic model and route in a domain module under `app/routers/api/`, then call it from the relevant template.
+- For a new API endpoint: add query/write helper(s), expose through a domain service in `app/services/`, add the Pydantic model and route in `app/routers/api/<domain>.py`, then call it from the relevant template.
 - For data writes, keep logic in `app/writer.py` and return structured JSON responses.
 - Preserve existing naming and data-shape conventions used by nearby code.
 - Avoid introducing unnecessary abstraction layers.

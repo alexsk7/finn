@@ -3,8 +3,7 @@ from typing import Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.services.reads import get_journal
-from app.services.writes import add_journal_entry, delete_journal_entry, update_journal_entry
+from app.services.journal import add_journal_entry, delete_journal_entry, get_journal, update_journal_entry
 
 router = APIRouter(tags=["journal"])
 

@@ -35,10 +35,12 @@ static/        CSS and static assets
 
 The [`docs/`](docs/) directory has detailed reference material — architecture, schema, frontend conventions, and a development guide. Worth reading before making changes.
 
+For service-layer refactors, follow [`docs/services-migration.md`](docs/services-migration.md).
+
 ## Making changes
 
 - **New page**: add a query in `queries.py`, a route in `app/routers/pages.py`, a nav link in `base.html`, and a template. See the "Adding a new page" section in [`docs/development.md`](docs/development.md).
-- **New API endpoint**: add the function in `queries.py` or `writer.py`, expose it via `app/services/`, add a Pydantic model + route in `app/routers/api/<domain>.py`, then call it from the relevant template.
+- **New API endpoint**: add the function in `queries.py` or `writer.py`, expose it via the relevant domain module in `app/services/`, add a Pydantic model + route in `app/routers/api/<domain>.py`, then call it from the relevant template.
 - **Schema changes**: add idempotent `ALTER TABLE` migrations in `db.py` (inside the try/except block after `executescript`).
 
 ## Submitting a PR

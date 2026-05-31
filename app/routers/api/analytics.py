@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.services.reads import (
+from app.services.analytics import (
     get_allocation,
     get_cashflow_by_category,
     get_dashboard_summary,

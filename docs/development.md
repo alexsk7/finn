@@ -1,5 +1,7 @@
 # Development Guide
 
+See [`docs/services-migration.md`](docs/services-migration.md) for the phased migration plan and domain-by-domain checklist.
+
 ## Adding a new page
 
 1. Add a query function to `app/queries.py`
@@ -11,10 +13,12 @@
 ## Adding a new API endpoint
 
 1. Add a read function to `app/queries.py` or write function to `app/writer.py`
-2. Re-export the function through `app/services/reads.py`, `app/services/writes.py`, or `app/services/profile.py`
+2. Re-export the function through the relevant domain service module under `app/services/` (for example `app/services/transactions.py`)
 3. Add a Pydantic model (for POST/PUT bodies) and route in the relevant domain router under `app/routers/api/`
 4. Import the function in that domain router from `app.services.*`
 5. Call from JS via `fetch('/api/...')` in the relevant template
+
+During migration work, keep endpoint payloads stable and move orchestration to services before moving low-level SQL.
 
 ## Adding a CSV import to a tab
 

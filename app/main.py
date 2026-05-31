@@ -10,12 +10,12 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app.csv_mapper import detect_transaction_csv_mapping
 from app.db import init_db
 from app.routers.api import router as api_router
 from app.routers.pages import router as pages_router
 from app.seed import seed_demo
-from app.writer import import_transaction_csv, refresh_prices
+from app.services.investments import refresh_prices
+from app.services.transactions import detect_transaction_csv_mapping, import_transaction_csv
 
 logger = logging.getLogger(__name__)
 

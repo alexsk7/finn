@@ -141,6 +141,20 @@ Planned next steps:
 
 See [TASKS.md](TASKS.md) for the detailed working checklist.
 
+## Migration status
+
+The FastAPI backend has moved to a domain-oriented structure:
+
+- App entrypoint: `app/main.py`
+- Page routes: `app/routers/pages.py`
+- API routes: `app/routers/api/*.py` (by domain)
+- Service layer: `app/services/*.py` (domain orchestration)
+- Data modules: `app/queries.py` (reads) and `app/writer.py` (writes)
+
+Current approach is incremental: routers call services, and services delegate to `queries.py` / `writer.py`. This keeps behavior stable while allowing domain-by-domain extraction over time.
+
+See [docs/services-migration.md](docs/services-migration.md) for the phased migration plan and checklist.
+
 ---
 
 ## Architecture

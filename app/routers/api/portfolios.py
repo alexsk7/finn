@@ -2,15 +2,20 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from app.services.portfolios import (
+    create_new_portfolio,
+    get_portfolios,
+    remove_portfolio,
+    rename_existing_portfolio,
+    switch_portfolio,
+)
+
 router = APIRouter(tags=["portfolios"])
 
 
 @router.get("/portfolios")
 async def api_portfolios():
-    from app.portfolio import _load, list_portfolios
-
-    cfg = _load()
-    return {"active": cfg["active"], "portfolios": list_portfolios()}
+    return get_portfolios()
 
 
 class PortfolioSwitchBody(BaseModel):
@@ -19,13 +24,8 @@ class PortfolioSwitchBody(BaseModel):
 
 @router.post("/portfolio/switch")
 async def api_portfolio_switch(body: PortfolioSwitchBody):
-    from app.db import init_db
-    from app.portfolio import set_active
-
     try:
-        set_active(body.name)
-        init_db()
-        return {"ok": True, "active": body.name}
+        return switch_portfolio(body.name)
     except ValueError as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
 
@@ -36,15 +36,8 @@ class PortfolioNewBody(BaseModel):
 
 @router.post("/portfolio/new")
 async def api_portfolio_new(body: PortfolioNewBody):
-    from app.db import init_db
-    from app.portfolio import create_portfolio
-    from app.seed import seed_demo
-
     try:
-        entry = create_portfolio(body.name)
-        init_db()
-        seed_demo()
-        return {"ok": True, **entry}
+        return create_new_portfolio(body.name)
     except ValueError as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
 
@@ -55,21 +48,15 @@ class PortfolioRenameBody(BaseModel):
 
 @router.put("/portfolio/{portfolio_name:path}")
 async def api_portfolio_rename(portfolio_name: str, body: PortfolioRenameBody):
-    from app.portfolio import rename_portfolio
-
     try:
-        entry = rename_portfolio(portfolio_name, body.name)
-        return {"ok": True, **entry}
+        return rename_existing_portfolio(portfolio_name, body.name)
     except ValueError as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
 
 
 @router.delete("/portfolio/{portfolio_name:path}")
 async def api_portfolio_delete(portfolio_name: str):
-    from app.portfolio import delete_portfolio
-
     try:
-        delete_portfolio(portfolio_name)
-        return {"ok": True}
+        return remove_portfolio(portfolio_name)
     except ValueError as e:
         return JSONResponse(status_code=400, content={"error": str(e)})

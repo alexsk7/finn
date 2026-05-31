@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.services.writes import reset_all_data
+from app.services.system import reset_all_data
 
 router = APIRouter(tags=["system"])
 

@@ -4,8 +4,14 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.services.reads import get_account_by_id, get_account_transactions, get_accounts_summary
-from app.services.writes import add_account, delete_account, update_account
+from app.services.accounts import (
+    add_account,
+    delete_account,
+    get_account_by_id,
+    get_account_transactions,
+    get_accounts_summary,
+    update_account,
+)
 
 router = APIRouter(tags=["accounts"])
 
