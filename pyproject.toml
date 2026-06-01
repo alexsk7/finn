@@ -1,6 +1,6 @@
 [project]
 name = "finn"
-version = "0.1.5"
+version = "0.1.6"
 description = "Local-first personal finance dashboard — net worth, investments, accounts, real estate, tax, and budget in a single SQLite database"
 readme = "README.md"
 requires-python = ">=3.12"
