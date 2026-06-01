@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 
+from app.queries import get_journal
 from app.schemas.journal import JournalBody, JournalUpdateBody
-from app.services.journal import add_journal_entry, delete_journal_entry, get_journal, update_journal_entry
+from app.writer import add_journal_entry, delete_journal_entry, update_journal_entry
 
 router = APIRouter(tags=["journal"])
 

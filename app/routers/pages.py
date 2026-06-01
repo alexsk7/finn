@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
-from app.services.profile import get_profile
+from app.profile import get_profile
 
 router = APIRouter(tags=["pages"])
 

@@ -2,18 +2,17 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 
+from app.queries import get_budget_categories_full, get_budget_month
 from app.schemas.budget import (
     BudgetCategoryBody,
     BudgetCategoryUpdate,
     BudgetMonthBody,
     BudgetMonthCopyBody,
 )
-from app.services.budget import (
+from app.writer import (
     add_budget_category,
     copy_budget_month,
     delete_budget_category,
-    get_budget_categories_full,
-    get_budget_month,
     save_budget_month,
     update_budget_category,
 )

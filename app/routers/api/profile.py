@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
+from app.profile import get_profile, save_profile
 from app.schemas.profile import ProfileBody
-from app.services.profile import get_profile, save_profile
 
 router = APIRouter(tags=["profile"])
 

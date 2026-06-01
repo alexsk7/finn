@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.system import ResetBody
-from app.services.system import reset_all_data
+from app.writer import reset_all_data
 
 router = APIRouter(tags=["system"])
 

@@ -1,15 +1,9 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+from app.queries import get_account_by_id, get_account_transactions, get_accounts_summary
 from app.schemas.accounts import AccountBody, AccountUpdateBody
-from app.services.accounts import (
-    add_account,
-    delete_account,
-    get_account_by_id,
-    get_account_transactions,
-    get_accounts_summary,
-    update_account,
-)
+from app.writer import add_account, delete_account, update_account
 
 router = APIRouter(tags=["accounts"])
 
