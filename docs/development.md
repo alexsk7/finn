@@ -13,13 +13,13 @@ See [`docs/services-migration.md`](docs/services-migration.md) for the phased mi
 ## Adding a new API endpoint
 
 1. Add a read function to `app/queries.py` or write function to `app/writer.py`
-2. Re-export the function through the relevant domain service module under `app/services/` (for example `app/services/transactions.py`)
+2. Add the helper to `app/queries.py`, `app/writer.py`, `app.csv_mapper.py`, or another owning module under `app/`
 3. Add/extend request schemas in `app/schemas/<domain>.py`
 4. Add a route in the relevant domain router under `app/routers/api/` and import schemas from `app.schemas.*`
-5. Import service functions in that domain router from `app.services.*`
+5. Import a service helper only if the domain has real orchestration or validation that belongs outside the router
 6. Call from JS via `fetch('/api/...')` in the relevant template
 
-During migration work, keep endpoint payloads stable and move orchestration to services before moving low-level SQL.
+During migration work, keep endpoint payloads stable and only introduce a service layer when it reduces duplication or owns non-trivial behavior.
 
 ## Adding a CSV import to a tab
 

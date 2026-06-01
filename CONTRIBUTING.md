@@ -41,7 +41,7 @@ For service-layer refactors, follow [`docs/services-migration.md`](docs/services
 ## Making changes
 
 - **New page**: add a query in `queries.py`, a route in `app/routers/pages.py`, a nav link in `base.html`, and a template. See the "Adding a new page" section in [`docs/development.md`](docs/development.md).
-- **New API endpoint**: add the function in `queries.py` or `writer.py`, expose it via the relevant domain module in `app/services/`, add/extend request schemas in `app/schemas/<domain>.py`, add the route in `app/routers/api/<domain>.py`, then call it from the relevant template.
+- **New API endpoint**: add the function in `queries.py`, `writer.py`, `csv_mapper.py`, or another owning module under `app/`, add/extend request schemas in `app/schemas/<domain>.py`, add the route in `app/routers/api/<domain>.py`, and only add a service helper if the domain has real orchestration or validation that belongs there.
 - **Schema changes**: add idempotent `ALTER TABLE` migrations in `db.py` (inside the try/except block after `executescript`).
 
 ## Submitting a PR

@@ -2,13 +2,15 @@
 
 ## Goal
 
-Move business orchestration behind domain service modules while preserving existing API contracts, DB schema behavior, and frontend payload shapes.
+Keep routing and transport logic thin while preserving existing API contracts, DB schema behavior, and frontend payload shapes. Most domains now call `app.queries.py`, `app.writer.py`, `app.csv_mapper.py`, or `app.profile.py` directly; only a small number of behavior-owning helpers remain in `app/services/`.
 
 ## Current state
 
 - App entrypoint: `app/main.py`
 - Routers: `app/routers/pages.py` and `app/routers/api/*.py`
-- Domain services: `app/services/*.py`
+- Behavior-owning services remain only where they add domain rules:
+  - `app/services/investments.py`
+  - `app/services/real_estate.py`
 - Core data modules remain authoritative implementations:
   - `app/queries.py` for read SQL
   - `app/writer.py` for write SQL and mutations
@@ -30,24 +32,25 @@ Move business orchestration behind domain service modules while preserving exist
 
 ### Phase 2 (completed): Service boundary introduction
 
-- Add domain service modules under `app/services/`.
-- Route handlers call service functions rather than importing `queries.py`/`writer.py` directly.
+- Add domain service modules under `app/services/` where they meaningfully own behavior.
+- Route handlers call those helpers when a domain has orchestration or validation worth centralizing.
 
-### Phase 3 (in progress): Orchestration move into services
+### Phase 3 (completed): Orchestration extraction and consolidation
 
-- Move multi-step business orchestration from routers into services first.
-- Keep low-level SQL in `queries.py` and `writer.py` unless extraction is required.
+- Move multi-step business orchestration into the smallest useful owning layer.
+- Keep low-level SQL in `queries.py` and `writer.py`.
+- Delete passthrough service modules once routers can call lower-level modules directly.
 
-### Phase 4 (optional, future): Domain data extraction
+### Phase 4 (optional, future): Selective domain data extraction
 
-- Extract domain-specific data access from `queries.py`/`writer.py` into service-local helpers or domain data modules.
-- Keep a compatibility layer during transition to avoid large breakage.
+- Extract only the data access that still benefits from a dedicated home.
+- Keep compatibility wrappers only when they reduce churn or preserve a stable contract during migration.
 
 ## Per-domain checklist
 
 1. Identify router endpoints for the domain.
-2. Ensure each endpoint calls a service function.
-3. Move orchestration and validation from router to service where practical.
+2. Decide whether the logic belongs in a shared helper, a router, or the underlying data module.
+3. Move orchestration and validation out of the router only when there is a real behavior boundary to own.
 4. Keep endpoint schemas and payloads unchanged.
 5. Add/update tests for the domain.
 6. Run focused tests, then full suite.
