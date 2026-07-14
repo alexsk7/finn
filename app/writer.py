@@ -523,7 +523,8 @@ def import_transaction_csv(
     import csv as _csv
     import io
 
-    from .csv_mapper import MEDIUM_CONFIDENCE, detect_transaction_csv_mapping
+    from .csv_mapper import detect_transaction_csv_mapping
+    from .helpers.csv_mapper_constants import MEDIUM_CONFIDENCE
 
     DIR_MAP = {
         "debit": "expense",

@@ -110,7 +110,7 @@ graph TD
     E --> F["Stage 3:<br/>Blend Scores"]
     B2 --> F
     
-    F --> F1["Optional ML Model<br/>if 4+ anchors"]
+    F --> F1["Optional ML Model<br/>if 2+ anchors and 2+ classes"]
     F1 --> F2["adaptive blend:<br/>header/profile/model<br/>weights per field"]
     
     F2 --> G["One-to-One<br/>Assignment"]
@@ -134,7 +134,7 @@ The detection process runs in three stages:
 #### Stage 1: Header Fuzzy Matching
 
 ```
-_header_score(field, header) → float [0.0, 1.0]
+header_score(field, header) -> float [0.0, 1.0]
 ```
 
 - Compare field name (e.g., "date") with CSV header using `difflib.SequenceMatcher`
@@ -147,7 +147,7 @@ _header_score(field, header) → float [0.0, 1.0]
 #### Stage 2: Column Profiling
 
 ```
-_profile_column(values) → ColumnProfile(9 stats)
+profile_column(values) -> ColumnProfile(9 stats)
 ```
 
 Analyze up to 120 sample rows, compute:
@@ -525,11 +525,11 @@ Returns:
 ```
 
 **Key helpers:**
-- `_normalize_header()` — Lowercase, strip quotes/spaces, convert `-/_` to spaces
-- `_profile_column()` — Compute 9-stat ColumnProfile
-- `_header_score()` — Fuzzy match with field-specific heuristics
-- `_profile_score()` — Field-specific profile weighting
-- `_maybe_model_probs()` — Optional weakly-supervised LogisticRegression
+- `normalize_header()` — Lowercase, strip quotes/spaces, convert `-/_` to spaces
+- `profile_column()` — Compute 9-stat ColumnProfile
+- `header_score()` — Fuzzy match with field-specific heuristics
+- `profile_score()` — Field-specific profile weighting
+- `maybe_model_probs()` — Optional weakly-supervised LogisticRegression
 
 **Integration:**
 - API endpoint: `POST /api/transactions/detect-columns` (FastAPI)
