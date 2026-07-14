@@ -113,7 +113,7 @@
 - [x] Expand the static analysis ruleset for `ruff` in the `pyproject.toml` file
 - [x] **Backup script** (`db/*.db` → timestamped `backups/`) — WAL-safe via `sqlite3.backup()`; runs on `./run.sh` startup; backs up all portfolios; keeps last 30 per portfolio
 - [x] `Makefile` with `run`, `refresh`, `snapshot`, `backup` targets
-- [ ] Safeguard: `reset_all_data()` should never be called from test/CLI code against the live DB — always copy to a temp DB for destructive testing
+- [x] Safeguard: `reset_all_data()` should never be called from test/CLI code against the live DB — always copy to a temp DB for destructive testing
 
 ## Security (complete)
 

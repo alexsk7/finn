@@ -502,7 +502,11 @@ def import_snapshot_csv(csv_text: str) -> dict:
 # ── CSV Transaction Import ────────────────────────────────────────────────────
 
 
-def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict:
+def import_transaction_csv(
+    csv_text: str,
+    account_id: int | None = None,
+    field_mapping: dict[str, str] | None = None,
+) -> dict:
     """
     Import transactions from CSV. Accepts common bank export formats.
 
@@ -519,35 +523,7 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
     import csv as _csv
     import io
 
-    COL_ALIASES = {
-        "date": "date",
-        "txn_date": "date",
-        "transaction_date": "date",
-        "posted_date": "date",
-        "post_date": "date",
-        "posting_date": "date",
-        "amount": "amount",
-        "amt": "amount",
-        "debit_amount": "amount",
-        "direction": "direction",
-        "type": "direction",
-        "dr_cr": "direction",
-        "transaction_type": "direction",
-        "credit_debit": "direction",
-        "category": "category",
-        "merchant": "payee",
-        "payee": "payee",
-        "vendor": "payee",
-        "name": "payee",
-        "description": "description",
-        "memo": "description",
-        "note": "description",
-        "narrative": "description",
-        "details": "description",
-        "account_id": "account_id",
-        "account": "account_id",
-        "recurring": "recurring",
-    }
+    from .csv_mapper import MEDIUM_CONFIDENCE, detect_transaction_csv_mapping
 
     DIR_MAP = {
         "debit": "expense",
@@ -571,18 +547,60 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
                 continue
         raise ValueError(f"unrecognized date format: {s!r}")
 
+    def parse_amount(s: str) -> float:
+        txt = (s or "").strip().replace(",", "").replace("$", "")
+        if txt.startswith("(") and txt.endswith(")"):
+            txt = "-" + txt[1:-1]
+        if not txt:
+            raise ValueError("missing amount")
+        return float(txt)
+
     lines = [line for line in csv_text.strip().splitlines() if line.strip() and not line.strip().startswith("#")]
     if not lines:
         return {"inserted": 0, "skipped": 0, "errors": ["Empty input"], "total": 0}
 
-    first_cols = [c.lower().strip().strip('"') for c in lines[0].split(",")]
-    has_header = any(c in COL_ALIASES for c in first_cols)
+    detect = detect_transaction_csv_mapping(csv_text)
+    delimiter = detect.get("delimiter", ",") if isinstance(detect, dict) else ","
 
-    if has_header:
-        reader = _csv.DictReader(io.StringIO("\n".join(lines)))
-    else:
-        fieldnames = ["date", "amount", "direction", "category", "description"]
-        reader = _csv.DictReader(io.StringIO("\n".join(lines)), fieldnames=fieldnames)
+    if field_mapping is None and isinstance(detect, dict) and detect.get("ok"):
+        field_mapping = detect.get("mapping")
+
+    detect_confidence = detect.get("confidence", {}) if isinstance(detect, dict) else {}
+    low_required_fields = [
+        f for f in ("date", "amount") if float(detect_confidence.get(f, 0.0) or 0.0) < MEDIUM_CONFIDENCE
+    ]
+    if field_mapping is None and low_required_fields:
+        details = ", ".join(
+            f"{f}={float(detect_confidence.get(f, 0.0) or 0.0):.3f} (< {MEDIUM_CONFIDENCE:.2f})"
+            for f in low_required_fields
+        )
+        warning = (
+            "Import blocked: required field confidence is below medium. "
+            f"{details}. Review column detection and confirm mappings before importing."
+        )
+        return {
+            "inserted": 0,
+            "skipped": 0,
+            "errors": [warning],
+            "warning": warning,
+            "total": 0,
+        }
+
+    if not field_mapping:
+        warning = (
+            "Import blocked: could not determine a reliable column mapping. "
+            "Provide field_mapping explicitly or confirm auto-detection output before importing."
+        )
+        return {
+            "inserted": 0,
+            "skipped": 0,
+            "errors": [warning],
+            "warning": warning,
+            "total": 0,
+        }
+
+    # Mapping keys reference CSV header names, so preserve the incoming header row.
+    reader = _csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delimiter)
 
     inserted = skipped = 0
     errors: list[str] = []
@@ -590,13 +608,26 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
     with get_conn() as conn:
         for i, row in enumerate(reader, 1):
             try:
+
+                def mapped(field: str) -> str:
+                    key = field_mapping.get(field)
+                    return ((row.get(key, "") if key else "") or "").strip().strip('"')
+
                 norm = {
-                    COL_ALIASES.get(k.lower().strip().strip('"'), k.lower().strip()): (v or "").strip().strip('"')
-                    for k, v in row.items()
-                    if k
+                    "transaction_date": mapped("date"),
+                    "post_date": mapped("_date_fallback"),
+                    "amount": mapped("amount"),
+                    "direction": mapped("direction"),
+                    "category": mapped("category"),
+                    "payee": mapped("payee"),
+                    "description": mapped("description"),
+                    "memo": mapped("memo"),
+                    "account_id": mapped("account_id"),
+                    "recurring": mapped("recurring"),
                 }
 
-                txn_date_raw = norm.get("date", "").strip()
+                # Prefer transaction date, then plain date, then posted date fallback.
+                txn_date_raw = (norm.get("transaction_date") or norm.get("date") or norm.get("post_date") or "").strip()
                 if not txn_date_raw:
                     errors.append(f"Row {i}: missing date")
                     skipped += 1
@@ -604,12 +635,12 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
 
                 txn_date = parse_date(txn_date_raw)
 
-                amt_raw = norm.get("amount", "").replace(",", "").replace("$", "")
-                if not amt_raw:
+                amt_raw = norm.get("amount", "")
+                if not amt_raw.strip():
                     errors.append(f"Row {i}: missing amount")
                     skipped += 1
                     continue
-                amount_raw = float(amt_raw)
+                amount_raw = parse_amount(amt_raw)
 
                 dir_raw = norm.get("direction", "").lower().strip()
                 if dir_raw:
@@ -626,7 +657,14 @@ def import_transaction_csv(csv_text: str, account_id: int | None = None) -> dict
 
                 category = _clean_category(norm.get("category"))
                 payee = norm.get("payee", "").strip() or None
-                description = norm.get("description", "").strip() or None
+
+                # Keep both free-text fields when both are present.
+                desc_raw = norm.get("description", "").strip()
+                memo_raw = norm.get("memo", "").strip()
+                if desc_raw and memo_raw:
+                    description = f"{desc_raw} | {memo_raw}"
+                else:
+                    description = desc_raw or memo_raw or None
 
                 row_acct = account_id
                 if row_acct is None:
