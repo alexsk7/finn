@@ -7,15 +7,15 @@ Usage: uv run python scripts/gen_favicon.py
 """
 
 from pathlib import Path
+
 from PIL import Image, ImageDraw
 
-
 # ── Palette (matches style.css CSS variables) ─────────────────────────────────
-BG      = (19,  24,  32)   # --bg2
-BORDER  = (35,  45,  63)   # --border
-BLUE    = (64, 128, 240)   # --accent
-GREEN   = (34, 211, 160)   # --green
-GRID    = (26,  32,  48)   # subtle grid line
+BG = (19, 24, 32)  # --bg2
+BORDER = (35, 45, 63)  # --border
+BLUE = (64, 128, 240)  # --accent
+GREEN = (34, 211, 160)  # --green
+GRID = (26, 32, 48)  # subtle grid line
 
 
 def lerp(a, b, t):
@@ -27,7 +27,6 @@ def lerp_color(c1, c2, t):
 
 
 def draw_icon(size: int) -> Image.Image:
-    scale = size / 48  # design at 48px, then scale
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
 
@@ -57,13 +56,12 @@ def draw_icon(size: int) -> Image.Image:
     if size >= 32:
         for gy in [0.33, 0.58, 0.82]:
             x0, y0 = pt(0.08, gy)
-            x1, _  = pt(0.92, gy)
+            x1, _ = pt(0.92, gy)
             d.line([(x0, y0), (x1, y0)], fill=GRID + (180,), width=1)
 
     # Area fill under chart — manual trapezoid in dark blue alpha
-    peak = pt(*points_norm[-1])
     base_right = pt(points_norm[-1][0], 0.88)
-    base_left  = pt(points_norm[0][0], 0.88)
+    base_left = pt(points_norm[0][0], 0.88)
     poly = [pt(nx, ny) for nx, ny in points_norm] + [base_right, base_left]
     # Draw as multiple semi-transparent layers for a soft fill
     fill_img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
@@ -117,7 +115,7 @@ def main():
         format="ICO",
         sizes=[(s, s) for s in sizes],
     )
-    print(f"Written {out_path}  ({', '.join(str(s)+'px' for s in sizes)})")
+    print(f"Written {out_path}  ({', '.join(str(s) + 'px' for s in sizes)})")
 
     # Also save a 512px PNG for use as an app icon / PWA icon
     png_path = Path(__file__).parent.parent / "static" / "icon-512.png"

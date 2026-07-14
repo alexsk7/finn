@@ -2,7 +2,7 @@
 
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 _ROOT = Path(__file__).parent.parent
@@ -23,7 +23,7 @@ def _load() -> dict:
                 {
                     "name": "default",
                     "path": "db/finance.db",
-                    "created_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                 }
             ],
         }
@@ -53,10 +53,7 @@ def get_active_path() -> Path:
 def list_portfolios() -> list[dict]:
     cfg = _load()
     active = cfg["active"]
-    return [
-        {**p, "is_active": p["name"] == active}
-        for p in cfg["portfolios"]
-    ]
+    return [{**p, "is_active": p["name"] == active} for p in cfg["portfolios"]]
 
 
 def set_active(name: str) -> None:
@@ -128,7 +125,7 @@ def create_portfolio(name: str) -> dict:
     entry = {
         "name": display_name,
         "path": db_name,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
     cfg["portfolios"].append(entry)
     cfg["active"] = display_name

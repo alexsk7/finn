@@ -1,12 +1,32 @@
-.PHONY: run backup refresh snapshot
+.PHONY: setup hooks lint format typecheck check run backup refresh snapshot
 
 PORT ?= 8080
+
+setup:
+	mise trust
+	mise install
+	$(MAKE) hooks
+	mise exec -- uv sync
+
+hooks:
+	git config core.hooksPath .githooks
+
+lint:
+	mise exec -- ruff check --fix .
+
+format:
+	mise exec -- ruff format .
+
+typecheck:
+	mise exec -- ty check .
+
+check: lint typecheck
 
 run:
 	./run.sh $(PORT)
 
 backup:
-	uv run python scripts/backup.py
+	mise exec -- uv run python scripts/backup.py
 
 refresh:
 	curl -s -X POST http://localhost:$(PORT)/api/prices/refresh | python3 -m json.tool

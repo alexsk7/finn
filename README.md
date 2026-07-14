@@ -34,8 +34,15 @@
 
 ## Prerequisites
 
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) — manages the Python environment and all dependencies
-- Python 3.12+
+- [mise](https://mise.jdx.dev/) — installs the repo's pinned Python, `uv`, `ruff`, and `ty` versions from [mise.toml](mise.toml)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) — manages the virtual environment and dependencies once provisioned by mise
+
+If you're using zsh, enable mise in your shell startup so repo-local tools resolve automatically:
+
+```bash
+echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
+exec zsh
+```
 
 ---
 
@@ -44,7 +51,8 @@
 ```bash
 git clone https://github.com/jacksonrc/finn.git
 cd finn
-./run.sh
+make setup
+make run
 ```
 
 Your browser opens automatically once the server is ready. A demo dataset loads on first run so the dashboard isn't empty. You'll be prompted for your name the first time — this is used for the dashboard greeting and is stored locally.
@@ -61,10 +69,18 @@ A `Makefile` is included for convenience:
 
 | Command | What it does |
 |---|---|
+| `make setup` | Trust the repo config, install the pinned Python, `uv`, `ruff`, and `ty` via mise, install the repo Git hooks, and sync dependencies |
+| `make hooks` | Point Git at the repo's committed hooks in `.githooks/` |
+| `make lint` | Run Ruff across the repository |
+| `make typecheck` | Run ty across the repository |
+| `make check` | Run both linting and type checking |
 | `make run` | Start the server |
 | `make run PORT=9000` | Start on a custom port |
 | `make backup` | Back up all portfolio databases right now |
 | `make refresh` | Trigger a price refresh on the running server |
+
+Git hooks are versioned in `.githooks/` and installed by `make setup`.
+The pre-commit hook runs `make lint`; the pre-push hook runs `make check`.
 
 ---
 
@@ -91,7 +107,7 @@ finn already covers the core local-first personal finance workflow: net worth, a
 Planned next steps:
 
 - **Stats / Value page** — app opens, daily streak, money tracked, savings and investing totals, tax losses harvested, and estimated advisory fees avoided
-- **Testing and linting** — add a committed test suite and project linting before broader contributor activity
+- **Testing** — add a committed test suite before broader contributor activity
 - **Business intelligence** — investigate a future business/bookkeeping area once the existing bookkeeper utility and schema are confirmed
 
 See [TASKS.md](TASKS.md) for the detailed working checklist.

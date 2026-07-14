@@ -75,13 +75,55 @@ All user-entered strings rendered via `innerHTML` must be passed through `esc(s)
 ## Running one-off Python
 
 ```bash
-uv run python -c "from app.db import get_conn; ..."
+mise exec -- uv run python -c "from app.db import get_conn; ..."
 ```
+
+## Linting
+
+```bash
+make lint
+```
+
+For an ad hoc run without Make:
+
+```bash
+mise exec -- ruff check .
+```
+
+## Type checking
+
+```bash
+make typecheck
+```
+
+For an ad hoc run without Make:
+
+```bash
+mise exec -- ty check .
+```
+
+## Combined checks
+
+```bash
+make check
+```
+
+This runs both Ruff and ty using the existing project configuration.
+
+## Git hooks
+
+```bash
+make hooks
+```
+
+The repo stores its Git hooks in `.githooks/`.
+`make setup` installs them automatically by setting `core.hooksPath`.
+The pre-commit hook runs `make lint`, and the pre-push hook runs `make check`.
 
 ## Tests
 
 ```bash
-uv run python -m compileall main.py app
+mise exec -- uv run python -m compileall main.py app
 ```
 
 There is not currently a committed `tests/` directory. Add focused tests alongside any future test harness and document the exact command here.

@@ -33,7 +33,9 @@ def _migrate_from_db() -> None:
         return
     try:
         import sqlite3
+
         from .portfolio import get_active_path
+
         db_path = get_active_path()
         if not db_path.exists():
             return
@@ -44,10 +46,12 @@ def _migrate_from_db() -> None:
             ).fetchall()
         m = {r["key"]: r["value"] for r in rows}
         if m.get("user_name") or m.get("currency_symbol"):
-            _save({
-                "user_name": m.get("user_name", ""),
-                "currency_symbol": m.get("currency_symbol", "$"),
-            })
+            _save(
+                {
+                    "user_name": m.get("user_name", ""),
+                    "currency_symbol": m.get("currency_symbol", "$"),
+                }
+            )
     except Exception:
         pass
 
@@ -58,7 +62,9 @@ def get_profile() -> dict:
 
 
 def save_profile(user_name: str, currency_symbol: str) -> None:
-    _save({
-        "user_name": user_name.strip(),
-        "currency_symbol": currency_symbol.strip() or "$",
-    })
+    _save(
+        {
+            "user_name": user_name.strip(),
+            "currency_symbol": currency_symbol.strip() or "$",
+        }
+    )
