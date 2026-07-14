@@ -118,12 +118,78 @@ make hooks
 
 The repo stores its Git hooks in `.githooks/`.
 `make setup` installs them automatically by setting `core.hooksPath`.
-The pre-commit hook runs `make lint`, and the pre-push hook runs `make check`.
+The pre-commit hook runs `make check`.
+The pre-push hook runs `make coverage`, optionally opens the coverage dashboard, and blocks
+push only when added executable Python lines are below 80% coverage.
 
 ## Tests
 
 ```bash
-mise exec -- uv run python -m compileall main.py app
+make test
 ```
 
-There is not currently a committed `tests/` directory. Add focused tests alongside any future test harness and document the exact command here.
+For targeted runs:
+
+```bash
+mise exec -- uv run pytest tests/test_writer_prices.py
+mise exec -- uv run pytest tests/test_api_smoke.py
+```
+
+Testing conventions:
+
+- Reuse fixtures from `tests/conftest.py`.
+- Default to the per-test DB lifecycle fixture (`test_db_lifecycle`) for explicit setup/teardown and DB artifact cleanup.
+- Use `minimal_seed_data` for deterministic assertions instead of full `seed_demo()` data.
+- Mock Yahoo Finance calls via `mock_yfinance_ticker`; tests must not depend on network access.
+- Freeze time-sensitive behavior with `frozen_now` when asserting timestamps or date-driven logic.
+- Prefer data-agnostic assertions for tax/TLH logic (structure and behavior checks, not hardcoded dollar values).
+
+### CI coverage artifact example (GitHub Actions)
+
+`make test` generates `coverage.json`.
+
+GitHub-hosted runners do not provide native Rocky Linux or Alpine labels.
+Use a pinned Ubuntu host runner with a Linux container, or use self-hosted runners.
+
+Example: Rocky Linux container on a pinned host runner:
+
+```yaml
+name: ci
+
+on:
+    pull_request:
+    push:
+        branches: [main]
+
+jobs:
+    test:
+        runs-on: ubuntu-24.04
+        container:
+            image: rockylinux:9
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install container deps
+                run: dnf -y install bash curl git tar gzip unzip xz
+
+            - name: Install mise
+                run: curl https://mise.run | sh
+
+            - name: Add mise to PATH
+                run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+            - name: Sync dependencies
+                run: mise exec -- uv sync
+
+            - name: Run tests with coverage
+                run: make test
+
+            - name: Upload coverage.json
+                uses: actions/upload-artifact@v4
+                with:
+                    name: coverage-json
+                    path: coverage.json
+```
+
+            If you want true native execution on Rocky Linux or Alpine, use a self-hosted runner (for example `runs-on: [self-hosted, linux, rockylinux]`).

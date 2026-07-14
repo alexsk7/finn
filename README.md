@@ -76,11 +76,40 @@ A `Makefile` is included for convenience:
 | `make check` | Run both linting and type checking |
 | `make run` | Start the server |
 | `make run PORT=9000` | Start on a custom port |
+| `make coverage` | Run tests with a concise local coverage summary + pretty `coverage.json` output |
+| `make coverage-html` | Run tests with coverage, generate `htmlcov/`, and open a dashboard with bar-chart summary |
 | `make backup` | Back up all portfolio databases right now |
 | `make refresh` | Trigger a price refresh on the running server |
 
 Git hooks are versioned in `.githooks/` and installed by `make setup`.
-The pre-commit hook runs `make lint`; the pre-push hook runs `make check`.
+The pre-commit hook runs `make check`.
+The pre-push hook runs `make coverage`, optionally opens the local coverage dashboard, and
+blocks push only if added executable Python lines are below 80% coverage.
+
+## Testing
+
+Run the test suite:
+
+```bash
+make test
+```
+
+`make test` also generates a CI-friendly pretty-printed coverage report at `coverage.json`.
+Use `make coverage` for a cleaner local summary that hides fully covered files.
+Use `make coverage-html` for a browsable dashboard that opens automatically and links to file-level detail.
+
+The suite uses `pytest` with fixtures in `tests/conftest.py`:
+
+- Each test gets an isolated temporary SQLite database with explicit setup and teardown.
+- Writer/query tests use a minimal deterministic seed fixture instead of full demo data.
+- Market data is mocked through the yfinance fixture; tests should not call external services.
+
+Useful targeted runs:
+
+```bash
+mise exec -- uv run pytest tests/test_writer_prices.py -k "fallback or failed"
+mise exec -- uv run pytest tests/test_scheduler.py
+```
 
 ---
 
@@ -107,7 +136,7 @@ finn already covers the core local-first personal finance workflow: net worth, a
 Planned next steps:
 
 - **Stats / Value page** — app opens, daily streak, money tracked, savings and investing totals, tax losses harvested, and estimated advisory fees avoided
-- **Testing** — add a committed test suite before broader contributor activity
+- **Testing** — add more data-agnostic tests for tax/TLH logic, including edge-case scenarios
 - **Business intelligence** — investigate a future business/bookkeeping area once the existing bookkeeper utility and schema are confirmed
 
 See [TASKS.md](TASKS.md) for the detailed working checklist.

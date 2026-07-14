@@ -4,5 +4,48 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-echo "Running pre-push checks..."
-make check
+zero_sha="0000000000000000000000000000000000000000"
+
+echo "Running pre-push checks with coverage..."
+make coverage
+
+echo "Generating coverage web report..."
+mise exec -- uv run coverage html -d htmlcov >/dev/null
+mise exec -- uv run python tests/coverage_dashboard.py
+
+# Ask before opening browser so pushes do not force a tab open unexpectedly.
+if [[ -r /dev/tty ]]; then
+	open_reply=""
+	read -r -p "Open coverage dashboard in browser? [y/N] " open_reply < /dev/tty || true
+	case "$open_reply" in
+		y|Y|yes|YES)
+			if ! mise exec -- uv run python -c "from pathlib import Path; import webbrowser; webbrowser.open(Path('htmlcov/dashboard.html').resolve().as_uri())" >/dev/null 2>&1; then
+				echo "Note: could not open coverage dashboard."
+			fi
+			;;
+		*)
+			echo "Skipping dashboard open."
+			;;
+	esac
+else
+	echo "No interactive terminal available; skipping dashboard open."
+fi
+
+echo "Checking new-code coverage threshold (>= 80%)..."
+
+checked_any=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+	# Deleting a remote ref: nothing to test.
+	if [[ "$local_sha" == "$zero_sha" ]]; then
+		continue
+	fi
+
+	echo "  Evaluating pushed commits for $local_ref -> $remote_ref"
+	mise exec -- uv run python scripts/check_new_code_coverage.py --auto-base --remote-sha "$remote_sha" --head "$local_sha" --threshold 80
+	checked_any=1
+done
+
+if [[ "$checked_any" -eq 0 ]]; then
+	echo "No updated refs with local commits to check."
+fi
