@@ -12,22 +12,26 @@
 - Read `README.md` for the product overview and top-level feature set.
 - Read `docs/architecture.md` for system design and data flow.
 - Read `docs/development.md` for repo conventions and workflows.
+- Read `docs/services-migration.md` before making structural refactors.
 - Read `docs/schema.md`, `docs/frontend.md`, and `docs/pages.md` when touching those areas.
 - Read `TASKS.md` before making feature work if roadmap context matters.
 
 ## Architecture Rules
 
-- Keep server logic in `main.py`, read queries in `app/queries.py`, and write logic in `app/writer.py`.
+- Keep app wiring in `app/main.py`, routes in `app/routers/`, and route handlers thin.
+- Keep request/response schemas in `app/schemas/` and import them into routers.
+- Route handlers should call the smallest owning layer that actually has behavior to centralize. Most endpoints now go directly to `app/queries.py`, `app/writer.py`, `app/csv_mapper.py`, or `app.profile.py`; use `app/services/` only for genuine orchestration or validation boundaries.
+- Keep read SQL in `app/queries.py` and write SQL in `app/writer.py` unless a migration step explicitly moves it.
 - Prefer plain SQL over an ORM.
 - Keep schema changes idempotent and place migrations in `app/db.py` after `executescript()` inside the existing try/except migration block.
 - Use `CREATE INDEX IF NOT EXISTS` for indexes.
 - Keep the app local-first; do not introduce cloud or network dependencies unless explicitly requested.
-- Background work should stay consistent with the existing APScheduler usage in `main.py`.
+- Background work should stay consistent with the existing APScheduler usage in `app/main.py`.
 
 ## Backend Change Patterns
 
-- For a new page: add a query function, add a route in `main.py`, add a sidebar link in `templates/base.html`, then create a template extending `base.html`.
-- For a new API endpoint: add the query/write helper, add the Pydantic model and route in `main.py`, then call it from the relevant template.
+- For a new page: add a query function, add a route in `app/routers/pages.py`, add a sidebar link in `templates/base.html`, then create a template extending `base.html`.
+- For a new API endpoint: add query/write/helper functions in the owning module, add/extend schema models in `app/schemas/<domain>.py`, add the route in `app/routers/api/<domain>.py`, and add a service helper only when the endpoint has real orchestration or validation worth centralizing.
 - For data writes, keep logic in `app/writer.py` and return structured JSON responses.
 - Preserve existing naming and data-shape conventions used by nearby code.
 - Avoid introducing unnecessary abstraction layers.

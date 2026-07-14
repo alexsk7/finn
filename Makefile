@@ -27,7 +27,7 @@ test:
 	mise exec -- uv run coverage json --pretty-print -o coverage.json >/dev/null
 
 coverage:
-	mise exec -- uv run pytest --override-ini="addopts=-q --strict-markers --cov=app --cov=main --cov-report=term:skip-covered"
+	mise exec -- uv run pytest --override-ini="addopts=-q --strict-markers --cov=app --cov-report=term:skip-covered"
 	mise exec -- uv run coverage json --pretty-print -o coverage.json >/dev/null
 
 coverage-new:

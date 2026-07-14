@@ -25,4 +25,4 @@ echo "Starting finn on http://localhost:$PORT"
 # Open browser after a short delay to let Uvicorn bind
 (sleep 1.5 && "$MISE_BIN" exec -- python -m webbrowser "http://localhost:$PORT") &
 
-"$MISE_BIN" exec -- uv run python -m uvicorn main:app --host 127.0.0.1 --port "$PORT" --reload
+"$MISE_BIN" exec -- uv run python -m uvicorn app.main:app --host 127.0.0.1 --port "$PORT" --reload

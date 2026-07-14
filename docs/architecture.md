@@ -6,22 +6,25 @@ Local-first, single-process web app. No authentication, no external API dependen
 
 ## Request flow
 
-1. Browser hits a page route (`/`, `/investments`, etc.) in `main.py`
-2. FastAPI renders a Jinja2 template via the shared `page()` helper — only `active` (sidebar key) is passed as context. Exception: `/accounts/{account_id}` also passes `account_id`.
+1. Browser hits a page route (`/`, `/investments`, etc.) in `app/routers/pages.py`
+2. FastAPI renders a Jinja2 template via the shared `_page()` helper — only `active` (sidebar key) is passed as context. Exception: `/accounts/{account_id}` also passes `account_id`.
 3. The HTML shell makes `fetch()` calls to `/api/*` endpoints on load
-4. API endpoints call `app/queries.py` (reads) or `app/writer.py` (writes) and return JSON
+4. API endpoints in `app/routers/api/` validate request bodies via schemas in `app/schemas/`
+5. Routers call the owning layer directly: most endpoints go to `app/queries.py`, `app/writer.py`, `app.csv_mapper.py`, or `app.profile.py`; only behavior-owning helpers in `app/services/` sit in the middle when a domain needs extra orchestration
 5. JS in `{% block scripts %}` builds the UI from the response
 
 ## Data layer (`app/`)
 
 - **`db.py`** — `get_conn()` opens SQLite with WAL mode and `row_factory=sqlite3.Row`. `init_db()` creates all tables idempotently and applies migrations. DB file lives at project root as `finance.db`. Idempotent column migrations are applied after `executescript` in a try/except block; indexes are created via `CREATE INDEX IF NOT EXISTS`.
+- **`schemas/`** — Pydantic request schemas by domain, imported by API routers.
+- **`services/`** — selective domain orchestration layer. Only modules with genuine domain rules remain here; most routers call the underlying data modules directly.
 - **`queries.py`** — all read queries. No ORM; plain SQL. Key functions: `_compute_balances(conn)`, `get_dashboard_summary`, `get_allocation`, `get_tax_summary`, `get_ticker_data`, `get_account_by_id` / `get_account_transactions`, `get_accounts_summary`, `get_real_estate`, `get_amortization`, `get_budget_month`, `get_cashflow_by_category`, `get_journal`, `get_transactions`, `get_allocation_targets`, `get_budget_categories_full`.
 - **`writer.py`** — all write operations: prices (`refresh_prices`, `update_price`), snapshots (`save_snapshot`, `import_snapshot_csv`), holdings CRUD + `import_holdings_csv`, account CRUD (`add_account`, `update_account`, `delete_account`), real estate (add/update/delete + `link_real_estate_account` + mortgage config + property costs), allocation targets (upsert), budget categories (add/edit/delete), monthly budget plans (`save_budget_month`, `copy_budget_month`), journal (add/edit/delete), transactions (`add_transaction`, `update_transaction`, `bulk_update_transaction_category`, `delete_transaction`, `import_transaction_csv`), `reset_all_data`.
 - **`seed.py`** — inserts demo data once, guarded via `app_flags` table (`demo_seeded` key).
 
 ## Background jobs
 
-APScheduler `BackgroundScheduler` starts at module load in `main.py`. One cron job: Mon–Fri 16:05 America/New_York, calls `refresh_prices()`. Skips silently if no holdings exist; skips any symbol with `is_manual=1` (i.e. `M:` prefix). Cleaned up via `atexit`. Dependency: `apscheduler>=3.10,<4`.
+APScheduler `BackgroundScheduler` starts at module load in `app/main.py`. One cron job: Mon–Fri 16:05 America/New_York, calls `refresh_prices()`. Skips silently if no holdings exist; skips any symbol with `is_manual=1` (i.e. `M:` prefix). Cleaned up via `atexit`. Dependency: `apscheduler>=3.10,<4`.
 
 ## SQLite connection settings
 

@@ -1,9 +1,11 @@
 # Development Guide
 
+See [`docs/services-migration.md`](docs/services-migration.md) for the phased migration plan and domain-by-domain checklist.
+
 ## Adding a new page
 
 1. Add a query function to `app/queries.py`
-2. Add a GET route to `main.py` using the `page()` helper with a new `active` key
+2. Add a GET route to `app/routers/pages.py` using the `_page()` helper with a new `active` key
 3. Add the nav link to `templates/base.html` sidebar with the matching `active` check
 4. Create `templates/<name>.html` extending `base.html`; fetch data in `{% block scripts %}`
 5. For multi-column layouts that need to collapse on mobile, use a named layout class from `style.css`
@@ -11,9 +13,13 @@
 ## Adding a new API endpoint
 
 1. Add a read function to `app/queries.py` or write function to `app/writer.py`
-2. Add a Pydantic model (for POST/PUT bodies) and route to `main.py`
-3. Import the function in `main.py` (in the relevant `from app.queries import ...` or `from app.writer import ...` block)
-4. Call from JS via `fetch('/api/...')` in the relevant template
+2. Add the helper to `app/queries.py`, `app/writer.py`, `app.csv_mapper.py`, or another owning module under `app/`
+3. Add/extend request schemas in `app/schemas/<domain>.py`
+4. Add a route in the relevant domain router under `app/routers/api/` and import schemas from `app.schemas.*`
+5. Import a service helper only if the domain has real orchestration or validation that belongs outside the router
+6. Call from JS via `fetch('/api/...')` in the relevant template
+
+During migration work, keep endpoint payloads stable and only introduce a service layer when it reduces duplication or owns non-trivial behavior.
 
 ## Adding a CSV import to a tab
 
@@ -32,7 +38,7 @@ Zero-based budget planning spans three layers:
 - `budget_months` creates a specific `YYYY-MM` planning period.
 - `budget_month_items` stores planned amounts per category for that month.
 
-When changing budget behavior, update `get_budget_month()` in `queries.py`, the month write helpers in `writer.py`, and the `/api/budget*` routes in `main.py`. Keep `/api/cashflow` working until callers have fully moved to `/api/budget`.
+When changing budget behavior, update `get_budget_month()` in `queries.py`, the month write helpers in `writer.py`, and the `/api/budget*` routes in `app/routers/api/budget.py`. Keep `/api/cashflow` working until callers have fully moved to `/api/budget`.
 
 ## Schema migrations
 

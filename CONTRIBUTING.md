@@ -13,7 +13,7 @@ Requires [uv](https://docs.astral.sh/uv/getting-started/installation/) and Pytho
 ## Running checks
 
 ```bash
-uv run python -m compileall main.py app
+uv run python -m compileall app
 ```
 
 There is not currently a committed test suite. If you add tests, document the exact command here and in [`docs/development.md`](docs/development.md).
@@ -22,21 +22,26 @@ There is not currently a committed test suite. If you add tests, document the ex
 
 ```
 app/
+  main.py      FastAPI app wiring and startup jobs
+  routers/     FastAPI route modules
+  schemas/     Pydantic request schemas by domain
+  services/    service-layer facades used by routers
   db.py        schema init and migrations
   queries.py   all read queries (plain SQL, no ORM)
   writer.py    all write operations
   seed.py      demo data (runs once on first start)
-main.py        FastAPI routes and Pydantic models
 templates/     Jinja2 HTML templates
 static/        CSS and static assets
 ```
 
 The [`docs/`](docs/) directory has detailed reference material — architecture, schema, frontend conventions, and a development guide. Worth reading before making changes.
 
+For service-layer refactors, follow [`docs/services-migration.md`](docs/services-migration.md).
+
 ## Making changes
 
-- **New page**: add a query in `queries.py`, a route in `main.py`, a nav link in `base.html`, and a template. See the "Adding a new page" section in [`docs/development.md`](docs/development.md).
-- **New API endpoint**: add the function in `queries.py` or `writer.py`, a Pydantic model + route in `main.py`, then call it from the relevant template.
+- **New page**: add a query in `queries.py`, a route in `app/routers/pages.py`, a nav link in `base.html`, and a template. See the "Adding a new page" section in [`docs/development.md`](docs/development.md).
+- **New API endpoint**: add the function in `queries.py`, `writer.py`, `csv_mapper.py`, or another owning module under `app/`, add/extend request schemas in `app/schemas/<domain>.py`, add the route in `app/routers/api/<domain>.py`, and only add a service helper if the domain has real orchestration or validation that belongs there.
 - **Schema changes**: add idempotent `ALTER TABLE` migrations in `db.py` (inside the try/except block after `executescript`).
 
 ## Submitting a PR
